@@ -1,0 +1,65 @@
+import { lazy, Suspense } from "react"
+import { BrowserRouter, Navigate, Route, Routes } from "react-router"
+
+import { Spinner } from "@/components/ui/spinner"
+import { RequireAuth } from "@/router/guards/require-auth"
+import { LEGACY_ROUTE_REDIRECTS } from "@/router/routes"
+
+const AppLayout = lazy(() => import("@/layout"))
+const IndexPage = lazy(() => import("@/views/index"))
+const LoginPage = lazy(() => import("@/views/login"))
+const HealthPage = lazy(() => import("@/views/monitor/health"))
+const UserPage = lazy(() => import("@/views/system/user"))
+const RolePage = lazy(() => import("@/views/system/role"))
+const MenuPage = lazy(() => import("@/views/system/menu"))
+const DeptPage = lazy(() => import("@/views/system/dept"))
+const PostPage = lazy(() => import("@/views/system/post"))
+const DictTypePage = lazy(() => import("@/views/system/dict/type"))
+const DictDataPage = lazy(() => import("@/views/system/dict/data"))
+
+export function AppRouter() {
+  return (
+    <BrowserRouter basename={import.meta.env.VITE_BASE_URL}>
+      <Suspense fallback={<RouteLoading />}>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route
+            path="/"
+            element={
+              <RequireAuth>
+                <AppLayout />
+              </RequireAuth>
+            }
+          >
+            <Route index element={<Navigate to="/index" replace />} />
+            <Route path="index" element={<IndexPage />} />
+            <Route path="system/user" element={<UserPage />} />
+            <Route path="system/role" element={<RolePage />} />
+            <Route path="system/menu" element={<MenuPage />} />
+            <Route path="system/dept" element={<DeptPage />} />
+            <Route path="system/post" element={<PostPage />} />
+            <Route path="system/dict/type" element={<DictTypePage />} />
+            <Route path="system/dict/data" element={<DictDataPage />} />
+            <Route path="monitor/health" element={<HealthPage />} />
+          </Route>
+          {Object.entries(LEGACY_ROUTE_REDIRECTS).map(([path, target]) => (
+            <Route
+              key={path}
+              path={path}
+              element={<Navigate to={target} replace />}
+            />
+          ))}
+          <Route path="*" element={<Navigate to="/index" replace />} />
+        </Routes>
+      </Suspense>
+    </BrowserRouter>
+  )
+}
+
+function RouteLoading() {
+  return (
+    <div className="flex min-h-svh items-center justify-center bg-background text-muted-foreground">
+      <Spinner />
+    </div>
+  )
+}
