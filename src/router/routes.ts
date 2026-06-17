@@ -5,8 +5,9 @@ export type AppRouteId =
   | "menus"
   | "depts"
   | "posts"
-  | "dict-types"
-  | "dict-data"
+  | "dict"
+  | "operation-logs"
+  | "login-logs"
   | "health"
 
 export interface AppRouteMeta {
@@ -63,18 +64,25 @@ export const APP_ROUTES: AppRouteMeta[] = [
     path: "/system/post",
   },
   {
-    id: "dict-types",
-    label: "字典类型",
-    title: "字典类型",
-    description: "管理系统字典类型定义。",
-    path: "/system/dict/type",
+    id: "dict",
+    label: "字典管理",
+    title: "字典管理",
+    description: "管理系统字典类型，并查看各类型下的字典数据。",
+    path: "/system/dict",
   },
   {
-    id: "dict-data",
-    label: "字典数据",
-    title: "字典数据",
-    description: "管理各字典类型下的键值数据。",
-    path: "/system/dict/data",
+    id: "operation-logs",
+    label: "操作日志",
+    title: "操作日志",
+    description: "查看后台写入、修改、删除等操作记录。",
+    path: "/system/log/operation",
+  },
+  {
+    id: "login-logs",
+    label: "登录日志",
+    title: "登录日志",
+    description: "查看后台账号登录成功和失败记录。",
+    path: "/system/log/login",
   },
   {
     id: "health",
@@ -92,15 +100,11 @@ export const APP_ROUTE_GROUPS = [
   },
   {
     label: "系统管理",
-    routes: [
-      "users",
-      "roles",
-      "menus",
-      "depts",
-      "posts",
-      "dict-types",
-      "dict-data",
-    ],
+    routes: ["users", "roles", "menus", "depts", "posts", "dict"],
+  },
+  {
+    label: "系统日志",
+    routes: ["operation-logs", "login-logs"],
   },
   {
     label: "系统监控",
@@ -139,10 +143,17 @@ export const LEGACY_ROUTE_REDIRECTS: Record<string, string> = {
   "/dashboard/system/depts": "/system/dept",
   "/dashboard/posts": "/system/post",
   "/dashboard/system/posts": "/system/post",
-  "/dashboard/dict-types": "/system/dict/type",
-  "/dashboard/system/dict-types": "/system/dict/type",
-  "/dashboard/dict-data": "/system/dict/data",
-  "/dashboard/system/dict-data": "/system/dict/data",
+  "/dashboard/dict-types": "/system/dict",
+  "/dashboard/system/dict-types": "/system/dict",
+  "/dashboard/dict-data": "/system/dict",
+  "/dashboard/system/dict-data": "/system/dict",
+  "/dashboard/system/dict": "/system/dict",
+  "/dashboard/operation-logs": "/system/log/operation",
+  "/dashboard/system/operation-logs": "/system/log/operation",
+  "/dashboard/system/log/operation": "/system/log/operation",
+  "/dashboard/login-logs": "/system/log/login",
+  "/dashboard/system/login-logs": "/system/log/login",
+  "/dashboard/system/log/login": "/system/log/login",
   "/dashboard/health": "/monitor/health",
   "/dashboard/monitor/health": "/monitor/health",
 }

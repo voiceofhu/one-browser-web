@@ -18,9 +18,24 @@ export function showResourceDeleteSuccess(noun: string) {
   })
 }
 
+export function showResourceBulkDeleteSuccess(noun: string, count: number) {
+  toast.success(`${noun}批量删除成功`, {
+    description: `已删除 ${count} 条记录，列表已刷新。`,
+  })
+}
+
 export function showResourceRefreshSuccess(noun: string) {
   toast.success(`${noun}列表已刷新`, {
     description: "已获取后台最新数据。",
+  })
+}
+
+export function showResourceReorderSuccess(noun: string, count: number) {
+  toast.success(`${noun}排序已保存`, {
+    description:
+      count > 0
+        ? `已更新 ${count} 条记录的显示顺序。`
+        : "顺序没有发生变化。",
   })
 }
 

@@ -21,3 +21,11 @@ export function updateRole(roleId: number, payload: RolePayload) {
 export function deleteRole(roleId: number) {
   return http.del<void>(`${ROLE_PATH}/${roleId}`)
 }
+
+export function getRoleMenuIds(roleId: number) {
+  return http.get<{ ids: number[] }>(`${ROLE_PATH}/${roleId}/menu`)
+}
+
+export function setRoleMenuIds(roleId: number, menuIds: number[]) {
+  return http.put<void>(`${ROLE_PATH}/${roleId}/menu`, { ids: menuIds })
+}

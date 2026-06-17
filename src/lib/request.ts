@@ -1,3 +1,5 @@
+import { toast } from "sonner"
+
 export class HttpError extends Error {
   readonly status: number
   readonly code: string
@@ -12,10 +14,26 @@ export class HttpError extends Error {
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "/api"
 const APP_BASE_URL = import.meta.env.VITE_BASE_URL || "/"
+const AUTH_EXPIRED_NOTICE_KEY = "one-browser:auth-expired-notice"
 let isRedirectingToLogin = false
 
 export function isUnauthorizedError(error: unknown): error is HttpError {
   return error instanceof HttpError && error.status === 401
+}
+
+export function consumeAuthExpiredNotice() {
+  if (typeof window === "undefined") {
+    return false
+  }
+
+  try {
+    const shouldNotify =
+      window.sessionStorage.getItem(AUTH_EXPIRED_NOTICE_KEY) === "1"
+    window.sessionStorage.removeItem(AUTH_EXPIRED_NOTICE_KEY)
+    return shouldNotify
+  } catch {
+    return false
+  }
 }
 
 function getAppBasePath() {
@@ -59,7 +77,19 @@ function redirectToLogin(path: string) {
   }
 
   isRedirectingToLogin = true
+  markAuthExpiredNotice()
+  toast.warning("登录状态已失效", {
+    description: "请重新登录后继续操作。",
+  })
   window.location.assign(loginUrl)
+}
+
+function markAuthExpiredNotice() {
+  try {
+    window.sessionStorage.setItem(AUTH_EXPIRED_NOTICE_KEY, "1")
+  } catch {
+    // Redirect should still happen if browser storage is unavailable.
+  }
 }
 
 function buildUrl(path: string, baseUrl = API_BASE_URL) {
@@ -70,10 +100,7 @@ function buildUrl(path: string, baseUrl = API_BASE_URL) {
   return `${baseUrl.replace(/\/$/, "")}/${path.replace(/^\//, "")}`
 }
 
-export function buildQueryPath(
-  path: string,
-  params?: object
-) {
+export function buildQueryPath(path: string, params?: object) {
   if (!params) {
     return path
   }

@@ -7,6 +7,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import type { ColumnDef } from "@tanstack/react-table"
 import { toast } from "sonner"
 
+import { setDictTypeStatus } from "@/api/system/dict"
+import { setDeptStatus } from "@/api/system/dept"
+import { setPostStatus } from "@/api/system/post"
 import { setUserStatus } from "@/api/system/user"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
@@ -78,8 +81,16 @@ export const roleColumns: ColumnDef<RoleResource>[] = [
     ),
     meta: { label: "数据范围" },
   },
-  booleanColumn("menu_check_strictly", "菜单严格"),
-  booleanColumn("dept_check_strictly", "部门严格"),
+  booleanColumn("menu_check_strictly", "菜单联动", {
+    invert: true,
+    trueLabel: "联动",
+    falseLabel: "独立",
+  }),
+  booleanColumn("dept_check_strictly", "部门联动", {
+    invert: true,
+    trueLabel: "联动",
+    falseLabel: "独立",
+  }),
   statusColumn(),
   dateColumn("created_at", "创建时间"),
 ]
@@ -115,13 +126,17 @@ export const menuColumns: ColumnDef<MenuResource>[] = [
 ]
 
 export const deptColumns: ColumnDef<DeptResource>[] = [
-  textColumn("dept_name", "部门名称"),
-  numberColumn("parent_id", "父级"),
+  textColumn("dept_name", "部门名称", "min-w-72 max-w-96"),
   numberColumn("order_num", "排序"),
   textColumn("leader", "负责人"),
   textColumn("phone", "电话"),
   textColumn("email", "邮箱"),
-  statusColumn(),
+  {
+    accessorKey: "status",
+    header: ({ column }) => tableHeader(column, "状态"),
+    cell: ({ row }) => <DeptStatusSwitch dept={row.original} />,
+    meta: { label: "状态" },
+  },
   dateColumn("created_at", "创建时间"),
 ]
 
@@ -129,16 +144,26 @@ export const postColumns: ColumnDef<PostResource>[] = [
   textColumn("post_name", "岗位名称"),
   textColumn("post_code", "岗位编码"),
   numberColumn("post_sort", "排序"),
-  statusColumn(),
+  {
+    accessorKey: "status",
+    header: ({ column }) => tableHeader(column, "状态"),
+    cell: ({ row }) => <PostStatusSwitch post={row.original} />,
+    meta: { label: "状态" },
+  },
   dateColumn("created_at", "创建时间"),
-  textColumn("remark", "备注"),
+  textColumn("remark", "备注", "max-w-64", "-"),
 ]
 
 export const dictTypeColumns: ColumnDef<DictTypeResource>[] = [
   textColumn("dict_name", "字典名称"),
   textColumn("dict_type", "字典类型"),
-  statusColumn(),
-  textColumn("remark", "备注"),
+  {
+    accessorKey: "status",
+    header: ({ column }) => tableHeader(column, "状态"),
+    cell: ({ row }) => <DictTypeStatusSwitch dictType={row.original} />,
+    meta: { label: "状态" },
+  },
+  textColumn("remark", "备注", "max-w-64", "-"),
 ]
 
 export const dictDataColumns: ColumnDef<DictDataResource>[] = [
@@ -148,7 +173,7 @@ export const dictDataColumns: ColumnDef<DictDataResource>[] = [
   numberColumn("dict_sort", "排序"),
   yesNoColumn("is_default", "默认"),
   statusColumn(),
-  textColumn("remark", "备注"),
+  textColumn("remark", "备注", "max-w-64", "-"),
 ]
 
 export function DependencyHealthBody({ health }: { health?: HealthResponse }) {
@@ -167,13 +192,17 @@ export function DependencyHealthBody({ health }: { health?: HealthResponse }) {
 
 function textColumn<TData, TKey extends keyof TData & string>(
   key: TKey,
-  label: string
+  label: string,
+  cellClassName = "max-w-64",
+  emptyText = "无"
 ): ColumnDef<TData> {
   return {
     accessorKey: key,
     header: ({ column }) => tableHeader(column, label),
-    cell: ({ getValue }) => <TextCell value={getValue()} />,
-    meta: { label, cellClassName: "max-w-64" },
+    cell: ({ getValue }) => (
+      <TextCell value={getValue()} emptyText={emptyText} />
+    ),
+    meta: { label, cellClassName },
   }
 }
 
@@ -214,16 +243,26 @@ function statusColumn<
 
 function booleanColumn<TData, TKey extends keyof TData & string>(
   key: TKey,
-  label: string
+  label: string,
+  options?: {
+    invert?: boolean
+    trueLabel?: string
+    falseLabel?: string
+  }
 ): ColumnDef<TData> {
   return {
     accessorKey: key,
     header: ({ column }) => tableHeader(column, label),
-    cell: ({ getValue }) => (
-      <Badge variant={getValue<boolean>() ? "secondary" : "outline"}>
-        {getValue<boolean>() ? "是" : "否"}
-      </Badge>
-    ),
+    cell: ({ getValue }) => {
+      const rawValue = getValue<boolean>()
+      const value = options?.invert ? !rawValue : rawValue
+
+      return (
+        <Badge variant={value ? "secondary" : "outline"}>
+          {value ? (options?.trueLabel ?? "是") : (options?.falseLabel ?? "否")}
+        </Badge>
+      )
+    },
     meta: { label },
   }
 }
@@ -300,8 +339,129 @@ function UserStatusSwitch({ user }: { user: UserResource }) {
   )
 }
 
-function TextCell({ value }: { value: unknown }) {
-  const text = value == null || value === "" ? "无" : String(value)
+function DeptStatusSwitch({ dept }: { dept: DeptResource }) {
+  const queryClient = useQueryClient()
+  const mutation = useMutation({
+    mutationFn: (status: StatusFlag) => setDeptStatus(dept, status),
+    onSuccess: async (updatedDept) => {
+      await queryClient.invalidateQueries({ queryKey: systemQueryKeys.depts })
+      toast.success(
+        `${updatedDept.dept_name}已${
+          updatedDept.status === "0" ? "设为正常" : "停用"
+        }`,
+        {
+          description: "部门状态已同步到后台。",
+          duration: 5_000,
+        }
+      )
+    },
+    onError: showResourceError,
+  })
+  const enabled = mutation.isPending
+    ? mutation.variables === "0"
+    : dept.status === "0"
+
+  return (
+    <div className="flex items-center gap-2">
+      <Switch
+        checked={enabled}
+        disabled={mutation.isPending}
+        aria-label={`${enabled ? "停用" : "设为正常"}部门 ${dept.dept_name}`}
+        onCheckedChange={(checked) => mutation.mutate(checked ? "0" : "1")}
+      />
+      <span className="text-xs text-muted-foreground">
+        {enabled ? "正常" : "停用"}
+      </span>
+    </div>
+  )
+}
+
+function PostStatusSwitch({ post }: { post: PostResource }) {
+  const queryClient = useQueryClient()
+  const mutation = useMutation({
+    mutationFn: (status: StatusFlag) => setPostStatus(post, status),
+    onSuccess: async (updatedPost) => {
+      await queryClient.invalidateQueries({ queryKey: systemQueryKeys.posts })
+      toast.success(
+        `${updatedPost.post_name}已${
+          updatedPost.status === "0" ? "启用" : "停用"
+        }`,
+        {
+          description: "岗位状态已同步到后台。",
+          duration: 5_000,
+        }
+      )
+    },
+    onError: showResourceError,
+  })
+  const enabled = mutation.isPending
+    ? mutation.variables === "0"
+    : post.status === "0"
+
+  return (
+    <div className="flex items-center gap-2">
+      <Switch
+        checked={enabled}
+        disabled={mutation.isPending}
+        aria-label={`${enabled ? "停用" : "启用"}岗位 ${post.post_name}`}
+        onCheckedChange={(checked) => mutation.mutate(checked ? "0" : "1")}
+      />
+      <span className="text-xs text-muted-foreground">
+        {enabled ? "启用" : "停用"}
+      </span>
+    </div>
+  )
+}
+
+function DictTypeStatusSwitch({ dictType }: { dictType: DictTypeResource }) {
+  const queryClient = useQueryClient()
+  const mutation = useMutation({
+    mutationFn: (status: StatusFlag) => setDictTypeStatus(dictType, status),
+    onSuccess: async (updatedDictType) => {
+      await queryClient.invalidateQueries({
+        queryKey: systemQueryKeys.dictTypes,
+      })
+      toast.success(
+        `${updatedDictType.dict_name}已${
+          updatedDictType.status === "0" ? "启用" : "停用"
+        }`,
+        {
+          description: "字典类型状态已同步到后台。",
+          duration: 5_000,
+        }
+      )
+    },
+    onError: showResourceError,
+  })
+  const enabled = mutation.isPending
+    ? mutation.variables === "0"
+    : dictType.status === "0"
+
+  return (
+    <div className="flex items-center gap-2">
+      <Switch
+        checked={enabled}
+        disabled={mutation.isPending}
+        aria-label={`${enabled ? "停用" : "启用"}字典类型 ${
+          dictType.dict_name
+        }`}
+        onCheckedChange={(checked) => mutation.mutate(checked ? "0" : "1")}
+      />
+      <span className="text-xs text-muted-foreground">
+        {enabled ? "启用" : "停用"}
+      </span>
+    </div>
+  )
+}
+
+function TextCell({
+  value,
+  emptyText = "无",
+}: {
+  value: unknown
+  emptyText?: string
+}) {
+  const text = value == null || value === "" ? emptyText : String(value)
 
   return <span className="block truncate">{text}</span>
 }

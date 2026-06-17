@@ -5,6 +5,7 @@ import type {
   DictTypeResource,
   ListParams,
   PageResponse,
+  StatusFlag,
 } from "@/types/admin"
 
 type DictPayload = Record<string, unknown>
@@ -24,6 +25,18 @@ export function createDictType(payload: DictPayload) {
 
 export function updateDictType(dictId: number, payload: DictPayload) {
   return http.put<DictTypeResource>(`${DICT_TYPE_PATH}/${dictId}`, payload)
+}
+
+export function setDictTypeStatus(
+  dictType: DictTypeResource,
+  status: StatusFlag
+) {
+  return updateDictType(dictType.dict_id, {
+    dict_name: dictType.dict_name,
+    dict_type: dictType.dict_type,
+    status,
+    remark: dictType.remark,
+  })
 }
 
 export function deleteDictType(dictId: number) {

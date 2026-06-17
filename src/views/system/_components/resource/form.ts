@@ -27,16 +27,26 @@ export type ResourceField = {
     | "number"
     | "textarea"
     | "select"
+    | "radio"
     | "dept-combobox"
+    | "dept-parent-select"
+    | "menu-icon-select"
+    | "menu-parent-select"
+    | "menu-permission-tree"
     | "post-multi-select"
     | "role-multi-select"
     | "status-switch"
     | "switch"
   placeholder?: string
   description?: string
+  tooltip?: string
   options?: ResourceFieldOption[]
+  hiddenOnCreate?: boolean
   hiddenOnEdit?: boolean
   disabledOnEdit?: boolean
+  invertBoolean?: boolean
+  colSpan?: "full"
+  required?: boolean
 }
 
 const requiredText = (label: string) =>
@@ -61,13 +71,6 @@ export const sexOptions = options<SexFlag>({
   "0": "男",
   "1": "女",
   "2": "未知",
-})
-export const dataScopeOptions = options<DataScopeFlag>({
-  "1": "全部数据",
-  "2": "本部门数据",
-  "3": "本部门及以下",
-  "4": "自定义数据",
-  "5": "仅本人数据",
 })
 export const menuTypeOptions = options<MenuTypeFlag>({
   M: "目录",
@@ -118,6 +121,7 @@ export const roleSchema = z.object({
   data_scope: dataScope,
   menu_check_strictly: z.boolean(),
   dept_check_strictly: z.boolean(),
+  menu_ids: z.array(z.number().int()),
   status,
   remark: optionalText,
 })
@@ -157,9 +161,7 @@ export const deptSchema = z.object({
 })
 
 export const postSchema = z.object({
-  post_code: requiredText("岗位编码").max(64, "岗位编码不能超过 64 个字符"),
   post_name: requiredText("岗位名称").max(64, "岗位名称不能超过 64 个字符"),
-  post_sort: requiredNumber,
   status,
   remark: optionalText,
 })
@@ -185,73 +187,69 @@ export const dictDataSchema = z.object({
 
 export const resourceFields = {
   users: [
-    textField("nick_name", "用户昵称", "请输入用户昵称"),
+    textField("nick_name", "用户昵称", "请输入用户昵称", true),
     deptComboboxField("dept_id", "归属部门"),
     textField("phone_number", "手机号码", "请输入手机号码"),
     emailField("email", "邮箱"),
-    textField("user_name", "用户名称", "请输入登录用户名"),
-    passwordField("password", "用户密码", "密码至少需要 10 位", true),
-    selectField("sex", "用户性别", sexOptions),
-    statusSwitchField("status", "状态"),
+    textField("user_name", "用户名称", "请输入登录用户名", true),
+    passwordField("password", "用户密码", undefined, true, true),
+    radioField("sex", "用户性别", sexOptions),
+    statusSwitchField("status", "状态", { hiddenOnCreate: true }),
     postMultiSelectField("post_ids", "岗位"),
-    roleMultiSelectField("role_ids", "角色"),
+    roleMultiSelectField("role_ids", "角色", true),
     textareaField("remark", "备注"),
   ],
   roles: [
-    textField("role_name", "角色名称"),
-    textField("role_key", "权限标识"),
-    numberField("role_sort", "排序"),
-    selectField("data_scope", "数据范围", dataScopeOptions),
-    switchField("menu_check_strictly", "菜单树严格校验"),
-    switchField("dept_check_strictly", "部门树严格校验"),
-    selectField("status", "状态", statusOptions),
+    textField("role_name", "角色名称", "请输入角色名称", true),
+    textField(
+      "role_key",
+      "权限字符",
+      "请输入权限字符",
+      true,
+      "控制器中定义的权限字符，例如：admin、system:role:list"
+    ),
+    numberField("role_sort", "角色顺序", undefined, true),
+    radioField("status", "状态", statusOptions),
+    menuPermissionTreeField("menu_ids", "菜单权限"),
     textareaField("remark", "备注"),
   ],
   menus: [
-    textField("menu_name", "菜单名称"),
-    numberField("parent_id", "父级菜单 ID", "留空表示顶级菜单"),
-    numberField("order_num", "排序"),
+    textField("menu_name", "菜单名称", "请输入菜单名称", true),
+    menuParentSelectField("parent_id", "父级菜单", "留空表示顶级菜单"),
+    selectField("menu_type", "菜单类型", menuTypeOptions, true),
+    menuIconSelectField("icon", "图标"),
     textField("path", "路由路径"),
     textField("component", "组件路径"),
     textField("route_query", "路由参数"),
     textField("route_name", "路由名称"),
     switchField("is_frame", "外链"),
     switchField("is_cache", "缓存"),
-    selectField("menu_type", "菜单类型", menuTypeOptions),
     selectField("visible", "可见状态", visibleOptions),
-    selectField("status", "状态", statusOptions),
     textField("perms", "权限标识"),
-    textField("icon", "图标"),
     textareaField("remark", "备注"),
   ],
   depts: [
-    numberField("parent_id", "父级部门 ID", "留空表示顶级部门"),
-    textField("ancestors", "祖级列表"),
-    textField("dept_name", "部门名称"),
-    numberField("order_num", "排序"),
-    textField("leader", "负责人"),
-    textField("phone", "联系电话"),
-    emailField("email", "邮箱"),
-    selectField("status", "状态", statusOptions),
+    deptParentSelectField("parent_id", "上级部门"),
+    textField("dept_name", "部门名称", "请输入部门名称", true),
+    textField("leader", "负责人", "请输入负责人"),
+    textField("phone", "联系电话", "请输入联系电话"),
+    emailField("email", "邮箱", "请输入邮箱"),
   ],
   posts: [
-    textField("post_code", "岗位编码"),
-    textField("post_name", "岗位名称"),
-    numberField("post_sort", "排序"),
-    selectField("status", "状态", statusOptions),
+    textField("post_name", "岗位名称", undefined, true),
     textareaField("remark", "备注"),
   ],
   dictTypes: [
-    textField("dict_name", "字典名称"),
-    textField("dict_type", "字典类型"),
-    selectField("status", "状态", statusOptions),
+    textField("dict_name", "字典名称", undefined, true),
+    textField("dict_type", "字典类型", undefined, true),
+    statusSwitchField("status", "状态", { hiddenOnCreate: true }),
     textareaField("remark", "备注"),
   ],
   dictData: [
-    numberField("dict_sort", "排序"),
-    textField("dict_label", "字典标签"),
-    textField("dict_value", "字典键值"),
-    textField("dict_type", "字典类型"),
+    numberField("dict_sort", "排序", undefined, true),
+    textField("dict_label", "字典标签", undefined, true),
+    textField("dict_value", "字典键值", undefined, true),
+    textField("dict_type", "字典类型", undefined, true),
     textField("css_class", "CSS 类名"),
     textField("list_class", "列表样式"),
     selectField("is_default", "是否默认", yesNoOptions),
@@ -281,8 +279,9 @@ export const defaultValues = {
     role_key: "",
     role_sort: 0,
     data_scope: "1" satisfies DataScopeFlag,
-    menu_check_strictly: true,
-    dept_check_strictly: true,
+    menu_check_strictly: false,
+    dept_check_strictly: false,
+    menu_ids: [],
     status: "0" satisfies StatusFlag,
     remark: "",
   },
@@ -305,7 +304,7 @@ export const defaultValues = {
   },
   depts: {
     parent_id: null,
-    ancestors: "",
+    ancestors: "0",
     dept_name: "",
     order_num: 0,
     leader: "",
@@ -314,9 +313,7 @@ export const defaultValues = {
     status: "0" satisfies StatusFlag,
   },
   posts: {
-    post_code: "",
     post_name: "",
-    post_sort: 0,
     status: "0" satisfies StatusFlag,
     remark: "",
   },
@@ -384,30 +381,39 @@ export function mergeRecord(
 function textField(
   name: string,
   label: string,
-  placeholder?: string
+  placeholder?: string,
+  required?: boolean,
+  tooltip?: string
 ): ResourceField {
-  return { name, label, type: "text", placeholder }
+  return { name, label, type: "text", placeholder, required, tooltip }
 }
 
-function emailField(name: string, label: string): ResourceField {
-  return { name, label, type: "email" }
+function emailField(
+  name: string,
+  label: string,
+  placeholder?: string,
+  required?: boolean
+): ResourceField {
+  return { name, label, type: "email", placeholder, required }
 }
 
 function passwordField(
   name: string,
   label: string,
   description?: string,
-  hiddenOnEdit?: boolean
+  hiddenOnEdit?: boolean,
+  required?: boolean
 ): ResourceField {
-  return { name, label, type: "password", description, hiddenOnEdit }
+  return { name, label, type: "password", description, hiddenOnEdit, required }
 }
 
 function numberField(
   name: string,
   label: string,
-  description?: string
+  description?: string,
+  required?: boolean
 ): ResourceField {
-  return { name, label, type: "number", description }
+  return { name, label, type: "number", description, required }
 }
 
 function textareaField(name: string, label: string): ResourceField {
@@ -417,9 +423,18 @@ function textareaField(name: string, label: string): ResourceField {
 function selectField(
   name: string,
   label: string,
+  options: ResourceFieldOption[],
+  required?: boolean
+): ResourceField {
+  return { name, label, type: "select", options, required }
+}
+
+function radioField(
+  name: string,
+  label: string,
   options: ResourceFieldOption[]
 ): ResourceField {
-  return { name, label, type: "select", options }
+  return { name, label, type: "radio", options }
 }
 
 function deptComboboxField(
@@ -430,20 +445,64 @@ function deptComboboxField(
   return { name, label, type: "dept-combobox", description }
 }
 
-function roleMultiSelectField(name: string, label: string): ResourceField {
-  return { name, label, type: "role-multi-select" }
+function deptParentSelectField(name: string, label: string): ResourceField {
+  return {
+    name,
+    label,
+    type: "dept-parent-select",
+    placeholder: "选择上级部门",
+    colSpan: "full",
+  }
+}
+
+function menuParentSelectField(
+  name: string,
+  label: string,
+  tooltip: string
+): ResourceField {
+  return {
+    name,
+    label,
+    type: "menu-parent-select",
+    placeholder: "选择父级菜单",
+    tooltip,
+  }
+}
+
+function menuIconSelectField(name: string, label: string): ResourceField {
+  return { name, label, type: "menu-icon-select" }
+}
+
+function menuPermissionTreeField(name: string, label: string): ResourceField {
+  return { name, label, type: "menu-permission-tree", colSpan: "full" }
+}
+
+function roleMultiSelectField(
+  name: string,
+  label: string,
+  required?: boolean
+): ResourceField {
+  return { name, label, type: "role-multi-select", required }
 }
 
 function postMultiSelectField(name: string, label: string): ResourceField {
   return { name, label, type: "post-multi-select" }
 }
 
-function statusSwitchField(name: string, label: string): ResourceField {
-  return { name, label, type: "status-switch" }
+function statusSwitchField(
+  name: string,
+  label: string,
+  options?: Pick<ResourceField, "hiddenOnCreate">
+): ResourceField {
+  return { name, label, type: "status-switch", ...options }
 }
 
-function switchField(name: string, label: string): ResourceField {
-  return { name, label, type: "switch" }
+function switchField(
+  name: string,
+  label: string,
+  options?: Pick<ResourceField, "invertBoolean">
+): ResourceField {
+  return { name, label, type: "switch", ...options }
 }
 
 function options<T extends string>(labels: Record<T, string>) {

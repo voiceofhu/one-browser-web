@@ -4,6 +4,7 @@ export type DataScopeFlag = "1" | "2" | "3" | "4" | "5"
 export type MenuTypeFlag = "M" | "C" | "F"
 export type VisibleFlag = "0" | "1"
 export type YesNoFlag = "Y" | "N"
+export type LogStatusFlag = "0" | "1"
 
 export interface CurrentUser {
   user_id: number
@@ -36,6 +37,8 @@ export interface ListParams {
   page?: number
   page_size?: number
   keyword?: string
+  status?: StatusFlag
+  dict_type?: string
 }
 
 export interface PageResponse<T> {
@@ -144,4 +147,36 @@ export interface DictDataResource {
   is_default: YesNoFlag
   status: StatusFlag
   remark: string | null
+}
+
+export interface OperationLogResource {
+  oper_id: number
+  title: string
+  business_type: number
+  method: string
+  request_method: string
+  operator_type: number
+  oper_name: string
+  dept_name: string
+  oper_url: string
+  oper_ip: string
+  oper_location: string
+  oper_param: string
+  json_result: string
+  status: LogStatusFlag
+  error_msg: string
+  operated_at: string
+  cost_time: number
+}
+
+export interface LoginLogResource {
+  info_id: number
+  user_name: string
+  ip_addr: string
+  login_location: string
+  browser: string
+  os: string
+  status: LogStatusFlag
+  msg: string
+  login_at: string
 }

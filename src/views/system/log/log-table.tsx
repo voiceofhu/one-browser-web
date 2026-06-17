@@ -1,0 +1,119 @@
+"use client"
+
+import * as React from "react"
+import { useQuery } from "@tanstack/react-query"
+import type { ColumnDef } from "@tanstack/react-table"
+
+import type { ListParams, PageResponse } from "@/types/admin"
+import { ResourceTable } from "@/views/system/_components/resource/table"
+import { useDebouncedValue } from "@/views/system/_components/resource/manager-utils"
+import {
+  ResourceStatusFilterTabs,
+  type ResourceStatusFilterValue,
+} from "@/views/system/_components/resource/status-filter-tabs"
+
+type LogTableProps<TData> = {
+  queryKey: readonly unknown[]
+  list: (params?: ListParams) => Promise<PageResponse<TData>>
+  columns: ColumnDef<TData>[]
+  getRowId: (row: TData, index: number) => string
+  searchPlaceholder: string
+  emptyTitle: string
+  emptyDescription: string
+  statusFilterLabel: string
+  columnVisibilityResetKey: React.Key
+  defaultColumnVisibility?: Record<string, boolean>
+}
+
+const LOG_STATUS_FILTERS = [
+  { label: "全部", value: "all" },
+  { label: "成功", value: "0" },
+  { label: "失败", value: "1" },
+] as const
+
+export function LogTable<TData>({
+  queryKey,
+  list,
+  columns,
+  getRowId,
+  searchPlaceholder,
+  emptyTitle,
+  emptyDescription,
+  statusFilterLabel,
+  columnVisibilityResetKey,
+  defaultColumnVisibility,
+}: LogTableProps<TData>) {
+  const [search, setSearch] = React.useState("")
+  const debouncedSearch = useDebouncedValue(search, 300)
+  const [statusFilter, setStatusFilter] =
+    React.useState<ResourceStatusFilterValue>("all")
+  const [pageIndex, setPageIndex] = React.useState(0)
+  const [pageSize, setPageSize] = React.useState(10)
+  const params = React.useMemo(
+    () => ({
+      page: pageIndex + 1,
+      page_size: pageSize,
+      keyword: debouncedSearch || undefined,
+      status: statusFilter === "all" ? undefined : statusFilter,
+    }),
+    [debouncedSearch, pageIndex, pageSize, statusFilter]
+  )
+  const listQueryKey = React.useMemo(
+    () => [...queryKey, params] as const,
+    [queryKey, params]
+  )
+  const query = useQuery({
+    queryKey: listQueryKey,
+    queryFn: () => list(params),
+    placeholderData: (previousData) => previousData,
+  })
+  const records = React.useMemo(
+    () => query.data?.items ?? [],
+    [query.data?.items]
+  )
+  const hasActiveFilters = search.trim().length > 0 || statusFilter !== "all"
+
+  return (
+    <div className="flex flex-1 flex-col">
+      <ResourceTable
+        data={records}
+        columns={columns}
+        defaultColumnVisibility={defaultColumnVisibility}
+        columnVisibilityResetKey={columnVisibilityResetKey}
+        totalRows={query.data?.total ?? 0}
+        pageIndex={pageIndex}
+        pageSize={pageSize}
+        searchValue={search}
+        onSearchChange={(value) => {
+          setSearch(value)
+          setPageIndex(0)
+        }}
+        onPageIndexChange={setPageIndex}
+        onPageSizeChange={(value) => {
+          setPageSize(value)
+          setPageIndex(0)
+        }}
+        toolbarLeading={
+          <ResourceStatusFilterTabs
+            label={statusFilterLabel}
+            options={LOG_STATUS_FILTERS}
+            value={statusFilter}
+            onValueChange={(value) => {
+              setStatusFilter(value)
+              setPageIndex(0)
+            }}
+          />
+        }
+        isLoading={query.isLoading}
+        isFetching={query.isFetching}
+        error={query.error}
+        searchPlaceholder={searchPlaceholder}
+        emptyTitle={emptyTitle}
+        emptyDescription={emptyDescription}
+        isFiltered={hasActiveFilters}
+        getRowId={getRowId}
+        selectionResetKey={`${statusFilter}:${debouncedSearch}`}
+      />
+    </div>
+  )
+}

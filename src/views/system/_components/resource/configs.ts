@@ -5,6 +5,7 @@ import {
   createDept,
   deleteDept,
   listDepts,
+  setDeptOrder,
   updateDept,
 } from "@/api/system/dept"
 import {
@@ -33,6 +34,7 @@ import {
   createRole,
   deleteRole,
   listRoles,
+  setRoleMenuIds,
   updateRole,
 } from "@/api/system/role"
 import {
@@ -87,12 +89,15 @@ import type {
   RoleResource,
   UserResource,
 } from "@/types/admin"
+import type { ResourceStatusFilterOption } from "./status-filter-tabs"
+import type { ResourceTreeConfig } from "./tree"
 
 export type DashboardResourceConfig<TData> = {
   queryKey: readonly unknown[]
   noun: string
   list: (params?: ListParams) => Promise<PageResponse<TData>>
   columns: ColumnDef<TData>[]
+  defaultColumnVisibility?: Record<string, boolean>
   getId: (record: TData) => number
   getName: (record: TData) => string
   fields: ResourceField[]
@@ -102,7 +107,10 @@ export type DashboardResourceConfig<TData> = {
   create: (payload: ResourceFormValues) => Promise<TData>
   update: (record: TData, payload: ResourceFormValues) => Promise<TData>
   remove: (record: TData) => Promise<void>
+  reorder?: (payload: ResourceReorderPayload<TData>) => Promise<number>
+  tree?: ResourceTreeConfig<TData>
   isProtected?: (record: TData) => boolean
+  statusFilters?: readonly ResourceStatusFilterOption[]
   userActions?: {
     getRoleIds: (record: TData) => Promise<number[]>
     setRoleIds: (record: TData, roleIds: number[]) => Promise<void>
@@ -110,11 +118,24 @@ export type DashboardResourceConfig<TData> = {
   }
 }
 
+export type ResourceReorderPayload<TData> = {
+  active: TData
+  over: TData
+  orderedRecords: TData[]
+}
+
+const STATUS_FILTERS = [
+  { label: "全部", value: "all" },
+  { label: "启用", value: "0" },
+  { label: "停用", value: "1" },
+] satisfies readonly ResourceStatusFilterOption[]
+
 export const RESOURCE_CONFIGS = {
   users: {
     queryKey: systemQueryKeys.users,
     noun: "用户",
     list: listUsers,
+    statusFilters: STATUS_FILTERS,
     columns: userColumns,
     getId: (record) => record.user_id,
     getName: (record) => record.user_name || record.nick_name,
@@ -151,6 +172,7 @@ export const RESOURCE_CONFIGS = {
     queryKey: systemQueryKeys.roles,
     noun: "角色",
     list: listRoles,
+    statusFilters: STATUS_FILTERS,
     columns: roleColumns,
     getId: (record) => record.role_id,
     getName: (record) => record.role_name,
@@ -158,14 +180,23 @@ export const RESOURCE_CONFIGS = {
     schema: () => roleSchema,
     getDefaultValues: () => ({ ...defaultValues.roles }),
     getEditValues: (record) => mergeRecord(defaultValues.roles, record),
-    create: (values) => createRole(rolePayload(values)),
-    update: (record, values) => updateRole(record.role_id, rolePayload(values)),
+    create: async (values) => {
+      const role = await createRole(rolePayload(values))
+      await setRoleMenuIds(role.role_id, idsPayload(values, "menu_ids"))
+      return role
+    },
+    update: async (record, values) => {
+      const role = await updateRole(record.role_id, rolePayload(values))
+      await setRoleMenuIds(record.role_id, idsPayload(values, "menu_ids"))
+      return role
+    },
     remove: (record) => deleteRole(record.role_id),
   },
   menus: {
     queryKey: systemQueryKeys.menus,
     noun: "菜单",
     list: listMenus,
+    statusFilters: STATUS_FILTERS,
     columns: menuColumns,
     getId: (record) => record.menu_id,
     getName: (record) => record.menu_name,
@@ -181,6 +212,7 @@ export const RESOURCE_CONFIGS = {
     queryKey: systemQueryKeys.depts,
     noun: "部门",
     list: listDepts,
+    statusFilters: STATUS_FILTERS,
     columns: deptColumns,
     getId: (record) => record.dept_id,
     getName: (record) => record.dept_name,
@@ -191,12 +223,24 @@ export const RESOURCE_CONFIGS = {
     create: (values) => createDept(deptPayload(values)),
     update: (record, values) => updateDept(record.dept_id, deptPayload(values)),
     remove: (record) => deleteDept(record.dept_id),
+    reorder: reorderDeptRows,
+    tree: {
+      columnId: "dept_name",
+      getParentId: (record) => record.parent_id,
+      getOrder: (record) => record.order_num,
+      pageSize: 1_000,
+    },
   },
   posts: {
     queryKey: systemQueryKeys.posts,
     noun: "岗位",
     list: listPosts,
+    statusFilters: STATUS_FILTERS,
     columns: postColumns,
+    defaultColumnVisibility: {
+      post_code: false,
+      post_sort: false,
+    },
     getId: (record) => record.post_id,
     getName: (record) => record.post_name,
     fields: resourceFields.posts,
@@ -211,6 +255,7 @@ export const RESOURCE_CONFIGS = {
     queryKey: systemQueryKeys.dictTypes,
     noun: "字典类型",
     list: listDictTypes,
+    statusFilters: STATUS_FILTERS,
     columns: dictTypeColumns,
     getId: (record) => record.dict_id,
     getName: (record) => record.dict_name,
@@ -227,6 +272,7 @@ export const RESOURCE_CONFIGS = {
     queryKey: systemQueryKeys.dictData,
     noun: "字典数据",
     list: listDictData,
+    statusFilters: STATUS_FILTERS,
     columns: dictDataColumns,
     getId: (record) => record.dict_code,
     getName: (record) => record.dict_label,
@@ -308,7 +354,7 @@ function menuPayload(values: ResourceFormValues) {
 function deptPayload(values: ResourceFormValues) {
   return {
     parent_id: nullableNumberPayload(values, "parent_id"),
-    ancestors: textPayload(values, "ancestors"),
+    ancestors: textPayload(values, "ancestors", "0"),
     dept_name: textPayload(values, "dept_name"),
     order_num: numberPayload(values, "order_num"),
     leader: nullableTextPayload(values, "leader"),
@@ -318,11 +364,37 @@ function deptPayload(values: ResourceFormValues) {
   }
 }
 
+async function reorderDeptRows({
+  active,
+  over,
+  orderedRecords,
+}: ResourceReorderPayload<DeptResource>) {
+  if (active.parent_id !== over.parent_id) {
+    throw new Error("部门只能在同一个上级部门下拖拽排序")
+  }
+
+  const siblings = orderedRecords.filter(
+    (record) => record.parent_id === active.parent_id
+  )
+  const nextOrderNums = siblings
+    .map((record) => record.order_num)
+    .sort((left, right) => left - right)
+  const updates = siblings
+    .map((record, index) => ({
+      record,
+      orderNum: nextOrderNums[index] ?? index + 1,
+    }))
+    .filter(({ record, orderNum }) => record.order_num !== orderNum)
+
+  await Promise.all(
+    updates.map(({ record, orderNum }) => setDeptOrder(record, orderNum))
+  )
+  return updates.length
+}
+
 function postPayload(values: ResourceFormValues) {
   return {
-    post_code: textPayload(values, "post_code"),
     post_name: textPayload(values, "post_name"),
-    post_sort: numberPayload(values, "post_sort"),
     status: textPayload(values, "status", "0"),
     remark: nullableTextPayload(values, "remark"),
   }

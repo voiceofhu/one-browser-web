@@ -21,8 +21,9 @@ import {
 import {
   BookOpenTextIcon,
   Building2Icon,
-  DatabaseIcon,
+  ClipboardListIcon,
   FileBadgeIcon,
+  FileClockIcon,
   HeartPulseIcon,
   LayoutDashboardIcon,
   MenuIcon,
@@ -43,8 +44,9 @@ const routeIcons: Record<AppRouteId, React.ReactNode> = {
   menus: <MenuIcon />,
   depts: <Building2Icon />,
   posts: <FileBadgeIcon />,
-  "dict-types": <BookOpenTextIcon />,
-  "dict-data": <DatabaseIcon />,
+  dict: <BookOpenTextIcon />,
+  "operation-logs": <ClipboardListIcon />,
+  "login-logs": <FileClockIcon />,
   health: <HeartPulseIcon />,
 }
 

@@ -1,6 +1,11 @@
 import { buildQueryPath, http } from "@/lib/request"
 
-import type { ListParams, PageResponse, PostResource } from "@/types/admin"
+import type {
+  ListParams,
+  PageResponse,
+  PostResource,
+  StatusFlag,
+} from "@/types/admin"
 
 type PostPayload = Record<string, unknown>
 
@@ -16,6 +21,14 @@ export function createPost(payload: PostPayload) {
 
 export function updatePost(postId: number, payload: PostPayload) {
   return http.put<PostResource>(`${POST_PATH}/${postId}`, payload)
+}
+
+export function setPostStatus(post: PostResource, status: StatusFlag) {
+  return updatePost(post.post_id, {
+    post_name: post.post_name,
+    status,
+    remark: post.remark,
+  })
 }
 
 export function deletePost(postId: number) {

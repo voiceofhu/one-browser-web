@@ -2,30 +2,55 @@
 
 import * as React from "react"
 import {
+  closestCenter,
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type UniqueIdentifier,
+} from "@dnd-kit/core"
+import { restrictToVerticalAxis } from "@dnd-kit/modifiers"
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable"
+import {
   flexRender,
   getCoreRowModel,
+  getExpandedRowModel,
   useReactTable,
   type ColumnDef,
+  type ExpandedState,
   type PaginationState,
+  type RowSelectionState,
   type Updater,
   type VisibilityState,
 } from "@tanstack/react-table"
 import {
   ChevronDownIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  ChevronsLeftIcon,
-  ChevronsRightIcon,
   SearchIcon,
   SlidersHorizontalIcon,
 } from "lucide-react"
 
 export { ResourceTableColumnHeader } from "./column-header"
+import { ResourceTableBulkActions } from "./bulk-actions"
+import { ResourceTableEmptyState } from "./empty-state"
+import { ResourceTablePagination } from "./pagination"
 import { ResourceTableSkeleton } from "./skeleton"
+import {
+  ResourceTableDragHandle,
+  SortableResourceTableRow,
+} from "./sortable-row"
+import { ResourceTableTreeCell } from "./tree-cell"
 import { getColumnMeta, getErrorMessage } from "./utils"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -35,25 +60,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty"
-import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
 } from "@/components/ui/input-group"
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import {
   Table,
   TableBody,
@@ -62,10 +72,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { cn } from "@/lib/utils"
 
 type ResourceTableProps<TData> = {
   data: TData[]
   columns: ColumnDef<TData>[]
+  defaultColumnVisibility?: VisibilityState
+  columnVisibilityResetKey?: React.Key
   totalRows: number
   pageIndex: number
   pageSize: number
@@ -79,14 +92,33 @@ type ResourceTableProps<TData> = {
   searchPlaceholder?: string
   emptyTitle?: string
   emptyDescription?: string
+  emptyActionLabel?: string
+  onEmptyAction?: () => void
+  isFiltered?: boolean
+  toolbarLeading?: React.ReactNode
   toolbarActions?: React.ReactNode
   renderRowActions?: (row: TData) => React.ReactNode
   getRowId?: (row: TData, index: number) => string
+  getSubRows?: (row: TData) => TData[] | undefined
+  treeColumnId?: string
+  getRowCanSelect?: (row: TData) => boolean
+  onBulkDelete?: (rows: TData[], clearSelection: () => void) => void
+  isBulkDeleting?: boolean
+  onRowReorder?: (event: {
+    active: TData
+    over: TData
+    orderedRecords: TData[]
+  }) => void
+  isRowReordering?: boolean
+  selectionResetKey?: React.Key
+  showPaginationControls?: boolean
 }
 
 export function ResourceTable<TData>({
   data,
   columns,
+  defaultColumnVisibility,
+  columnVisibilityResetKey,
   totalRows,
   pageIndex,
   pageSize,
@@ -100,12 +132,37 @@ export function ResourceTable<TData>({
   searchPlaceholder = "搜索资源...",
   emptyTitle = "暂无数据",
   emptyDescription = "当前资源还没有可显示的记录。",
+  emptyActionLabel,
+  onEmptyAction,
+  isFiltered = false,
+  toolbarLeading,
   toolbarActions,
   renderRowActions,
   getRowId,
+  getSubRows,
+  treeColumnId,
+  getRowCanSelect,
+  onBulkDelete,
+  isBulkDeleting = false,
+  onRowReorder,
+  isRowReordering = false,
+  selectionResetKey,
+  showPaginationControls = true,
 }: ResourceTableProps<TData>) {
   const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({})
+    React.useState<VisibilityState>(() => defaultColumnVisibility ?? {})
+  const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({})
+  const [expanded, setExpanded] = React.useState<ExpandedState>(true)
+  const enableBulkSelection = Boolean(onBulkDelete)
+  const enableRowReorder = Boolean(onRowReorder)
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 6 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
   const pagination = React.useMemo(
     () => ({ pageIndex, pageSize }),
     [pageIndex, pageSize]
@@ -124,25 +181,97 @@ export function ResourceTable<TData>({
     [onPageIndexChange, onPageSizeChange, pageIndex, pageSize, pagination]
   )
 
+  const clearRowSelection = React.useCallback(() => setRowSelection({}), [])
+
+  React.useEffect(() => {
+    clearRowSelection()
+  }, [clearRowSelection, pageIndex, pageSize, searchValue, selectionResetKey])
+
+  React.useEffect(() => {
+    setColumnVisibility(defaultColumnVisibility ?? {})
+  }, [columnVisibilityResetKey, defaultColumnVisibility])
+
+  React.useEffect(() => {
+    if (getSubRows) {
+      setExpanded(true)
+    }
+  }, [getSubRows, selectionResetKey])
+
   const tableColumns = React.useMemo<ColumnDef<TData>[]>(() => {
-    if (!renderRowActions) {
-      return columns
+    const nextColumns = [...columns]
+
+    if (enableBulkSelection) {
+      nextColumns.unshift({
+        id: "select",
+        enableHiding: false,
+        header: ({ table }) => {
+          const hasSelectableRows = table
+            .getRowModel()
+            .rows.some((row) => row.getCanSelect())
+
+          return (
+            <Checkbox
+              checked={
+                table.getIsAllPageRowsSelected() ||
+                (table.getIsSomePageRowsSelected() && "indeterminate")
+              }
+              disabled={!hasSelectableRows}
+              aria-label="选择当前页"
+              onCheckedChange={(value) =>
+                table.toggleAllPageRowsSelected(value === true)
+              }
+            />
+          )
+        },
+        cell: ({ row }) => (
+          <Checkbox
+            checked={row.getIsSelected()}
+            disabled={!row.getCanSelect()}
+            aria-label="选择当前行"
+            onCheckedChange={(value) => row.toggleSelected(value === true)}
+          />
+        ),
+        meta: {
+          label: "选择",
+          cellClassName: "w-10",
+        },
+      })
     }
 
-    return [
-      ...columns,
-      {
+    if (enableRowReorder) {
+      nextColumns.unshift({
+        id: "reorder",
+        enableHiding: false,
+        header: "",
+        cell: () => <ResourceTableDragHandle disabled={isRowReordering} />,
+        meta: {
+          label: "排序",
+          cellClassName: "w-10",
+        },
+      })
+    }
+
+    if (renderRowActions) {
+      nextColumns.push({
         id: "actions",
         enableHiding: false,
         header: "操作",
         cell: ({ row }) => renderRowActions(row.original),
         meta: {
           label: "操作",
-          cellClassName: "w-24 text-right",
+          cellClassName: "w-32 text-right",
         },
-      },
-    ]
-  }, [columns, renderRowActions])
+      })
+    }
+
+    return nextColumns
+  }, [
+    columns,
+    enableBulkSelection,
+    enableRowReorder,
+    isRowReordering,
+    renderRowActions,
+  ])
 
   // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Table v8 exposes stateful table helpers by design.
   const table = useReactTable({
@@ -150,12 +279,21 @@ export function ResourceTable<TData>({
     columns: tableColumns,
     state: {
       columnVisibility,
+      expanded,
       pagination,
+      rowSelection,
     },
     onColumnVisibilityChange: setColumnVisibility,
+    onExpandedChange: setExpanded,
     onPaginationChange: handlePaginationChange,
+    onRowSelectionChange: setRowSelection,
     getCoreRowModel: getCoreRowModel(),
+    getExpandedRowModel: getExpandedRowModel(),
+    getSubRows,
     enableSorting: false,
+    enableRowSelection: enableBulkSelection
+      ? (row) => getRowCanSelect?.(row.original) ?? true
+      : false,
     manualFiltering: true,
     manualPagination: true,
     rowCount: totalRows,
@@ -164,6 +302,15 @@ export function ResourceTable<TData>({
 
   const visibleColumns = table.getVisibleLeafColumns()
   const rows = table.getRowModel().rows
+  const rowIds = React.useMemo<UniqueIdentifier[]>(
+    () => rows.map((row) => row.id),
+    [rows]
+  )
+  const selectedRows = table
+    .getSelectedRowModel()
+    .rows.filter((row) => row.getCanSelect())
+  const selectedRecords = selectedRows.map((row) => row.original)
+  const selectedCount = selectedRecords.length
   const errorMessage = getErrorMessage(error)
   const totalPages = Math.max(Math.ceil(totalRows / pageSize), 1)
   const hasPreviousPage = pageIndex > 0
@@ -171,20 +318,43 @@ export function ResourceTable<TData>({
   const firstRow = totalRows === 0 ? 0 : pageIndex * pageSize + 1
   const lastRow = Math.min((pageIndex + 1) * pageSize, totalRows)
 
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    if (!over || active.id === over.id) {
+      return
+    }
+
+    const oldIndex = rows.findIndex((row) => row.id === String(active.id))
+    const newIndex = rows.findIndex((row) => row.id === String(over.id))
+    if (oldIndex < 0 || newIndex < 0) {
+      return
+    }
+
+    const orderedRows = arrayMove(rows, oldIndex, newIndex)
+    onRowReorder?.({
+      active: rows[oldIndex].original,
+      over: rows[newIndex].original,
+      orderedRecords: orderedRows.map((row) => row.original),
+    })
+  }
+
   return (
-    <section className="flex flex-1 flex-col bg-background">
+    <section className="relative flex flex-1 flex-col overflow-hidden bg-background">
       <div className="flex flex-col gap-2 border-b px-4 py-3 sm:flex-row sm:items-center sm:justify-between lg:px-6">
-        <InputGroup className="w-full max-w-sm">
-          <InputGroupAddon>
-            <SearchIcon />
-          </InputGroupAddon>
-          <InputGroupInput
-            value={searchValue}
-            onChange={(event) => onSearchChange(event.target.value)}
-            placeholder={searchPlaceholder}
-            aria-label={searchPlaceholder}
-          />
-        </InputGroup>
+        <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
+          {toolbarLeading}
+          <InputGroup className="w-full max-w-sm sm:w-80">
+            <InputGroupAddon>
+              <SearchIcon />
+            </InputGroupAddon>
+            <InputGroupInput
+              value={searchValue}
+              onChange={(event) => onSearchChange(event.target.value)}
+              placeholder={searchPlaceholder}
+              aria-label={searchPlaceholder}
+            />
+          </InputGroup>
+        </div>
         <div className="flex items-center justify-end gap-2">
           {toolbarActions}
           <DropdownMenu>
@@ -233,133 +403,109 @@ export function ResourceTable<TData>({
             />
           </div>
         ) : rows.length === 0 ? (
-          <Empty className="min-h-72 flex-1 rounded-none border-0">
-            <EmptyHeader>
-              <EmptyMedia variant="icon">
-                <SearchIcon />
-              </EmptyMedia>
-              <EmptyTitle>
-                {searchValue ? "没有匹配结果" : emptyTitle}
-              </EmptyTitle>
-              <EmptyDescription>
-                {searchValue
-                  ? "换个关键词试试，搜索会直接请求后台分页接口。"
-                  : emptyDescription}
-              </EmptyDescription>
-            </EmptyHeader>
-          </Empty>
+          <ResourceTableEmptyState
+            searchValue={searchValue}
+            title={emptyTitle}
+            description={emptyDescription}
+            actionLabel={emptyActionLabel}
+            isFiltered={isFiltered}
+            onAction={onEmptyAction}
+          />
         ) : (
           <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => (
-                      <TableHead key={header.id}>
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                ))}
-              </TableHeader>
-              <TableBody>
-                {rows.map((row) => (
-                  <TableRow key={row.id}>
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell
-                        key={cell.id}
-                        className={getColumnMeta(cell.column).cellClassName}
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              modifiers={[restrictToVerticalAxis]}
+              onDragEnd={handleDragEnd}
+            >
+              <Table>
+                <TableHeader className="bg-muted/50">
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <TableRow key={headerGroup.id}>
+                      {headerGroup.headers.map((header) => (
+                        <TableHead
+                          key={header.id}
+                          className="first:pl-4 last:pr-4 lg:first:pl-6 lg:last:pr-6"
+                        >
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(
+                                header.column.columnDef.header,
+                                header.getContext()
+                              )}
+                        </TableHead>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableHeader>
+                <TableBody>
+                  <SortableContext
+                    items={rowIds}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    {rows.map((row) => (
+                      <SortableResourceTableRow
+                        key={row.id}
+                        row={row}
+                        disabled={!enableRowReorder || isRowReordering}
                       >
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </TableCell>
+                        {row.getVisibleCells().map((cell) => {
+                          const content = flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )
+
+                          return (
+                            <TableCell
+                              key={cell.id}
+                              className={cn(
+                                "first:pl-4 last:pr-4 lg:first:pl-6 lg:last:pr-6",
+                                getColumnMeta(cell.column).cellClassName
+                              )}
+                            >
+                              {cell.column.id === treeColumnId ? (
+                                <ResourceTableTreeCell row={row}>
+                                  {content}
+                                </ResourceTableTreeCell>
+                              ) : (
+                                content
+                              )}
+                            </TableCell>
+                          )
+                        })}
+                      </SortableResourceTableRow>
                     ))}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                  </SortableContext>
+                </TableBody>
+              </Table>
+            </DndContext>
           </div>
         )}
       </div>
-      <div className="flex flex-col gap-3 border-t px-4 py-3 sm:flex-row sm:items-center sm:justify-between lg:px-6">
-        <div className="flex items-center gap-3 text-sm text-muted-foreground">
-          <span>
-            当前显示 {firstRow}-{lastRow} 条，共 {totalRows} 条
-          </span>
-          {isFetching && !isLoading ? <span>更新中...</span> : null}
-        </div>
-        <div className="flex items-center gap-2">
-          <Select
-            value={String(pageSize)}
-            onValueChange={(value) => onPageSizeChange(Number(value))}
-          >
-            <SelectTrigger size="sm" className="w-24">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                {[10, 20, 50, 100].map((value) => (
-                  <SelectItem key={value} value={String(value)}>
-                    {value} 条
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon-sm"
-            onClick={() => onPageIndexChange(0)}
-            disabled={!hasPreviousPage}
-          >
-            <ChevronsLeftIcon />
-            <span className="sr-only">第一页</span>
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon-sm"
-            onClick={() => onPageIndexChange(Math.max(pageIndex - 1, 0))}
-            disabled={!hasPreviousPage}
-          >
-            <ChevronLeftIcon />
-            <span className="sr-only">上一页</span>
-          </Button>
-          <div className="min-w-24 text-center text-sm text-muted-foreground">
-            第 {pageIndex + 1} / {totalPages} 页
-          </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon-sm"
-            onClick={() =>
-              onPageIndexChange(Math.min(pageIndex + 1, totalPages - 1))
-            }
-            disabled={!hasNextPage}
-          >
-            <ChevronRightIcon />
-            <span className="sr-only">下一页</span>
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon-sm"
-            onClick={() => onPageIndexChange(totalPages - 1)}
-            disabled={!hasNextPage}
-          >
-            <ChevronsRightIcon />
-            <span className="sr-only">最后一页</span>
-          </Button>
-        </div>
-      </div>
+      <ResourceTablePagination
+        firstRow={firstRow}
+        lastRow={lastRow}
+        totalRows={totalRows}
+        pageIndex={pageIndex}
+        pageSize={pageSize}
+        totalPages={totalPages}
+        hasPreviousPage={hasPreviousPage}
+        hasNextPage={hasNextPage}
+        isUpdating={isFetching && !isLoading}
+        showControls={showPaginationControls}
+        onPageIndexChange={onPageIndexChange}
+        onPageSizeChange={onPageSizeChange}
+      />
+      {enableBulkSelection ? (
+        <ResourceTableBulkActions
+          selectedCount={selectedCount}
+          selectedRecords={selectedRecords}
+          isBulkDeleting={isBulkDeleting}
+          onClearSelection={clearRowSelection}
+          onBulkDelete={onBulkDelete}
+        />
+      ) : null}
     </section>
   )
 }

@@ -38,12 +38,12 @@ import {
   monitorQueryKeys,
   systemQueryKeys,
 } from "@/lib/query-keys"
+import { cn } from "@/lib/utils"
 import { APP_ROUTE_BY_ID } from "@/router/routes"
 import type { CurrentUser, HealthResponse, PageResponse } from "@/types/admin"
 
 type CountQuery = UseQueryResult<PageResponse<unknown>, Error>
 type HealthQuery = UseQueryResult<HealthResponse, Error>
-
 type ResourceSummary = ReturnType<typeof resourceSummary>
 
 const quickActions = [
@@ -67,7 +67,7 @@ export default function IndexPage() {
   const recentItems = buildRecentItems(data)
 
   return (
-    <div className="flex flex-col gap-3 px-4 lg:px-6">
+    <div className="flex flex-col gap-3 px-4 pt-4 lg:px-6">
       {data.currentUser.error ? (
         <Alert variant="destructive">
           <AlertTitle>需要登录</AlertTitle>
@@ -80,13 +80,13 @@ export default function IndexPage() {
       <StatusStrip user={data.currentUser.data} health={data.health} />
 
       <div className="grid grid-cols-1 gap-3 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
-        {resourceCards.slice(0, 4).map((card) => (
-          <ResourceSummaryCard key={card.title} card={card} />
+        {resourceCards.slice(0, 4).map((card, index) => (
+          <ResourceSummaryCard key={card.title} card={card} index={index} />
         ))}
       </div>
 
-      <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1fr)_20rem]">
-        <div className="grid gap-3">
+      <div className="grid grid-cols-1 items-start gap-3 xl:grid-cols-[minmax(0,1fr)_21rem]">
+        <div className="grid content-start gap-3">
           <ResourceOverview cards={resourceCards} />
           <RecentResources items={recentItems} />
         </div>
@@ -111,7 +111,7 @@ function StatusStrip({
   const serviceStatus = health.data?.status ?? "unknown"
 
   return (
-    <Card size="sm" className="shadow-none">
+    <Card size="sm" className="bg-muted/40 shadow-none ring-0">
       <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatusItem
           label="当前用户"
@@ -134,11 +134,23 @@ function StatusItem({ label, value }: { label: string; value: string }) {
   )
 }
 
-function ResourceSummaryCard({ card }: { card: ResourceSummary }) {
+function ResourceSummaryCard({
+  card,
+  index,
+}: {
+  card: ResourceSummary
+  index: number
+}) {
   const Icon = card.icon
 
   return (
-    <Card size="sm" className="shadow-none">
+    <Card
+      size="sm"
+      className={cn(
+        "shadow-none ring-0",
+        panelToneClass(index, Boolean(card.errorMessage))
+      )}
+    >
       <CardHeader className="gap-1">
         <CardDescription>{card.description}</CardDescription>
         <CardTitle className="flex items-center gap-2 text-xl font-semibold tabular-nums">
@@ -155,16 +167,19 @@ function ResourceSummaryCard({ card }: { card: ResourceSummary }) {
 
 function ResourceOverview({ cards }: { cards: ResourceSummary[] }) {
   return (
-    <Card size="sm" className="shadow-none">
+    <Card size="sm" className="bg-muted/35 shadow-none ring-0">
       <CardHeader>
         <CardDescription>核心资源</CardDescription>
         <CardTitle>系统管理总览</CardTitle>
       </CardHeader>
-      <CardContent className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-        {cards.map((card) => (
+      <CardContent className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+        {cards.map((card, index) => (
           <div
             key={card.title}
-            className="flex items-center justify-between gap-3 rounded-md border px-3 py-2.5"
+            className={cn(
+              "flex items-center justify-between gap-3 rounded-lg px-3 py-2.5 transition-colors",
+              overviewToneClass(index, Boolean(card.errorMessage))
+            )}
           >
             <div className="min-w-0">
               <div className="truncate text-sm font-medium">{card.title}</div>
@@ -184,21 +199,21 @@ function ResourceOverview({ cards }: { cards: ResourceSummary[] }) {
 
 function QuickActions() {
   return (
-    <Card size="sm" className="shadow-none">
+    <Card size="sm" className="bg-muted/35 shadow-none ring-0">
       <CardHeader>
         <CardDescription>常用入口</CardDescription>
         <CardTitle>快捷操作</CardTitle>
       </CardHeader>
       <CardContent className="grid gap-2">
-        {quickActions.map((action) => {
+        {quickActions.map((action, index) => {
           const Icon = action.icon
 
           return (
             <Button
               key={action.routeId}
               asChild
-              variant="outline"
-              className="justify-between"
+              variant="ghost"
+              className={cn("justify-between", overviewToneClass(index, false))}
             >
               <NavLink to={APP_ROUTE_BY_ID[action.routeId].path}>
                 <span className="flex items-center gap-2">
@@ -215,14 +230,38 @@ function QuickActions() {
   )
 }
 
+const overviewTones = [
+  "bg-primary/5 hover:bg-primary/10",
+  "bg-muted/60 hover:bg-muted",
+  "bg-accent/45 hover:bg-accent/70",
+  "bg-secondary/60 hover:bg-secondary/80",
+] as const
+
+const panelTones = [
+  "bg-primary/5",
+  "bg-muted/45",
+  "bg-accent/35",
+  "bg-secondary/55",
+] as const
+
+function overviewToneClass(index: number, isError: boolean) {
+  return isError
+    ? "bg-destructive/5 hover:bg-destructive/10"
+    : overviewTones[index % overviewTones.length]
+}
+
+function panelToneClass(index: number, isError: boolean) {
+  return isError ? "bg-destructive/5" : panelTones[index % panelTones.length]
+}
+
 function RecentResources({ items }: { items: RecentItem[] }) {
   return (
-    <Card size="sm" className="shadow-none">
+    <Card size="sm" className="bg-muted/35 shadow-none ring-0">
       <CardHeader>
         <CardDescription>近期数据</CardDescription>
         <CardTitle>最近创建的资源</CardTitle>
       </CardHeader>
-      <CardContent className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+      <CardContent className="grid gap-2 sm:grid-cols-2 2xl:grid-cols-3">
         {items.length === 0 ? (
           <div className="text-sm text-muted-foreground">
             暂无可展示的近期资源。
@@ -231,7 +270,10 @@ function RecentResources({ items }: { items: RecentItem[] }) {
           items.map((item, index) => (
             <div
               key={`${item.kind}-${item.name}-${index}`}
-              className="flex gap-3"
+              className={cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2.5",
+                overviewToneClass(index, false)
+              )}
             >
               <Badge variant="outline" className="h-fit">
                 {item.kind}
@@ -255,7 +297,7 @@ function HealthCard({ query }: { query: HealthQuery }) {
   const isOk = status === "ok"
 
   return (
-    <Card size="sm" className="shadow-none">
+    <Card size="sm" className="bg-muted/35 shadow-none ring-0">
       <CardHeader>
         <CardDescription>服务健康</CardDescription>
         <CardTitle>{query.isLoading ? "检查中" : status}</CardTitle>
@@ -281,7 +323,7 @@ function DependencyHealthCard({ query }: { query: HealthQuery }) {
   const isOk = status === "ok"
 
   return (
-    <Card size="sm" className="shadow-none">
+    <Card size="sm" className="bg-muted/35 shadow-none ring-0">
       <CardHeader>
         <CardDescription>依赖健康</CardDescription>
         <CardTitle>{query.isLoading ? "检查中" : status}</CardTitle>

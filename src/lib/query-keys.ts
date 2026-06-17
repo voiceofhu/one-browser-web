@@ -17,4 +17,6 @@ export const systemQueryKeys = {
   posts: ["system", "posts"] as const,
   dictTypes: ["system", "dict-types"] as const,
   dictData: ["system", "dict-data"] as const,
+  operationLogs: ["system", "logs", "operation"] as const,
+  loginLogs: ["system", "logs", "login"] as const,
 }

@@ -1,8 +1,10 @@
+import { useEffect } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { Navigate, useNavigate, useSearchParams } from "react-router"
+import { toast } from "sonner"
 
 import { LoginForm } from "@/components/login-form"
-import { isUnauthorizedError } from "@/lib/request"
+import { consumeAuthExpiredNotice, isUnauthorizedError } from "@/lib/request"
 import { getCurrentUser } from "@/api/auth"
 import { authQueryKeys, useLoginMutation } from "@/hooks/use-auth"
 
@@ -29,6 +31,14 @@ export default function LoginPage() {
     retry: (failureCount, error) =>
       isUnauthorizedError(error) ? false : failureCount < 3,
   })
+
+  useEffect(() => {
+    if (consumeAuthExpiredNotice()) {
+      toast.warning("登录状态已失效", {
+        description: "请重新登录后继续操作。",
+      })
+    }
+  }, [])
 
   if (currentUser.isSuccess) {
     return <Navigate to={redirectTo} replace />

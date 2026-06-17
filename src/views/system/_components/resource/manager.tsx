@@ -2,16 +2,7 @@
 
 import * as React from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import {
-  EditIcon,
-  KeyRoundIcon,
-  MoreHorizontalIcon,
-  PlusIcon,
-  RefreshCwIcon,
-  Trash2Icon,
-  TriangleAlertIcon,
-  UserRoundCheckIcon,
-} from "lucide-react"
+import { Trash2Icon, TriangleAlertIcon } from "lucide-react"
 
 import {
   AlertDialog,
@@ -24,28 +15,29 @@ import {
   AlertDialogMedia,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { Spinner } from "@/components/ui/spinner"
-import { cn } from "@/lib/utils"
 
 import type { DashboardResourceConfig } from "./configs"
 import type { ResourceFormValues } from "./form"
 import { ResourceEditorDialog } from "./editor-dialog"
+import { delay, useDebouncedValue } from "./manager-utils"
+import { useResourceReorder } from "./reorder"
+import { RowActions } from "./row-actions"
+import {
+  ResourceStatusFilterTabs,
+  type ResourceStatusFilterValue,
+} from "./status-filter-tabs"
 import { ResourceTable } from "./table"
 import {
   showResourceCreateSuccess,
+  showResourceBulkDeleteSuccess,
   showResourceDeleteSuccess,
   showResourceError,
   showResourceRefreshSuccess,
   showResourceUpdateSuccess,
 } from "./toast"
+import { ResourceToolbarActions } from "./toolbar-actions"
+import { buildResourceTree, getResourceTreeSubRows } from "./tree"
 import {
   ResetPasswordDialog,
   RoleAssignmentDialog,
@@ -53,27 +45,49 @@ import {
 
 type ResourceManagerProps<TData> = {
   config: DashboardResourceConfig<TData>
+  renderInlineRowActions?: (record: TData) => React.ReactNode
 }
 
 type EditorState<TData> =
   | { mode: "create"; record?: undefined }
   | { mode: "edit"; record: TData }
 
+type BulkDeleteState<TData> = {
+  records: TData[]
+  clearSelection: () => void
+}
+
 export function ResourceManager<TData>({
   config,
+  renderInlineRowActions,
 }: ResourceManagerProps<TData>) {
   const queryClient = useQueryClient()
   const [search, setSearch] = React.useState("")
   const debouncedSearch = useDebouncedValue(search, 300)
+  const [statusFilter, setStatusFilter] =
+    React.useState<ResourceStatusFilterValue>("all")
   const [pageIndex, setPageIndex] = React.useState(0)
   const [pageSize, setPageSize] = React.useState(10)
+  const treeConfig = config.tree
+  const queryPageIndex = treeConfig ? 0 : pageIndex
+  const queryPageSize = treeConfig?.pageSize ?? pageSize
   const params = React.useMemo(
     () => ({
-      page: pageIndex + 1,
-      page_size: pageSize,
+      page: queryPageIndex + 1,
+      page_size: queryPageSize,
       keyword: debouncedSearch || undefined,
+      status:
+        config.statusFilters && statusFilter !== "all"
+          ? statusFilter
+          : undefined,
     }),
-    [debouncedSearch, pageIndex, pageSize]
+    [
+      config.statusFilters,
+      debouncedSearch,
+      queryPageIndex,
+      queryPageSize,
+      statusFilter,
+    ]
   )
   const listQueryKey = React.useMemo(
     () => [...config.queryKey, params] as const,
@@ -84,8 +98,23 @@ export function ResourceManager<TData>({
     queryFn: () => config.list(params),
     placeholderData: (previousData) => previousData,
   })
+  const records = React.useMemo(
+    () => query.data?.items ?? [],
+    [query.data?.items]
+  )
+  const tableData = React.useMemo(
+    () =>
+      treeConfig
+        ? buildResourceTree(records, config.getId, treeConfig)
+        : records,
+    [config.getId, records, treeConfig]
+  )
+  const tableTotalRows = treeConfig ? records.length : (query.data?.total ?? 0)
+  const tablePageSize = treeConfig ? Math.max(records.length, 1) : pageSize
   const [editor, setEditor] = React.useState<EditorState<TData> | null>(null)
   const [deletingRecord, setDeletingRecord] = React.useState<TData | null>(null)
+  const [bulkDeletingState, setBulkDeletingState] =
+    React.useState<BulkDeleteState<TData> | null>(null)
   const [resettingRecord, setResettingRecord] = React.useState<TData | null>(
     null
   )
@@ -128,6 +157,28 @@ export function ResourceManager<TData>({
     },
     onError: showResourceError,
   })
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (records: TData[]) => {
+      const removableRecords = records.filter(
+        (record) => config.isProtected?.(record) !== true
+      )
+
+      if (removableRecords.length === 0) {
+        throw new Error("没有可删除的记录")
+      }
+
+      await Promise.all(removableRecords.map((record) => config.remove(record)))
+      return removableRecords.length
+    },
+    onSuccess: async (count) => {
+      setPageIndex(0)
+      await queryClient.invalidateQueries({ queryKey: config.queryKey })
+      showResourceBulkDeleteSuccess(config.noun, count)
+      bulkDeletingState?.clearSelection()
+      setBulkDeletingState(null)
+    },
+    onError: showResourceError,
+  })
   const resetPasswordMutation = useMutation({
     mutationFn: async ({
       record,
@@ -166,6 +217,7 @@ export function ResourceManager<TData>({
       setAssigningRoleRecord(null)
     },
   })
+  const reorderMutation = useResourceReorder(config)
 
   const editorValues = React.useMemo(
     () =>
@@ -176,6 +228,13 @@ export function ResourceManager<TData>({
   )
   const isSubmitting = createMutation.isPending || updateMutation.isPending
   const editorMode = editor?.mode ?? "create"
+  const hasActiveFilters =
+    search.trim().length > 0 ||
+    Boolean(config.statusFilters && statusFilter !== "all")
+
+  function handleCreate() {
+    setEditor({ mode: "create" })
+  }
 
   async function handleRefresh() {
     setIsManualRefreshing(true)
@@ -196,80 +255,99 @@ export function ResourceManager<TData>({
   return (
     <div className="flex flex-1 flex-col">
       <ResourceTable
-        data={query.data?.items ?? []}
+        data={tableData}
         columns={config.columns}
-        totalRows={query.data?.total ?? 0}
-        pageIndex={pageIndex}
-        pageSize={pageSize}
+        defaultColumnVisibility={config.defaultColumnVisibility}
+        columnVisibilityResetKey={config.noun}
+        totalRows={tableTotalRows}
+        pageIndex={treeConfig ? 0 : pageIndex}
+        pageSize={tablePageSize}
         searchValue={search}
         onSearchChange={(value) => {
           setSearch(value)
           setPageIndex(0)
         }}
-        onPageIndexChange={setPageIndex}
+        onPageIndexChange={treeConfig ? () => undefined : setPageIndex}
         onPageSizeChange={(value) => {
+          if (treeConfig) {
+            return
+          }
           setPageSize(value)
           setPageIndex(0)
         }}
+        toolbarLeading={
+          config.statusFilters ? (
+            <ResourceStatusFilterTabs
+              label={`${config.noun}状态筛选`}
+              options={config.statusFilters}
+              value={statusFilter}
+              onValueChange={(value) => {
+                setStatusFilter(value)
+                setPageIndex(0)
+              }}
+            />
+          ) : null
+        }
         isLoading={query.isLoading}
         isFetching={query.isFetching}
         error={query.error}
         searchPlaceholder={`搜索${config.noun}...`}
         emptyTitle={`暂无${config.noun}`}
-        emptyDescription={`后台还没有返回${config.noun}记录。`}
+        emptyDescription={`还没有任何${config.noun}，快来新增一个${config.noun}吧。`}
+        emptyActionLabel={`新增${config.noun}`}
+        onEmptyAction={handleCreate}
+        isFiltered={hasActiveFilters}
         getRowId={(row, index) => String(config.getId(row) || index)}
+        getSubRows={treeConfig ? getResourceTreeSubRows : undefined}
+        treeColumnId={treeConfig?.columnId}
+        getRowCanSelect={(row) => config.isProtected?.(row) !== true}
+        onBulkDelete={(records, clearSelection) =>
+          setBulkDeletingState({ records, clearSelection })
+        }
+        isBulkDeleting={bulkDeleteMutation.isPending}
+        isRowReordering={reorderMutation.isPending}
+        onRowReorder={
+          config.reorder
+            ? (payload) => reorderMutation.mutate(payload)
+            : undefined
+        }
+        selectionResetKey={`${statusFilter}:${debouncedSearch}`}
+        showPaginationControls={!treeConfig}
         toolbarActions={
-          <>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleRefresh}
-              disabled={isManualRefreshing}
-            >
-              <RefreshCwIcon
-                data-icon="inline-start"
-                className={cn(isManualRefreshing && "animate-spin")}
-              />
-              刷新
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              onClick={() => {
-                setEditor({ mode: "create" })
-              }}
-            >
-              <PlusIcon data-icon="inline-start" />
-              新增
-            </Button>
-          </>
+          <ResourceToolbarActions
+            isRefreshing={isManualRefreshing}
+            onRefresh={handleRefresh}
+            onCreate={handleCreate}
+          />
         }
         renderRowActions={(record) => {
           const isProtected = config.isProtected?.(record) === true
 
           return (
-            <RowActions
-              noun={config.noun}
-              onEdit={
-                isProtected
-                  ? undefined
-                  : () => setEditor({ mode: "edit", record })
-              }
-              onDelete={
-                isProtected ? undefined : () => setDeletingRecord(record)
-              }
-              onResetPassword={
-                config.userActions
-                  ? () => setResettingRecord(record)
-                  : undefined
-              }
-              onAssignRoles={
-                config.userActions && !isProtected
-                  ? () => setAssigningRoleRecord(record)
-                  : undefined
-              }
-            />
+            <div className="flex items-center justify-end gap-1">
+              {renderInlineRowActions?.(record)}
+              <RowActions
+                noun={config.noun}
+                onEdit={
+                  isProtected
+                    ? undefined
+                    : () => setEditor({ mode: "edit", record })
+                }
+                onDelete={
+                  isProtected ? undefined : () => setDeletingRecord(record)
+                }
+                onResetPassword={
+                  config.userActions
+                    ? () => setResettingRecord(record)
+                    : undefined
+                }
+                onAssignRoles={
+                  config.userActions && !isProtected
+                    ? () => setAssigningRoleRecord(record)
+                    : undefined
+                }
+              />
+            </div>
           )
         }}
       />
@@ -342,6 +420,48 @@ export function ResourceManager<TData>({
         </AlertDialogContent>
       </AlertDialog>
 
+      <AlertDialog
+        open={Boolean(bulkDeletingState)}
+        onOpenChange={(open) => {
+          if (!open && !bulkDeleteMutation.isPending) {
+            setBulkDeletingState(null)
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogMedia>
+              <Trash2Icon />
+            </AlertDialogMedia>
+            <AlertDialogTitle>批量删除{config.noun}</AlertDialogTitle>
+            <AlertDialogDescription>
+              确认删除已选中的 {bulkDeletingState?.records.length ?? 0} 条
+              {config.noun}吗？受保护的记录不会被提交删除。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bulkDeleteMutation.isPending}>
+              取消
+            </AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              disabled={bulkDeleteMutation.isPending}
+              onClick={(event) => {
+                event.preventDefault()
+                if (bulkDeletingState) {
+                  bulkDeleteMutation.mutate(bulkDeletingState.records)
+                }
+              }}
+            >
+              {bulkDeleteMutation.isPending ? (
+                <Spinner data-icon="inline-start" />
+              ) : null}
+              批量删除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {config.userActions ? (
         <>
           <ResetPasswordDialog
@@ -380,95 +500,6 @@ export function ResourceManager<TData>({
             }
           />
         </>
-      ) : null}
-    </div>
-  )
-}
-
-function delay(duration: number) {
-  return new Promise((resolve) => window.setTimeout(resolve, duration))
-}
-
-function useDebouncedValue(value: string, delay: number) {
-  const [debouncedValue, setDebouncedValue] = React.useState(value)
-
-  React.useEffect(() => {
-    const timeoutId = window.setTimeout(() => setDebouncedValue(value), delay)
-    return () => window.clearTimeout(timeoutId)
-  }, [delay, value])
-
-  return debouncedValue
-}
-
-function RowActions({
-  noun,
-  onEdit,
-  onDelete,
-  onResetPassword,
-  onAssignRoles,
-}: {
-  noun: string
-  onEdit?: () => void
-  onDelete?: () => void
-  onResetPassword?: () => void
-  onAssignRoles?: () => void
-}) {
-  return (
-    <div className="flex items-center gap-0.5 whitespace-nowrap">
-      {onEdit ? (
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="h-7 px-2 text-primary"
-          onClick={onEdit}
-        >
-          <EditIcon />
-          编辑
-        </Button>
-      ) : null}
-      {onDelete ? (
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="h-7 px-2 text-destructive hover:text-destructive"
-          onClick={onDelete}
-        >
-          <Trash2Icon />
-          删除
-        </Button>
-      ) : null}
-      {onResetPassword || onAssignRoles ? (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              className="size-7"
-            >
-              <MoreHorizontalIcon />
-              <span className="sr-only">{noun}更多操作</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-40">
-            <DropdownMenuGroup>
-              {onResetPassword ? (
-                <DropdownMenuItem onSelect={onResetPassword}>
-                  <KeyRoundIcon />
-                  重置密码
-                </DropdownMenuItem>
-              ) : null}
-              {onAssignRoles ? (
-                <DropdownMenuItem onSelect={onAssignRoles}>
-                  <UserRoundCheckIcon />
-                  重新分配角色
-                </DropdownMenuItem>
-              ) : null}
-            </DropdownMenuGroup>
-          </DropdownMenuContent>
-        </DropdownMenu>
       ) : null}
     </div>
   )

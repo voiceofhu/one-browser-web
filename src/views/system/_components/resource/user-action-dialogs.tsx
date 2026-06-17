@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { useQuery } from "@tanstack/react-query"
+import { EyeIcon, EyeOffIcon } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -45,8 +46,8 @@ export function ResetPasswordDialog<TData>({
   onSubmit: (record: TData, password: string) => Promise<void>
 }) {
   const [password, setPassword] = React.useState("")
-  const [confirmation, setConfirmation] = React.useState("")
   const [error, setError] = React.useState("")
+  const [showPassword, setShowPassword] = React.useState(false)
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -57,11 +58,6 @@ export function ResetPasswordDialog<TData>({
       setError("密码至少需要 10 位")
       return
     }
-    if (password !== confirmation) {
-      setError("两次输入的密码不一致")
-      return
-    }
-
     setError("")
     try {
       await onSubmit(record, password)
@@ -82,26 +78,29 @@ export function ResetPasswordDialog<TData>({
           </DialogHeader>
           <Field data-invalid={Boolean(error)}>
             <FieldLabel htmlFor="reset-user-password">新密码</FieldLabel>
-            <Input
-              id="reset-user-password"
-              type="password"
-              value={password}
-              disabled={isSubmitting}
-              autoComplete="new-password"
-              onChange={(event) => setPassword(event.target.value)}
-            />
+            <div className="relative">
+              <Input
+                id="reset-user-password"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                disabled={isSubmitting}
+                autoComplete="new-password"
+                className="pr-10"
+                onChange={(event) => setPassword(event.target.value)}
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                disabled={isSubmitting}
+                aria-label={showPassword ? "隐藏密码" : "显示密码"}
+                className="absolute top-1/2 right-1 size-7 -translate-y-1/2 text-muted-foreground"
+                onClick={() => setShowPassword((value) => !value)}
+              >
+                {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+              </Button>
+            </div>
             <FieldDescription>至少 10 位，保存后立即生效。</FieldDescription>
-          </Field>
-          <Field data-invalid={Boolean(error)}>
-            <FieldLabel htmlFor="confirm-user-password">确认密码</FieldLabel>
-            <Input
-              id="confirm-user-password"
-              type="password"
-              value={confirmation}
-              disabled={isSubmitting}
-              autoComplete="new-password"
-              onChange={(event) => setConfirmation(event.target.value)}
-            />
             <FieldError>{error}</FieldError>
           </Field>
           <DialogFooter>

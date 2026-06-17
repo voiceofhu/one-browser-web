@@ -1,5 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod"
-import { LogInIcon } from "lucide-react"
+import { EyeIcon, EyeOffIcon, LogInIcon } from "lucide-react"
+import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 
@@ -21,6 +22,12 @@ import {
   FieldLabel,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "@/components/ui/input-group"
 import { Spinner } from "@/components/ui/spinner"
 
 const loginSchema = z.object({
@@ -43,6 +50,7 @@ export function LoginForm({
   error,
   onSubmit,
 }: LoginFormProps) {
+  const [showPassword, setShowPassword] = useState(false)
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -94,15 +102,28 @@ export function LoginForm({
                 data-disabled={disabled}
               >
                 <FieldLabel htmlFor="login-form-password">密码</FieldLabel>
-                <Input
-                  id="login-form-password"
-                  type="password"
-                  autoComplete="current-password"
-                  disabled={disabled}
-                  aria-invalid={Boolean(form.formState.errors.password)}
-                  placeholder="请输入密码"
-                  {...form.register("password")}
-                />
+                <InputGroup>
+                  <InputGroupInput
+                    id="login-form-password"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
+                    disabled={disabled}
+                    aria-invalid={Boolean(form.formState.errors.password)}
+                    placeholder="请输入密码"
+                    {...form.register("password")}
+                  />
+                  <InputGroupAddon align="inline-end">
+                    <InputGroupButton
+                      aria-label={showPassword ? "隐藏密码" : "显示密码"}
+                      aria-pressed={showPassword}
+                      disabled={disabled}
+                      size="icon-xs"
+                      onClick={() => setShowPassword((visible) => !visible)}
+                    >
+                      {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+                    </InputGroupButton>
+                  </InputGroupAddon>
+                </InputGroup>
                 <FieldError errors={[form.formState.errors.password]} />
               </Field>
 
