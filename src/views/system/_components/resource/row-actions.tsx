@@ -2,6 +2,7 @@ import {
   EditIcon,
   KeyRoundIcon,
   MoreHorizontalIcon,
+  PlusIcon,
   Trash2Icon,
   UserRoundCheckIcon,
 } from "lucide-react"
@@ -19,6 +20,7 @@ type RowActionsProps = {
   noun: string
   onEdit?: () => void
   onDelete?: () => void
+  onCreateChild?: () => void
   onResetPassword?: () => void
   onAssignRoles?: () => void
 }
@@ -27,11 +29,12 @@ export function RowActions({
   noun,
   onEdit,
   onDelete,
+  onCreateChild,
   onResetPassword,
   onAssignRoles,
 }: RowActionsProps) {
   const hasActions = Boolean(
-    onEdit || onDelete || onResetPassword || onAssignRoles
+    onEdit || onDelete || onCreateChild || onResetPassword || onAssignRoles
   )
 
   if (!hasActions) {
@@ -48,6 +51,12 @@ export function RowActions({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-40">
         <DropdownMenuGroup>
+          {onCreateChild ? (
+            <DropdownMenuItem onSelect={onCreateChild}>
+              <PlusIcon />
+              新增
+            </DropdownMenuItem>
+          ) : null}
           {onEdit ? (
             <DropdownMenuItem onSelect={onEdit}>
               <EditIcon />

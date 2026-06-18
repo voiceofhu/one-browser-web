@@ -1,11 +1,10 @@
 "use client"
 
 /* eslint-disable react-refresh/only-export-components */
-import { format } from "date-fns"
-import { zhCN } from "date-fns/locale/zh-CN"
 import type { ColumnDef } from "@tanstack/react-table"
 
 import { Badge } from "@/components/ui/badge"
+import { formatAbsoluteDateTime, formatRelativeTime } from "@/lib/datetime"
 import type {
   LoginLogResource,
   LogStatusFlag,
@@ -75,7 +74,7 @@ function textColumn<TData, TKey extends keyof TData & string>(
   key: TKey,
   label: string,
   cellClassName = "max-w-64",
-  emptyText = "无"
+  emptyText = "-"
 ): ColumnDef<TData> {
   return {
     accessorKey: key,
@@ -131,7 +130,7 @@ function LogStatusBadge({ status }: { status: LogStatusFlag }) {
 
 function TextCell({
   value,
-  emptyText = "无",
+  emptyText = "-",
 }: {
   value: unknown
   emptyText?: string
@@ -142,14 +141,9 @@ function TextCell({
 }
 
 function DateTimeCell({ value }: { value: string }) {
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) {
-    return <span>{value}</span>
-  }
-
   return (
-    <span title={date.toISOString()}>
-      {format(date, "yyyy-MM-dd HH:mm:ss", { locale: zhCN })}
+    <span title={formatAbsoluteDateTime(value)}>
+      {formatRelativeTime(value)}
     </span>
   )
 }

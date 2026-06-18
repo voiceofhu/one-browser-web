@@ -44,9 +44,9 @@ export const APP_ROUTES: AppRouteMeta[] = [
   },
   {
     id: "menus",
-    label: "菜单管理",
-    title: "菜单管理",
-    description: "管理菜单路由、权限标识和可见状态。",
+    label: "权限管理",
+    title: "权限管理",
+    description: "管理目录、菜单路由和按钮权限标识。",
     path: "/system/menu",
   },
   {

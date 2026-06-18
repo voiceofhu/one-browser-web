@@ -49,7 +49,7 @@ type ResourceManagerProps<TData> = {
 }
 
 type EditorState<TData> =
-  | { mode: "create"; record?: undefined }
+  | { mode: "create"; values?: ResourceFormValues; record?: undefined }
   | { mode: "edit"; record: TData }
 
 type BulkDeleteState<TData> = {
@@ -220,10 +220,17 @@ export function ResourceManager<TData>({
   const reorderMutation = useResourceReorder(config)
 
   const editorValues = React.useMemo(
-    () =>
-      editor?.mode === "edit"
-        ? config.getEditValues(editor.record)
-        : config.getDefaultValues(),
+    () => {
+      if (editor?.mode === "edit") {
+        return config.getEditValues(editor.record)
+      }
+
+      if (editor?.mode === "create" && editor.values) {
+        return editor.values
+      }
+
+      return config.getDefaultValues()
+    },
     [config, editor]
   )
   const isSubmitting = createMutation.isPending || updateMutation.isPending
@@ -232,8 +239,8 @@ export function ResourceManager<TData>({
     search.trim().length > 0 ||
     Boolean(config.statusFilters && statusFilter !== "all")
 
-  function handleCreate() {
-    setEditor({ mode: "create" })
+  function handleCreate(values?: ResourceFormValues) {
+    setEditor(values ? { mode: "create", values } : { mode: "create" })
   }
 
   async function handleRefresh() {
@@ -322,6 +329,7 @@ export function ResourceManager<TData>({
         }
         renderRowActions={(record) => {
           const isProtected = config.isProtected?.(record) === true
+          const childCreateValues = config.getChildCreateValues?.(record) ?? null
 
           return (
             <div className="flex items-center justify-end gap-1">
@@ -335,6 +343,11 @@ export function ResourceManager<TData>({
                 }
                 onDelete={
                   isProtected ? undefined : () => setDeletingRecord(record)
+                }
+                onCreateChild={
+                  childCreateValues && !isProtected
+                    ? () => handleCreate(childCreateValues)
+                    : undefined
                 }
                 onResetPassword={
                   config.userActions

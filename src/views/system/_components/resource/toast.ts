@@ -30,6 +30,19 @@ export function showResourceRefreshSuccess(noun: string) {
   })
 }
 
+export function showResourceValidationError(
+  noun: string,
+  fieldLabel?: string,
+  message?: string
+) {
+  toast.error(`${noun}信息未填写完整`, {
+    description:
+      fieldLabel && message
+        ? `${fieldLabel}：${message}`
+        : "请检查表单中的必填项或格式提示。",
+  })
+}
+
 export function showResourceReorderSuccess(noun: string, count: number) {
   toast.success(`${noun}排序已保存`, {
     description:

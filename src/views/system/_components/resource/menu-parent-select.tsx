@@ -2,12 +2,7 @@
 
 import * as React from "react"
 import { useQuery } from "@tanstack/react-query"
-import {
-  CheckIcon,
-  ChevronsUpDownIcon,
-  SearchIcon,
-  XIcon,
-} from "lucide-react"
+import { CheckIcon, ChevronsUpDownIcon, SearchIcon, XIcon } from "lucide-react"
 
 import { listMenus } from "@/api/system/menu"
 import { Button } from "@/components/ui/button"
@@ -20,7 +15,7 @@ import {
 import { Spinner } from "@/components/ui/spinner"
 import { systemQueryKeys } from "@/lib/query-keys"
 import { cn } from "@/lib/utils"
-import type { MenuResource } from "@/types/admin"
+import type { MenuResource, MenuTypeFlag } from "@/types/admin"
 
 type MenuParentSelectProps = {
   controlId: string
@@ -29,6 +24,9 @@ type MenuParentSelectProps = {
   invalid: boolean
   disabled: boolean
   placeholder: string
+  allowedTypes?: readonly MenuTypeFlag[]
+  allowEmpty?: boolean
+  emptyLabel?: string
   onChange: (menu: MenuResource | null) => void
 }
 
@@ -44,6 +42,9 @@ export function MenuParentSelect({
   invalid,
   disabled,
   placeholder,
+  allowedTypes,
+  allowEmpty = true,
+  emptyLabel = "顶级菜单",
   onChange,
 }: MenuParentSelectProps) {
   const [open, setOpen] = React.useState(false)
@@ -56,8 +57,8 @@ export function MenuParentSelect({
   })
   const menus = React.useMemo(() => query.data?.items ?? [], [query.data])
   const selectableMenus = React.useMemo(
-    () => filterSelectableMenus(menus, currentMenuId),
-    [currentMenuId, menus]
+    () => filterSelectableMenus(menus, currentMenuId, allowedTypes),
+    [allowedTypes, currentMenuId, menus]
   )
   const flatMenus = React.useMemo(
     () => flattenMenus(selectableMenus),
@@ -67,8 +68,7 @@ export function MenuParentSelect({
     () => filterFlatMenus(flatMenus, keyword),
     [flatMenus, keyword]
   )
-  const selectedMenu =
-    menus.find((menu) => menu.menu_id === selectedId) ?? null
+  const selectedMenu = menus.find((menu) => menu.menu_id === selectedId) ?? null
 
   function selectMenu(menu: MenuResource | null) {
     onChange(menu)
@@ -92,7 +92,8 @@ export function MenuParentSelect({
           )}
         >
           <span className="truncate">
-            {selectedMenu?.menu_name ?? (selectedId == null ? "顶级菜单" : placeholder)}
+            {selectedMenu?.menu_name ??
+              (selectedId == null && allowEmpty ? emptyLabel : placeholder)}
           </span>
           <ChevronsUpDownIcon data-icon="inline-end" />
         </Button>
@@ -106,24 +107,26 @@ export function MenuParentSelect({
             <SearchIcon className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={keyword}
-              placeholder="搜索菜单..."
+              placeholder="搜索权限..."
               className="pl-8"
               onChange={(event) => setKeyword(event.target.value)}
             />
           </div>
         </div>
         <div className="max-h-72 overflow-y-auto p-1">
-          <MenuParentOption
-            label="顶级菜单"
-            selected={selectedId == null}
-            onSelect={() => selectMenu(null)}
-          >
-            <XIcon className="text-muted-foreground" />
-          </MenuParentOption>
+          {allowEmpty ? (
+            <MenuParentOption
+              label={emptyLabel}
+              selected={selectedId == null}
+              onSelect={() => selectMenu(null)}
+            >
+              <XIcon className="text-muted-foreground" />
+            </MenuParentOption>
+          ) : null}
           {query.isLoading ? (
             <div className="flex items-center justify-center gap-2 px-2 py-6 text-sm text-muted-foreground">
               <Spinner />
-              正在加载菜单...
+              正在加载权限...
             </div>
           ) : filteredMenus.length > 0 ? (
             filteredMenus.map((item) => (
@@ -132,13 +135,13 @@ export function MenuParentSelect({
                 label={item.menu.menu_name}
                 selected={selectedId === item.menu.menu_id}
                 depth={keyword.trim() ? 0 : item.depth}
-                description={item.menu.path}
+                description={menuDescription(item.menu)}
                 onSelect={() => selectMenu(item.menu)}
               />
             ))
           ) : (
             <div className="px-2 py-6 text-center text-sm text-muted-foreground">
-              没有匹配的菜单
+              没有匹配的权限
             </div>
           )}
         </div>
@@ -186,14 +189,26 @@ function MenuParentOption({
   )
 }
 
-function filterSelectableMenus(menus: MenuResource[], currentMenuId?: number) {
-  if (currentMenuId == null) {
-    return menus
+function filterSelectableMenus(
+  menus: MenuResource[],
+  currentMenuId?: number,
+  allowedTypes?: readonly MenuTypeFlag[]
+) {
+  const allowedTypeSet = allowedTypes?.length ? new Set(allowedTypes) : null
+  const blockedIds =
+    currentMenuId == null
+      ? new Set<number>()
+      : collectDescendantIds(menus, currentMenuId)
+
+  if (currentMenuId != null) {
+    blockedIds.add(currentMenuId)
   }
 
-  const blockedIds = collectDescendantIds(menus, currentMenuId)
-  blockedIds.add(currentMenuId)
-  return menus.filter((menu) => !blockedIds.has(menu.menu_id))
+  return menus.filter(
+    (menu) =>
+      !blockedIds.has(menu.menu_id) &&
+      (allowedTypeSet == null || allowedTypeSet.has(menu.menu_type))
+  )
 }
 
 function collectDescendantIds(menus: MenuResource[], menuId: number) {
@@ -267,4 +282,23 @@ function filterFlatMenus(items: FlatMenu[], keyword: string) {
       .toLowerCase()
       .includes(normalizedKeyword)
   )
+}
+
+function menuDescription(menu: MenuResource) {
+  const typeLabel = menuTypeLabel(menu.menu_type)
+  const target = menu.perms || menu.path
+
+  return target ? `${typeLabel} · ${target}` : typeLabel
+}
+
+function menuTypeLabel(type: MenuTypeFlag) {
+  if (type === "M") {
+    return "目录"
+  }
+
+  if (type === "C") {
+    return "菜单"
+  }
+
+  return "按钮"
 }

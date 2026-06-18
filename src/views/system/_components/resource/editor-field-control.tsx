@@ -2,10 +2,7 @@
 
 import * as React from "react"
 import { HelpCircleIcon } from "lucide-react"
-import {
-  useForm,
-  type FieldError as HookFormFieldError,
-} from "react-hook-form"
+import { useForm, type FieldError as HookFormFieldError } from "react-hook-form"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -25,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import {
   Tooltip,
@@ -33,7 +31,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
-import type { DeptResource } from "@/types/admin"
+import type { DeptResource, MenuTypeFlag } from "@/types/admin"
 import type {
   ResourceField,
   ResourceFormMode,
@@ -56,6 +54,12 @@ type ResourceFieldControlProps = {
   setValue: ReturnType<typeof useForm<ResourceFormValues>>["setValue"]
   useMultiColumn: boolean
 }
+
+const MENU_PARENT_TYPES = {
+  M: ["M"],
+  C: ["M"],
+  F: ["C"],
+} satisfies Record<MenuTypeFlag, MenuTypeFlag[]>
 
 export function ResourceFieldControl({
   field,
@@ -133,12 +137,14 @@ export function ResourceFieldControl({
       data-disabled={isDisabled}
       className={fieldClassName}
     >
-      <RequiredFieldLabel
-        htmlFor={controlId}
-        label={field.label}
-        required={field.required}
-        tooltip={field.tooltip}
-      />
+      {field.hideLabel ? null : (
+        <RequiredFieldLabel
+          htmlFor={controlId}
+          label={field.label}
+          required={field.required}
+          tooltip={field.tooltip}
+        />
+      )}
       {renderControl({
         field,
         mode,
@@ -207,6 +213,61 @@ function renderControl({
     )
   }
 
+  if (field.type === "menu-type-tabs") {
+    const currentType = normalizeMenuType(watch(field.name))
+
+    return (
+      <Tabs
+        value={currentType}
+        aria-label={field.label}
+        className="w-full sm:w-fit"
+        onValueChange={(value) => {
+          const nextType = normalizeMenuType(value)
+          const previousType = normalizeMenuType(watch(field.name))
+
+          setValue(field.name, nextType, {
+            shouldDirty: true,
+            shouldValidate: true,
+          })
+
+          if (nextType !== previousType) {
+            setValue("parent_id", null, {
+              shouldDirty: true,
+              shouldValidate: true,
+            })
+          }
+
+          if (nextType === "F") {
+            setValue("path", "", { shouldDirty: true, shouldValidate: true })
+            setValue("icon", "#", { shouldDirty: true, shouldValidate: true })
+            setValue("visible", "1", {
+              shouldDirty: true,
+              shouldValidate: true,
+            })
+          } else {
+            setValue("visible", "0", {
+              shouldDirty: true,
+              shouldValidate: true,
+            })
+          }
+        }}
+      >
+        <TabsList className="grid w-full grid-cols-3 sm:w-fit">
+          {field.options?.map((option) => (
+            <TabsTrigger
+              key={option.value}
+              value={option.value}
+              disabled={isDisabled}
+              className="px-4"
+            >
+              {option.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
+    )
+  }
+
   if (field.type === "radio") {
     const optionCount = field.options?.length ?? 0
 
@@ -216,7 +277,10 @@ function renderControl({
         value={String(watch(field.name) ?? "")}
         disabled={isDisabled}
         aria-invalid={invalid}
-        className={cn("grid gap-2", optionCount <= 2 ? "grid-cols-2" : "grid-cols-3")}
+        className={cn(
+          "grid gap-2",
+          optionCount <= 2 ? "grid-cols-2" : "grid-cols-3"
+        )}
         onValueChange={(value) =>
           setValue(field.name, value, {
             shouldDirty: true,
@@ -291,6 +355,8 @@ function renderControl({
   }
 
   if (field.type === "menu-parent-select") {
+    const menuType = normalizeMenuType(watch("menu_type"))
+
     return (
       <MenuParentSelect
         controlId={controlId}
@@ -298,7 +364,10 @@ function renderControl({
         currentMenuId={mode === "edit" ? recordId : undefined}
         invalid={invalid}
         disabled={isDisabled}
-        placeholder={field.placeholder ?? "选择父级菜单"}
+        placeholder={menuParentPlaceholder(menuType, field.placeholder)}
+        allowedTypes={MENU_PARENT_TYPES[menuType]}
+        allowEmpty={menuType !== "F"}
+        emptyLabel="顶级权限"
         onChange={(menu) =>
           setValue(field.name, menu?.menu_id ?? null, {
             shouldDirty: true,
@@ -475,4 +544,27 @@ function getDeptAncestors(parentDept: DeptResource | null) {
   return parentAncestors
     ? `${parentAncestors},${parentDept.dept_id}`
     : `0,${parentDept.dept_id}`
+}
+
+function normalizeMenuType(value: unknown): MenuTypeFlag {
+  if (value === "C" || value === "F") {
+    return value
+  }
+
+  return "M"
+}
+
+function menuParentPlaceholder(
+  menuType: MenuTypeFlag,
+  fallback?: string
+): string {
+  if (menuType === "F") {
+    return "选择所属菜单"
+  }
+
+  if (menuType === "C") {
+    return "选择上级目录"
+  }
+
+  return fallback ?? "选择上级权限"
 }

@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import {
   useForm,
   type FieldError as HookFormFieldError,
+  type FieldErrors,
   type Resolver,
 } from "react-hook-form"
 import type { ZodType } from "zod"
@@ -32,6 +33,7 @@ import type {
   ResourceFormValues,
 } from "./form"
 import { ResourceFieldControl } from "./editor-field-control"
+import { showResourceValidationError } from "./toast"
 
 type ResourceEditorDialogProps = {
   open: boolean
@@ -63,6 +65,7 @@ export function ResourceEditorDialog({
     defaultValues: values,
   })
   const { reset } = form
+  const watchedValues = form.watch()
   const hasRoleField = fields.some(
     (field) => field.type === "role-multi-select"
   )
@@ -93,8 +96,16 @@ export function ResourceEditorDialog({
   const visibleFields = fields.filter(
     (field) =>
       !(mode === "create" && field.hiddenOnCreate) &&
-      !(mode === "edit" && field.hiddenOnEdit)
+      !(mode === "edit" && field.hiddenOnEdit) &&
+      field.visibleWhen?.(watchedValues, mode) !== false
   )
+
+  function handleInvalidSubmit(errors: FieldErrors<ResourceFormValues>) {
+    const [fieldName, error] = Object.entries(errors)[0] ?? []
+    const fieldLabel = fields.find((field) => field.name === fieldName)?.label
+    showResourceValidationError(noun, fieldLabel, getFieldErrorMessage(error))
+  }
+
   const title = mode === "create" ? `新增${noun}` : `编辑${noun}`
   const isLoadingRoleBinding =
     mode === "edit" && hasRoleField && roleIdsQuery.isLoading
@@ -116,7 +127,10 @@ export function ResourceEditorDialog({
       >
         <form
           className="grid gap-3"
-          onSubmit={form.handleSubmit((formValues) => onSubmit(formValues))}
+          onSubmit={form.handleSubmit(
+            (formValues) => onSubmit(formValues),
+            handleInvalidSubmit
+          )}
         >
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
@@ -168,4 +182,13 @@ export function ResourceEditorDialog({
       </DialogContent>
     </Dialog>
   )
+}
+
+function getFieldErrorMessage(error: unknown) {
+  if (error && typeof error === "object" && "message" in error) {
+    const message = (error as { message?: unknown }).message
+    return typeof message === "string" ? message : undefined
+  }
+
+  return undefined
 }

@@ -5,8 +5,8 @@ import {
   DatabaseIcon,
   FileTextIcon,
   HeartPulseIcon,
+  KeyRoundIcon,
   LayoutDashboardIcon,
-  MenuIcon,
   ShieldIcon,
   UsersIcon,
 } from "lucide-react"
@@ -38,6 +38,7 @@ import {
   monitorQueryKeys,
   systemQueryKeys,
 } from "@/lib/query-keys"
+import { formatAbsoluteDateTime, formatRelativeTime } from "@/lib/datetime"
 import { cn } from "@/lib/utils"
 import { APP_ROUTE_BY_ID } from "@/router/routes"
 import type { CurrentUser, HealthResponse, PageResponse } from "@/types/admin"
@@ -49,7 +50,7 @@ type ResourceSummary = ReturnType<typeof resourceSummary>
 const quickActions = [
   { label: "用户管理", routeId: "users", icon: UsersIcon },
   { label: "角色管理", routeId: "roles", icon: ShieldIcon },
-  { label: "菜单管理", routeId: "menus", icon: MenuIcon },
+  { label: "权限管理", routeId: "menus", icon: KeyRoundIcon },
   { label: "健康检查", routeId: "health", icon: HeartPulseIcon },
 ] as const
 
@@ -58,7 +59,7 @@ export default function IndexPage() {
   const resourceCards = [
     resourceSummary("用户", "后台账号", data.users, UsersIcon),
     resourceSummary("角色", "权限角色", data.roles, ShieldIcon),
-    resourceSummary("菜单", "菜单与权限项", data.menus, MenuIcon),
+    resourceSummary("权限", "菜单与按钮权限", data.menus, KeyRoundIcon),
     resourceSummary("部门", "组织部门", data.depts, LayoutDashboardIcon),
     resourceSummary("岗位", "组织岗位", data.posts, FileTextIcon),
     resourceSummary("字典类型", "字典定义", data.dictTypes, DatabaseIcon),
@@ -280,8 +281,11 @@ function RecentResources({ items }: { items: RecentItem[] }) {
               </Badge>
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-medium">{item.name}</div>
-                <div className="truncate text-xs text-muted-foreground">
-                  {item.createdAt}
+                <div
+                  className="truncate text-xs text-muted-foreground"
+                  title={formatAbsoluteDateTime(item.createdAt)}
+                >
+                  {formatRelativeTime(item.createdAt)}
                 </div>
               </div>
             </div>
@@ -450,7 +454,7 @@ function buildRecentItems(data: OverviewData): RecentItem[] {
       timestamp: Date.parse(item.created_at),
     })),
     ...(data.menus.data?.items ?? []).map((item) => ({
-      kind: "菜单",
+      kind: "权限",
       name: item.menu_name,
       createdAt: item.created_at,
       timestamp: Date.parse(item.created_at),
@@ -465,22 +469,6 @@ function buildRecentItems(data: OverviewData): RecentItem[] {
     .filter((item) => Number.isFinite(item.timestamp))
     .sort((left, right) => right.timestamp - left.timestamp)
     .slice(0, 6)
-    .map((item) => ({
-      ...item,
-      createdAt: formatDateTime(item.createdAt),
-    }))
-}
-
-function formatDateTime(value: string) {
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) {
-    return value
-  }
-
-  return new Intl.DateTimeFormat("zh-CN", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(date)
 }
 
 function getErrorMessage(error: unknown) {

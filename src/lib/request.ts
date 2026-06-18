@@ -100,6 +100,10 @@ function buildUrl(path: string, baseUrl = API_BASE_URL) {
   return `${baseUrl.replace(/\/$/, "")}/${path.replace(/^\//, "")}`
 }
 
+export function buildApiUrl(path: string) {
+  return buildUrl(path)
+}
+
 export function buildQueryPath(path: string, params?: object) {
   if (!params) {
     return path

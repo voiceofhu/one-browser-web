@@ -1,6 +1,4 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { formatDistanceToNow } from "date-fns"
-import { zhCN } from "date-fns/locale"
 import { BellIcon, BellOffIcon, CheckIcon, CircleAlertIcon } from "lucide-react"
 import { toast } from "sonner"
 
@@ -40,6 +38,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
 import { useCurrentUser } from "@/hooks/use-auth"
+import { formatAbsoluteDateTime, formatRelativeTime } from "@/lib/datetime"
 import { buildQueryPath, http } from "@/lib/request"
 
 type Notice = {
@@ -276,14 +275,9 @@ function NotificationSkeleton() {
 }
 
 function getNoticeDate(value: string) {
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) {
-    return { absolute: value, relative: value }
-  }
-
   return {
-    absolute: date.toLocaleString("zh-CN"),
-    relative: formatDistanceToNow(date, { addSuffix: true, locale: zhCN }),
+    absolute: formatAbsoluteDateTime(value),
+    relative: formatRelativeTime(value),
   }
 }
 

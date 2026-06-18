@@ -104,6 +104,7 @@ export type DashboardResourceConfig<TData> = {
   schema: (mode: ResourceFormMode) => ZodType<ResourceFormValues>
   getDefaultValues: () => ResourceFormValues
   getEditValues: (record: TData) => ResourceFormValues
+  getChildCreateValues?: (record: TData) => ResourceFormValues | null
   create: (payload: ResourceFormValues) => Promise<TData>
   update: (record: TData, payload: ResourceFormValues) => Promise<TData>
   remove: (record: TData) => Promise<void>
@@ -194,7 +195,7 @@ export const RESOURCE_CONFIGS = {
   },
   menus: {
     queryKey: systemQueryKeys.menus,
-    noun: "菜单",
+    noun: "权限",
     list: listMenus,
     statusFilters: STATUS_FILTERS,
     columns: menuColumns,
@@ -204,9 +205,16 @@ export const RESOURCE_CONFIGS = {
     schema: () => menuSchema,
     getDefaultValues: () => ({ ...defaultValues.menus }),
     getEditValues: (record) => mergeRecord(defaultValues.menus, record),
+    getChildCreateValues: menuChildCreateValues,
     create: (values) => createMenu(menuPayload(values)),
     update: (record, values) => updateMenu(record.menu_id, menuPayload(values)),
     remove: (record) => deleteMenu(record.menu_id),
+    tree: {
+      columnId: "menu_name",
+      getParentId: (record) => record.parent_id,
+      getOrder: (record) => record.order_num,
+      pageSize: 1_000,
+    },
   },
   depts: {
     queryKey: systemQueryKeys.depts,
@@ -332,22 +340,36 @@ function rolePayload(values: ResourceFormValues) {
 }
 
 function menuPayload(values: ResourceFormValues) {
+  const menuType = textPayload(values, "menu_type", "M")
+  const isButtonPermission = menuType === "F"
+
   return {
     menu_name: textPayload(values, "menu_name"),
     parent_id: nullableNumberPayload(values, "parent_id"),
     order_num: numberPayload(values, "order_num"),
-    path: textPayload(values, "path"),
-    component: nullableTextPayload(values, "component"),
-    route_query: nullableTextPayload(values, "route_query"),
-    route_name: textPayload(values, "route_name"),
-    is_frame: booleanPayload(values, "is_frame"),
-    is_cache: booleanPayload(values, "is_cache"),
-    menu_type: textPayload(values, "menu_type", "M"),
-    visible: textPayload(values, "visible", "0"),
+    path: isButtonPermission ? "" : textPayload(values, "path"),
+    menu_type: menuType,
+    visible: isButtonPermission ? "1" : textPayload(values, "visible", "0"),
     status: textPayload(values, "status", "0"),
-    perms: nullableTextPayload(values, "perms"),
-    icon: textPayload(values, "icon", "#"),
+    perms: menuType === "M" ? null : nullableTextPayload(values, "perms"),
+    icon: isButtonPermission ? "#" : textPayload(values, "icon", "#"),
     remark: textPayload(values, "remark"),
+  }
+}
+
+function menuChildCreateValues(menu: MenuResource): ResourceFormValues | null {
+  if (menu.menu_type === "F") {
+    return null
+  }
+
+  const childType = menu.menu_type === "C" ? "F" : "C"
+
+  return {
+    ...defaultValues.menus,
+    parent_id: menu.menu_id,
+    menu_type: childType,
+    visible: childType === "F" ? "1" : "0",
+    icon: childType === "F" ? "#" : defaultValues.menus.icon,
   }
 }
 

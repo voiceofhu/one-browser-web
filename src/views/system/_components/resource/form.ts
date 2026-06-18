@@ -32,6 +32,7 @@ export type ResourceField = {
     | "dept-parent-select"
     | "menu-icon-select"
     | "menu-parent-select"
+    | "menu-type-tabs"
     | "menu-permission-tree"
     | "post-multi-select"
     | "role-multi-select"
@@ -46,7 +47,9 @@ export type ResourceField = {
   disabledOnEdit?: boolean
   invertBoolean?: boolean
   colSpan?: "full"
+  hideLabel?: boolean
   required?: boolean
+  visibleWhen?: (values: ResourceFormValues, mode: ResourceFormMode) => boolean
 }
 
 const requiredText = (label: string) =>
@@ -117,32 +120,55 @@ export const userUpdateSchema = userBaseSchema.extend({
 export const roleSchema = z.object({
   role_name: requiredText("角色名称").max(64, "角色名称不能超过 64 个字符"),
   role_key: requiredText("权限标识").max(64, "权限标识不能超过 64 个字符"),
-  role_sort: requiredNumber,
-  data_scope: dataScope,
-  menu_check_strictly: z.boolean(),
-  dept_check_strictly: z.boolean(),
-  menu_ids: z.array(z.number().int()),
-  status,
+  role_sort: requiredNumber.optional().default(0),
+  data_scope: dataScope.default("1"),
+  menu_check_strictly: z.boolean().default(false),
+  dept_check_strictly: z.boolean().default(false),
+  menu_ids: z.array(z.number().int()).default([]),
+  status: status.optional().default("0"),
   remark: optionalText,
 })
 
-export const menuSchema = z.object({
-  menu_name: requiredText("菜单名称").max(64, "菜单名称不能超过 64 个字符"),
-  parent_id: optionalNullableNumber,
-  order_num: requiredNumber,
-  path: optionalText,
-  component: optionalText,
-  route_query: optionalText,
-  route_name: optionalText,
-  is_frame: z.boolean(),
-  is_cache: z.boolean(),
-  menu_type: menuType,
-  visible,
-  status,
-  perms: optionalText,
-  icon: optionalText,
-  remark: optionalText,
-})
+export const menuSchema = z
+  .object({
+    menu_name: requiredText("权限名称").max(64, "权限名称不能超过 64 个字符"),
+    parent_id: optionalNullableNumber,
+    order_num: requiredNumber,
+    path: optionalText,
+    menu_type: menuType,
+    visible,
+    status,
+    perms: optionalText,
+    icon: optionalText,
+    remark: optionalText,
+  })
+  .superRefine((values, context) => {
+    if (values.menu_type === "C" && !values.path?.trim()) {
+      context.addIssue({
+        code: "custom",
+        path: ["path"],
+        message: "菜单路由不能为空",
+      })
+    }
+
+    if (values.menu_type === "F") {
+      if (values.parent_id == null) {
+        context.addIssue({
+          code: "custom",
+          path: ["parent_id"],
+          message: "按钮权限需要选择所属菜单",
+        })
+      }
+
+      if (!values.perms?.trim()) {
+        context.addIssue({
+          code: "custom",
+          path: ["perms"],
+          message: "按钮权限标识不能为空",
+        })
+      }
+    }
+  })
 
 export const deptSchema = z.object({
   parent_id: optionalNullableNumber,
@@ -208,24 +234,37 @@ export const resourceFields = {
       true,
       "控制器中定义的权限字符，例如：admin、system:role:list"
     ),
-    numberField("role_sort", "角色顺序", undefined, true),
-    radioField("status", "状态", statusOptions),
-    menuPermissionTreeField("menu_ids", "菜单权限"),
+    numberField("role_sort", "角色顺序", undefined, true, {
+      hiddenOnCreate: true,
+    }),
+    statusSwitchField("status", "状态", { hiddenOnCreate: true }),
+    menuPermissionTreeField("menu_ids", "权限范围"),
     textareaField("remark", "备注"),
   ],
   menus: [
-    textField("menu_name", "菜单名称", "请输入菜单名称", true),
-    menuParentSelectField("parent_id", "父级菜单", "留空表示顶级菜单"),
-    selectField("menu_type", "菜单类型", menuTypeOptions, true),
-    menuIconSelectField("icon", "图标"),
-    textField("path", "路由路径"),
-    textField("component", "组件路径"),
-    textField("route_query", "路由参数"),
-    textField("route_name", "路由名称"),
-    switchField("is_frame", "外链"),
-    switchField("is_cache", "缓存"),
-    selectField("visible", "可见状态", visibleOptions),
-    textField("perms", "权限标识"),
+    menuTypeTabsField("menu_type", "权限类型"),
+    textField("menu_name", "权限名称", "请输入权限名称", true),
+    menuParentSelectField(
+      "parent_id",
+      "上级权限",
+      "按钮权限必须挂在具体菜单下"
+    ),
+    visibleWhen(menuIconSelectField("icon", "图标"), isRoutePermission),
+    visibleWhen(textField("path", "路由路径"), isRoutePermission),
+    visibleWhen(
+      selectField("visible", "可见状态", visibleOptions),
+      isRoutePermission
+    ),
+    visibleWhen(
+      textField(
+        "perms",
+        "权限标识",
+        "例如 system:user:create 或 system:user:delete",
+        false,
+        "后端接口校验使用的权限字符，按钮权限必须填写。"
+      ),
+      hasPermissionCode
+    ),
     textareaField("remark", "备注"),
   ],
   depts: [
@@ -290,11 +329,6 @@ export const defaultValues = {
     parent_id: null,
     order_num: 0,
     path: "",
-    component: "",
-    route_query: "",
-    route_name: "",
-    is_frame: false,
-    is_cache: false,
     menu_type: "M" satisfies MenuTypeFlag,
     visible: "0" satisfies VisibleFlag,
     status: "0" satisfies StatusFlag,
@@ -411,9 +445,10 @@ function numberField(
   name: string,
   label: string,
   description?: string,
-  required?: boolean
+  required?: boolean,
+  options?: Pick<ResourceField, "hiddenOnCreate" | "hiddenOnEdit">
 ): ResourceField {
-  return { name, label, type: "number", description, required }
+  return { name, label, type: "number", description, required, ...options }
 }
 
 function textareaField(name: string, label: string): ResourceField {
@@ -427,6 +462,18 @@ function selectField(
   required?: boolean
 ): ResourceField {
   return { name, label, type: "select", options, required }
+}
+
+function menuTypeTabsField(name: string, label: string): ResourceField {
+  return {
+    name,
+    label,
+    type: "menu-type-tabs",
+    options: menuTypeOptions,
+    colSpan: "full",
+    hideLabel: true,
+    required: true,
+  }
 }
 
 function radioField(
@@ -497,17 +544,24 @@ function statusSwitchField(
   return { name, label, type: "status-switch", ...options }
 }
 
-function switchField(
-  name: string,
-  label: string,
-  options?: Pick<ResourceField, "invertBoolean">
-): ResourceField {
-  return { name, label, type: "switch", ...options }
-}
-
 function options<T extends string>(labels: Record<T, string>) {
   return Object.entries(labels).map(([value, label]) => ({
     value,
     label: String(label),
   }))
+}
+
+function visibleWhen(
+  field: ResourceField,
+  predicate: ResourceField["visibleWhen"]
+): ResourceField {
+  return { ...field, visibleWhen: predicate }
+}
+
+function isRoutePermission(values: ResourceFormValues) {
+  return values.menu_type !== "F"
+}
+
+function hasPermissionCode(values: ResourceFormValues) {
+  return values.menu_type !== "M"
 }

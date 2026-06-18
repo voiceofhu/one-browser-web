@@ -24,9 +24,9 @@ import {
   ClipboardListIcon,
   FileBadgeIcon,
   FileClockIcon,
-  HeartPulseIcon,
+  KeyRoundIcon,
   LayoutDashboardIcon,
-  MenuIcon,
+  ServerCogIcon,
   ShieldIcon,
   UsersIcon,
 } from "lucide-react"
@@ -41,13 +41,13 @@ const routeIcons: Record<AppRouteId, React.ReactNode> = {
   overview: <LayoutDashboardIcon />,
   users: <UsersIcon />,
   roles: <ShieldIcon />,
-  menus: <MenuIcon />,
+  menus: <KeyRoundIcon />,
   depts: <Building2Icon />,
   posts: <FileBadgeIcon />,
   dict: <BookOpenTextIcon />,
   "operation-logs": <ClipboardListIcon />,
   "login-logs": <FileClockIcon />,
-  health: <HeartPulseIcon />,
+  health: <ServerCogIcon />,
 }
 
 export function AppSidebar({

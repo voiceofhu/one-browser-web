@@ -29,7 +29,7 @@ export function ResourceTableTreeCell<TData>({
           variant="ghost"
           size="icon-xs"
           className="text-muted-foreground"
-          aria-label={expanded ? "收起部门节点" : "展开部门节点"}
+          aria-label={expanded ? "收起节点" : "展开节点"}
           aria-expanded={expanded}
           onClick={row.getToggleExpandedHandler()}
         >

@@ -31,6 +31,70 @@ export interface HealthResponse {
   postgres: string
   sea_orm: string
   redis: string
+  updated_at?: string
+  server?: HealthServerSnapshot
+  process?: HealthProcessSnapshot
+  system?: HealthSystemSnapshot
+}
+
+export interface HealthServerSnapshot {
+  hostname: string
+  os: string
+  arch: string
+  uptime_seconds: number | null
+  boot_time?: string | null
+  current_time: string
+}
+
+export interface HealthProcessSnapshot {
+  pid: number
+  version: string
+  commit: string
+  runtime: string
+  runtime_version?: string | null
+  started_at: string
+  uptime_seconds: number
+  cpu_usage_percent: number | null
+  cpu_time_seconds: number | null
+  user_cpu_seconds: number | null
+  system_cpu_seconds: number | null
+  rss_bytes: number | null
+  peak_rss_bytes: number | null
+  memory_footprint_bytes?: number | null
+  virtual_memory_bytes: number | null
+  data_bytes: number | null
+  threads: number | null
+  fd_count: number | null
+  fd_limit?: number | null
+  executable: string
+}
+
+export interface HealthSystemSnapshot {
+  load_average: HealthLoadAverage | null
+  memory: HealthMemorySnapshot | null
+  storage: HealthStorageSnapshot
+}
+
+export interface HealthLoadAverage {
+  one: number
+  five: number
+  fifteen: number
+  cores?: number
+  usage_percent?: number
+}
+
+export interface HealthMemorySnapshot {
+  total_bytes: number
+  available_bytes: number
+  used_bytes: number
+  usage_percent: number
+}
+
+export interface HealthStorageSnapshot {
+  path: string
+  total_bytes: number | null
+  used_bytes: number | null
+  usage_percent: number | null
 }
 
 export interface ListParams {
@@ -88,11 +152,6 @@ export interface MenuResource {
   parent_id: number | null
   order_num: number
   path: string
-  component: string | null
-  route_query: string | null
-  route_name: string
-  is_frame: boolean
-  is_cache: boolean
   menu_type: MenuTypeFlag
   visible: VisibleFlag
   status: StatusFlag

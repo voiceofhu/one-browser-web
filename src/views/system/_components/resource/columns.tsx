@@ -1,24 +1,24 @@
 "use client"
 
 /* eslint-disable react-refresh/only-export-components */
-import { formatDistanceToNow } from "date-fns"
-import { zhCN } from "date-fns/locale/zh-CN"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import type { ColumnDef } from "@tanstack/react-table"
 import { toast } from "sonner"
 
 import { setDictTypeStatus } from "@/api/system/dict"
 import { setDeptStatus } from "@/api/system/dept"
+import { setMenuStatus } from "@/api/system/menu"
 import { setPostStatus } from "@/api/system/post"
+import { setRoleStatus } from "@/api/system/role"
 import { setUserStatus } from "@/api/system/user"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
+import { formatAbsoluteDateTime, formatRelativeTime } from "@/lib/datetime"
 import { systemQueryKeys } from "@/lib/query-keys"
 
 import {
   DATA_SCOPE_LABELS,
   getLabel,
-  MENU_TYPE_LABELS,
   SEX_LABELS,
   STATUS_LABELS,
   VISIBLE_LABELS,
@@ -91,37 +91,31 @@ export const roleColumns: ColumnDef<RoleResource>[] = [
     trueLabel: "联动",
     falseLabel: "独立",
   }),
-  statusColumn(),
+  {
+    accessorKey: "status",
+    header: ({ column }) => tableHeader(column, "状态"),
+    cell: ({ row }) => <RoleStatusSwitch role={row.original} />,
+    meta: { label: "状态" },
+  },
   dateColumn("created_at", "创建时间"),
 ]
 
 export const menuColumns: ColumnDef<MenuResource>[] = [
-  textColumn("menu_name", "菜单名称"),
-  numberColumn("parent_id", "父级"),
+  {
+    accessorKey: "menu_name",
+    header: ({ column }) => tableHeader(column, "权限名称"),
+    cell: ({ row }) => <MenuNameCell menu={row.original} />,
+    meta: { label: "权限名称", cellClassName: "min-w-72 max-w-96" },
+  },
   numberColumn("order_num", "排序"),
   textColumn("path", "路由路径"),
   textColumn("perms", "权限标识"),
   {
-    accessorKey: "menu_type",
-    header: ({ column }) => tableHeader(column, "类型"),
-    cell: ({ row }) => (
-      <Badge variant="outline">
-        {getLabel(MENU_TYPE_LABELS, row.original.menu_type)}
-      </Badge>
-    ),
-    meta: { label: "类型" },
+    accessorKey: "status",
+    header: ({ column }) => tableHeader(column, "状态"),
+    cell: ({ row }) => <MenuStatusSwitch menu={row.original} />,
+    meta: { label: "状态" },
   },
-  {
-    accessorKey: "visible",
-    header: ({ column }) => tableHeader(column, "可见"),
-    cell: ({ row }) => (
-      <Badge variant="outline">
-        {getLabel(VISIBLE_LABELS, row.original.visible)}
-      </Badge>
-    ),
-    meta: { label: "可见" },
-  },
-  statusColumn(),
   dateColumn("created_at", "创建时间"),
 ]
 
@@ -194,7 +188,7 @@ function textColumn<TData, TKey extends keyof TData & string>(
   key: TKey,
   label: string,
   cellClassName = "max-w-64",
-  emptyText = "无"
+  emptyText = "-"
 ): ColumnDef<TData> {
   return {
     accessorKey: key,
@@ -300,6 +294,20 @@ function StatusBadge({ status }: { status: StatusFlag }) {
   )
 }
 
+function MenuNameCell({ menu }: { menu: MenuResource }) {
+  return (
+    <div className="flex min-w-0 items-center gap-2">
+      <span className="truncate">{menu.menu_name}</span>
+      <Badge
+        variant={menu.visible === "0" ? "secondary" : "destructive"}
+        className="shrink-0"
+      >
+        {getLabel(VISIBLE_LABELS, menu.visible)}
+      </Badge>
+    </div>
+  )
+}
+
 function UserStatusSwitch({ user }: { user: UserResource }) {
   const queryClient = useQueryClient()
   const mutation = useMutation({
@@ -330,6 +338,80 @@ function UserStatusSwitch({ user }: { user: UserResource }) {
         aria-label={`${enabled ? "停用" : "启用"}用户 ${
           user.nick_name || user.user_name
         }`}
+        onCheckedChange={(checked) => mutation.mutate(checked ? "0" : "1")}
+      />
+      <span className="text-xs text-muted-foreground">
+        {enabled ? "启用" : "停用"}
+      </span>
+    </div>
+  )
+}
+
+function RoleStatusSwitch({ role }: { role: RoleResource }) {
+  const queryClient = useQueryClient()
+  const mutation = useMutation({
+    mutationFn: (status: StatusFlag) => setRoleStatus(role, status),
+    onSuccess: async (updatedRole) => {
+      await queryClient.invalidateQueries({ queryKey: systemQueryKeys.roles })
+      toast.success(
+        `${updatedRole.role_name}已${
+          updatedRole.status === "0" ? "启用" : "停用"
+        }`,
+        {
+          description: "角色状态已同步到后台。",
+          duration: 5_000,
+        }
+      )
+    },
+    onError: showResourceError,
+  })
+  const enabled = mutation.isPending
+    ? mutation.variables === "0"
+    : role.status === "0"
+
+  return (
+    <div className="flex items-center gap-2">
+      <Switch
+        checked={enabled}
+        disabled={mutation.isPending}
+        aria-label={`${enabled ? "停用" : "启用"}角色 ${role.role_name}`}
+        onCheckedChange={(checked) => mutation.mutate(checked ? "0" : "1")}
+      />
+      <span className="text-xs text-muted-foreground">
+        {enabled ? "启用" : "停用"}
+      </span>
+    </div>
+  )
+}
+
+function MenuStatusSwitch({ menu }: { menu: MenuResource }) {
+  const queryClient = useQueryClient()
+  const mutation = useMutation({
+    mutationFn: (status: StatusFlag) => setMenuStatus(menu, status),
+    onSuccess: async (updatedMenu) => {
+      await queryClient.invalidateQueries({ queryKey: systemQueryKeys.menus })
+      toast.success(
+        `${updatedMenu.menu_name}已${
+          updatedMenu.status === "0" ? "启用" : "停用"
+        }`,
+        {
+          description: "菜单状态已同步到后台。",
+          duration: 5_000,
+        }
+      )
+    },
+    onError: showResourceError,
+  })
+  const enabled = mutation.isPending
+    ? mutation.variables === "0"
+    : menu.status === "0"
+
+  return (
+    <div className="flex items-center gap-2">
+      <Switch
+        checked={enabled}
+        disabled={mutation.isPending}
+        aria-label={`${enabled ? "停用" : "启用"}权限 ${menu.menu_name}`}
         onCheckedChange={(checked) => mutation.mutate(checked ? "0" : "1")}
       />
       <span className="text-xs text-muted-foreground">
@@ -456,7 +538,7 @@ function DictTypeStatusSwitch({ dictType }: { dictType: DictTypeResource }) {
 
 function TextCell({
   value,
-  emptyText = "无",
+  emptyText = "-",
 }: {
   value: unknown
   emptyText?: string
@@ -471,14 +553,9 @@ function DateCell({ value }: { value: string | null }) {
     return <span className="text-muted-foreground">从未</span>
   }
 
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) {
-    return <span>{value}</span>
-  }
-
   return (
-    <span title={date.toISOString()}>
-      {formatDistanceToNow(date, { addSuffix: true, locale: zhCN })}
+    <span title={formatAbsoluteDateTime(value)}>
+      {formatRelativeTime(value, "从未")}
     </span>
   )
 }

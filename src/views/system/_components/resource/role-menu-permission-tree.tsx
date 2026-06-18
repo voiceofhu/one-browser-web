@@ -60,22 +60,30 @@ export function RoleMenuPermissionTree({
     }
   }, [onChange, roleMenusQuery.data])
 
-  const menus = React.useMemo(() => menusQuery.data?.items ?? [], [menusQuery.data])
+  const menus = React.useMemo(
+    () => menusQuery.data?.items ?? [],
+    [menusQuery.data]
+  )
   const tree = React.useMemo(() => buildMenuTree(menus), [menus])
-  const allMenuIds = React.useMemo(() => menus.map((menu) => menu.menu_id), [menus])
+  const allMenuIds = React.useMemo(
+    () => menus.map((menu) => menu.menu_id),
+    [menus]
+  )
   const parentById = React.useMemo(() => buildParentMap(menus), [menus])
   const childrenById = React.useMemo(() => buildChildrenMap(tree), [tree])
   const expandableIds = React.useMemo(
-    () => Array.from(childrenById.entries())
-      .filter(([, childIds]) => childIds.length > 0)
-      .map(([menuId]) => menuId),
+    () =>
+      Array.from(childrenById.entries())
+        .filter(([, childIds]) => childIds.length > 0)
+        .map(([menuId]) => menuId),
     [childrenById]
   )
   const selectedIds = React.useMemo(
     () => new Set(value.filter((item) => typeof item === "number")),
     [value]
   )
-  const allSelected = allMenuIds.length > 0 && allMenuIds.every((id) => selectedIds.has(id))
+  const allSelected =
+    allMenuIds.length > 0 && allMenuIds.every((id) => selectedIds.has(id))
   const allExpanded =
     expandableIds.length > 0 && expandableIds.every((id) => expandedIds.has(id))
   const isLoading = menusQuery.isLoading || roleMenusQuery.isLoading
@@ -118,7 +126,9 @@ export function RoleMenuPermissionTree({
     if (linked) {
       if (checked) {
         nodeIds.forEach((id) => next.add(id))
-        getAncestorIds(node.menu.menu_id, parentById).forEach((id) => next.add(id))
+        getAncestorIds(node.menu.menu_id, parentById).forEach((id) =>
+          next.add(id)
+        )
       } else {
         nodeIds.forEach((id) => next.delete(id))
         removeEmptyAncestors(next, node.menu.menu_id, parentById, childrenById)
@@ -162,7 +172,7 @@ export function RoleMenuPermissionTree({
           {isLoading ? (
             <div className="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
               <Spinner />
-              正在加载菜单权限...
+              正在加载权限...
             </div>
           ) : tree.length > 0 ? (
             tree.map((node) => (
@@ -179,7 +189,7 @@ export function RoleMenuPermissionTree({
             ))
           ) : (
             <div className="py-10 text-center text-sm text-muted-foreground">
-              暂无菜单权限
+              暂无权限
             </div>
           )}
         </div>
@@ -250,10 +260,16 @@ function MenuTreeItem({
           variant="ghost"
           size="icon-xs"
           disabled={!hasChildren}
-          aria-label={expanded ? "收起菜单" : "展开菜单"}
+          aria-label={expanded ? "收起权限节点" : "展开权限节点"}
           onClick={() => onToggleExpanded(node.menu.menu_id)}
         >
-          {hasChildren ? expanded ? <ChevronDownIcon /> : <ChevronRightIcon /> : null}
+          {hasChildren ? (
+            expanded ? (
+              <ChevronDownIcon />
+            ) : (
+              <ChevronRightIcon />
+            )
+          ) : null}
         </Button>
         <Checkbox
           id={inputId}
