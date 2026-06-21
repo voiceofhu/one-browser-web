@@ -25,23 +25,20 @@ type MenuTreeNode = {
 type RoleMenuPermissionTreeProps = {
   value: number[]
   roleId?: number
-  linked: boolean
   disabled: boolean
   invalid: boolean
   onChange: (menuIds: number[]) => void
-  onLinkedChange: (linked: boolean) => void
 }
 
 export function RoleMenuPermissionTree({
   value,
   roleId,
-  linked,
   disabled,
   invalid,
   onChange,
-  onLinkedChange,
 }: RoleMenuPermissionTreeProps) {
   const [expandedIds, setExpandedIds] = React.useState<Set<number>>(new Set())
+  const [linked, setLinked] = React.useState(true)
   const menusQuery = useQuery({
     queryKey: [...systemQueryKeys.menus, "permission-tree"],
     queryFn: () => listMenus({ page: 1, page_size: 1_000 }),
@@ -101,7 +98,7 @@ export function RoleMenuPermissionTree({
   }
 
   function toggleLinked(checked: boolean) {
-    onLinkedChange(checked)
+    setLinked(checked)
     if (checked) {
       updateSelection(normalizeLinkedSelection(selectedIds, tree, parentById))
     }

@@ -3,16 +3,13 @@ import { Command as CommandPrimitive } from "cmdk"
 
 import { cn } from "@/lib/utils"
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import {
-  InputGroup,
-  InputGroupAddon,
-} from "@/components/ui/input-group"
+  ResponsiveDialog,
+  ResponsiveDialogContent,
+  ResponsiveDialogDescription,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+} from "@/components/ui/responsive-dialog"
+import { InputGroup, InputGroupAddon } from "@/components/ui/input-group"
 import { SearchIcon, CheckIcon } from "lucide-react"
 
 function Command({
@@ -38,28 +35,30 @@ function CommandDialog({
   className,
   showCloseButton = false,
   ...props
-}: React.ComponentProps<typeof Dialog> & {
+}: React.ComponentProps<typeof ResponsiveDialog> & {
   title?: string
   description?: string
   className?: string
   showCloseButton?: boolean
 }) {
   return (
-    <Dialog {...props}>
-      <DialogHeader className="sr-only">
-        <DialogTitle>{title}</DialogTitle>
-        <DialogDescription>{description}</DialogDescription>
-      </DialogHeader>
-      <DialogContent
+    <ResponsiveDialog {...props}>
+      <ResponsiveDialogContent
         className={cn(
-          "top-1/3 translate-y-0 overflow-hidden rounded-xl! p-0",
+          "overflow-hidden rounded-xl! p-0 md:top-1/3 md:translate-y-0",
           className
         )}
         showCloseButton={showCloseButton}
       >
+        <ResponsiveDialogHeader className="sr-only">
+          <ResponsiveDialogTitle>{title}</ResponsiveDialogTitle>
+          <ResponsiveDialogDescription>
+            {description}
+          </ResponsiveDialogDescription>
+        </ResponsiveDialogHeader>
         {children}
-      </DialogContent>
-    </Dialog>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   )
 }
 

@@ -3,12 +3,10 @@ import { NavLink } from "react-router"
 
 import { NavMain } from "@/layout/components/nav-main"
 import { NavUser } from "@/layout/components/nav-user"
-import type { CurrentUser } from "@/types/admin"
-import {
-  APP_ROUTE_BY_ID,
-  APP_ROUTE_GROUPS,
-  type AppRouteId,
-} from "@/router/routes"
+import { routeIcons } from "@/layout/components/route-icons"
+import type { AuthPermissions, CurrentUser } from "@/types/admin"
+import { getAuthorizedRouteGroups } from "@/router/access"
+import { APP_ROUTE_BY_ID, type AppRouteId } from "@/router/routes"
 import {
   Sidebar,
   SidebarContent,
@@ -18,45 +16,22 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import {
-  BookOpenTextIcon,
-  Building2Icon,
-  ClipboardListIcon,
-  FileBadgeIcon,
-  FileClockIcon,
-  KeyRoundIcon,
-  LayoutDashboardIcon,
-  ServerCogIcon,
-  ShieldIcon,
-  UsersIcon,
-} from "lucide-react"
 
 type AppSidebarProps = React.ComponentProps<typeof Sidebar> & {
   activeRoute: AppRouteId
   currentUser?: CurrentUser
+  authPermissions?: AuthPermissions
   onLogout?: () => void
-}
-
-const routeIcons: Record<AppRouteId, React.ReactNode> = {
-  overview: <LayoutDashboardIcon />,
-  users: <UsersIcon />,
-  roles: <ShieldIcon />,
-  menus: <KeyRoundIcon />,
-  depts: <Building2Icon />,
-  posts: <FileBadgeIcon />,
-  dict: <BookOpenTextIcon />,
-  "operation-logs": <ClipboardListIcon />,
-  "login-logs": <FileClockIcon />,
-  health: <ServerCogIcon />,
 }
 
 export function AppSidebar({
   activeRoute,
   currentUser,
+  authPermissions,
   onLogout,
   ...props
 }: AppSidebarProps) {
-  const navGroups = APP_ROUTE_GROUPS.map((group) => ({
+  const navGroups = getAuthorizedRouteGroups(authPermissions).map((group) => ({
     label: group.label,
     showLabel: group.routes[0] === "overview" ? false : undefined,
     items: group.routes.map((routeId) => {

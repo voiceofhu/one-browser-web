@@ -11,13 +11,13 @@ import {
 
 import { Button } from "@/components/ui/button"
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
+  ResponsiveDialog,
+  ResponsiveDialogContent,
+  ResponsiveDialogDescription,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogTrigger,
+} from "@/components/ui/responsive-dialog"
 import {
   Empty,
   EmptyDescription,
@@ -100,8 +100,8 @@ export function MenuIconSelect({
   }
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
+    <ResponsiveDialog open={open} onOpenChange={handleOpenChange}>
+      <ResponsiveDialogTrigger asChild>
         <Button
           id={controlId}
           type="button"
@@ -117,14 +117,16 @@ export function MenuIconSelect({
           </span>
           <ChevronsUpDownIcon data-icon="inline-end" />
         </Button>
-      </DialogTrigger>
-      <DialogContent className="gap-3 p-3 sm:max-w-4xl">
-        <DialogHeader className="gap-1 pr-8">
-          <DialogTitle className="text-base">选择菜单图标</DialogTitle>
-          <DialogDescription className="text-xs">
+      </ResponsiveDialogTrigger>
+      <ResponsiveDialogContent className="gap-3 p-3 sm:max-w-4xl">
+        <ResponsiveDialogHeader className="gap-1 pr-8">
+          <ResponsiveDialogTitle className="text-base">
+            选择菜单图标
+          </ResponsiveDialogTitle>
+          <ResponsiveDialogDescription className="text-xs">
             当前：{selectedOption.label}（{selectedOption.value}）
-          </DialogDescription>
-        </DialogHeader>
+          </ResponsiveDialogDescription>
+        </ResponsiveDialogHeader>
 
         <div className="flex flex-col gap-2.5">
           <div className="relative">
@@ -225,8 +227,8 @@ export function MenuIconSelect({
             </div>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   )
 }
 

@@ -1,52 +1,24 @@
-import { Link } from "react-router"
+import type * as React from "react"
 
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { ThemeToggleButton } from "@/components/theme/theme-toggle-button"
 import { NotificationDrawer } from "@/layout/components/notification-drawer"
 
 type SiteHeaderProps = {
-  title: string
+  children: React.ReactNode
 }
 
-export function SiteHeader({ title }: SiteHeaderProps) {
+export function SiteHeader({ children }: SiteHeaderProps) {
   return (
     <header className="flex h-(--header-height) shrink-0 items-center border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
-      <div className="flex w-full items-center gap-3 px-4 lg:px-6">
-        <SidebarTrigger className="-ml-1" />
-        <div className="h-8 w-px shrink-0 bg-border" aria-hidden="true" />
-        <div className="min-w-0 flex-1">
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                {title === "首页" ? (
-                  <BreadcrumbPage>首页</BreadcrumbPage>
-                ) : (
-                  <BreadcrumbLink asChild>
-                    <Link to="/">首页</Link>
-                  </BreadcrumbLink>
-                )}
-              </BreadcrumbItem>
-              {title === "首页" ? null : (
-                <>
-                  <BreadcrumbSeparator />
-                  <BreadcrumbItem>
-                    <BreadcrumbPage>{title}</BreadcrumbPage>
-                  </BreadcrumbItem>
-                </>
-              )}
-            </BreadcrumbList>
-          </Breadcrumb>
+      <div className="flex h-full w-full min-w-0 items-center px-3 lg:px-4">
+        <SidebarTrigger className="mr-2 -ml-1" />
+        <div className="h-full w-px shrink-0 bg-border" aria-hidden="true" />
+        <div className="h-full min-w-0 flex-1">{children}</div>
+        <div className="ml-2 flex h-full shrink-0 items-center gap-1.5">
+          <NotificationDrawer />
+          <ThemeToggleButton />
         </div>
-        <NotificationDrawer />
-        <ThemeToggleButton />
       </div>
     </header>
   )

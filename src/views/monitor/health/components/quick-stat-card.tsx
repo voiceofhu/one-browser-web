@@ -8,7 +8,8 @@ import { cn } from "@/lib/utils"
 
 import { clampPercent } from "../lib/format"
 
-const monitorCardClass = "bg-muted/35 py-0 shadow-none ring-0"
+const monitorCardClass =
+  "border bg-muted/35 py-0 shadow-none ring-0 lg:border-0"
 
 export type QuickStatCardProps = {
   icon: LucideIcon

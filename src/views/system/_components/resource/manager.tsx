@@ -16,6 +16,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Spinner } from "@/components/ui/spinner"
+import { useAuthPermissions } from "@/hooks/use-auth"
+import { hasPermission } from "@/lib/auth-permissions"
 
 import type { DashboardResourceConfig } from "./configs"
 import type { ResourceFormValues } from "./form"
@@ -62,6 +64,7 @@ export function ResourceManager<TData>({
   renderInlineRowActions,
 }: ResourceManagerProps<TData>) {
   const queryClient = useQueryClient()
+  const authPermissions = useAuthPermissions()
   const [search, setSearch] = React.useState("")
   const debouncedSearch = useDebouncedValue(search, 300)
   const [statusFilter, setStatusFilter] =
@@ -121,6 +124,8 @@ export function ResourceManager<TData>({
   const [assigningRoleRecord, setAssigningRoleRecord] =
     React.useState<TData | null>(null)
   const [isManualRefreshing, setIsManualRefreshing] = React.useState(false)
+  const allowDeleteDialogCloseRef = React.useRef(false)
+  const allowBulkDeleteDialogCloseRef = React.useRef(false)
 
   const createMutation = useMutation({
     mutationFn: (values: ResourceFormValues) => config.create(values),
@@ -219,25 +224,59 @@ export function ResourceManager<TData>({
   })
   const reorderMutation = useResourceReorder(config)
 
-  const editorValues = React.useMemo(
-    () => {
-      if (editor?.mode === "edit") {
-        return config.getEditValues(editor.record)
-      }
+  const editorValues = React.useMemo(() => {
+    if (editor?.mode === "edit") {
+      return config.getEditValues(editor.record)
+    }
 
-      if (editor?.mode === "create" && editor.values) {
-        return editor.values
-      }
+    if (editor?.mode === "create" && editor.values) {
+      return editor.values
+    }
 
-      return config.getDefaultValues()
-    },
-    [config, editor]
-  )
+    return config.getDefaultValues()
+  }, [config, editor])
   const isSubmitting = createMutation.isPending || updateMutation.isPending
   const editorMode = editor?.mode ?? "create"
   const hasActiveFilters =
     search.trim().length > 0 ||
     Boolean(config.statusFilters && statusFilter !== "all")
+  const actionPermissions = config.permissions
+  const canCreate = hasPermission(
+    authPermissions.data,
+    actionPermissions?.create
+  )
+  const canUpdate = hasPermission(
+    authPermissions.data,
+    actionPermissions?.update
+  )
+  const canDelete = hasPermission(
+    authPermissions.data,
+    actionPermissions?.delete
+  )
+  const canCreateChild =
+    Boolean(config.getChildCreateValues) &&
+    hasPermission(
+      authPermissions.data,
+      actionPermissions?.createChild ?? actionPermissions?.create
+    )
+  const canReorder = hasPermission(
+    authPermissions.data,
+    actionPermissions?.reorder
+  )
+  const canResetPassword =
+    Boolean(config.userActions) &&
+    hasPermission(authPermissions.data, actionPermissions?.resetPassword)
+  const canAssignRoles =
+    Boolean(config.userActions) &&
+    hasPermission(authPermissions.data, actionPermissions?.assignRoles)
+  const canShowRowActions = Boolean(
+    renderInlineRowActions ||
+    canUpdate ||
+    canDelete ||
+    canCreateChild ||
+    canResetPassword ||
+    canAssignRoles
+  )
 
   function handleCreate(values?: ResourceFormValues) {
     setEditor(values ? { mode: "create", values } : { mode: "create" })
@@ -301,20 +340,25 @@ export function ResourceManager<TData>({
         searchPlaceholder={`搜索${config.noun}...`}
         emptyTitle={`暂无${config.noun}`}
         emptyDescription={`还没有任何${config.noun}，快来新增一个${config.noun}吧。`}
-        emptyActionLabel={`新增${config.noun}`}
-        onEmptyAction={handleCreate}
+        emptyActionLabel={canCreate ? `新增${config.noun}` : undefined}
+        onEmptyAction={canCreate ? handleCreate : undefined}
         isFiltered={hasActiveFilters}
         getRowId={(row, index) => String(config.getId(row) || index)}
         getSubRows={treeConfig ? getResourceTreeSubRows : undefined}
         treeColumnId={treeConfig?.columnId}
-        getRowCanSelect={(row) => config.isProtected?.(row) !== true}
-        onBulkDelete={(records, clearSelection) =>
-          setBulkDeletingState({ records, clearSelection })
+        getRowCanSelect={(row) =>
+          canDelete && config.isProtected?.(row) !== true
+        }
+        onBulkDelete={
+          canDelete
+            ? (records, clearSelection) =>
+                setBulkDeletingState({ records, clearSelection })
+            : undefined
         }
         isBulkDeleting={bulkDeleteMutation.isPending}
         isRowReordering={reorderMutation.isPending}
         onRowReorder={
-          config.reorder
+          config.reorder && canReorder
             ? (payload) => reorderMutation.mutate(payload)
             : undefined
         }
@@ -324,45 +368,52 @@ export function ResourceManager<TData>({
           <ResourceToolbarActions
             isRefreshing={isManualRefreshing}
             onRefresh={handleRefresh}
-            onCreate={handleCreate}
+            onCreate={canCreate ? handleCreate : undefined}
           />
         }
-        renderRowActions={(record) => {
-          const isProtected = config.isProtected?.(record) === true
-          const childCreateValues = config.getChildCreateValues?.(record) ?? null
+        renderRowActions={
+          canShowRowActions
+            ? (record) => {
+                const isProtected = config.isProtected?.(record) === true
+                const childCreateValues =
+                  config.getChildCreateValues?.(record) ?? null
 
-          return (
-            <div className="flex items-center justify-end gap-1">
-              {renderInlineRowActions?.(record)}
-              <RowActions
-                noun={config.noun}
-                onEdit={
-                  isProtected
-                    ? undefined
-                    : () => setEditor({ mode: "edit", record })
-                }
-                onDelete={
-                  isProtected ? undefined : () => setDeletingRecord(record)
-                }
-                onCreateChild={
-                  childCreateValues && !isProtected
-                    ? () => handleCreate(childCreateValues)
-                    : undefined
-                }
-                onResetPassword={
-                  config.userActions
-                    ? () => setResettingRecord(record)
-                    : undefined
-                }
-                onAssignRoles={
-                  config.userActions && !isProtected
-                    ? () => setAssigningRoleRecord(record)
-                    : undefined
-                }
-              />
-            </div>
-          )
-        }}
+                return (
+                  <div className="flex items-center justify-end gap-1">
+                    {renderInlineRowActions?.(record)}
+                    <RowActions
+                      noun={config.noun}
+                      onEdit={
+                        canUpdate && !isProtected
+                          ? () => setEditor({ mode: "edit", record })
+                          : undefined
+                      }
+                      onDelete={
+                        canDelete && !isProtected
+                          ? () => setDeletingRecord(record)
+                          : undefined
+                      }
+                      onCreateChild={
+                        canCreateChild && childCreateValues && !isProtected
+                          ? () => handleCreate(childCreateValues)
+                          : undefined
+                      }
+                      onResetPassword={
+                        config.userActions && canResetPassword
+                          ? () => setResettingRecord(record)
+                          : undefined
+                      }
+                      onAssignRoles={
+                        config.userActions && canAssignRoles && !isProtected
+                          ? () => setAssigningRoleRecord(record)
+                          : undefined
+                      }
+                    />
+                  </div>
+                )
+              }
+            : undefined
+        }
       />
 
       <ResourceEditorDialog
@@ -394,7 +445,13 @@ export function ResourceManager<TData>({
       <AlertDialog
         open={Boolean(deletingRecord)}
         onOpenChange={(open) => {
-          if (!open && !deleteMutation.isPending) {
+          if (open) {
+            allowDeleteDialogCloseRef.current = false
+            return
+          }
+
+          if (!deleteMutation.isPending && allowDeleteDialogCloseRef.current) {
+            allowDeleteDialogCloseRef.current = false
             setDeletingRecord(null)
           }
         }}
@@ -411,7 +468,12 @@ export function ResourceManager<TData>({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteMutation.isPending}>
+            <AlertDialogCancel
+              disabled={deleteMutation.isPending}
+              onClick={() => {
+                allowDeleteDialogCloseRef.current = true
+              }}
+            >
               取消
             </AlertDialogCancel>
             <AlertDialogAction
@@ -436,7 +498,16 @@ export function ResourceManager<TData>({
       <AlertDialog
         open={Boolean(bulkDeletingState)}
         onOpenChange={(open) => {
-          if (!open && !bulkDeleteMutation.isPending) {
+          if (open) {
+            allowBulkDeleteDialogCloseRef.current = false
+            return
+          }
+
+          if (
+            !bulkDeleteMutation.isPending &&
+            allowBulkDeleteDialogCloseRef.current
+          ) {
+            allowBulkDeleteDialogCloseRef.current = false
             setBulkDeletingState(null)
           }
         }}
@@ -453,7 +524,12 @@ export function ResourceManager<TData>({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={bulkDeleteMutation.isPending}>
+            <AlertDialogCancel
+              disabled={bulkDeleteMutation.isPending}
+              onClick={() => {
+                allowBulkDeleteDialogCloseRef.current = true
+              }}
+            >
               取消
             </AlertDialogCancel>
             <AlertDialogAction

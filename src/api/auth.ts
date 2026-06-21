@@ -1,10 +1,34 @@
 import { http } from "@/lib/request"
 
-import type { CurrentUserEnvelope, LoginResponse } from "@/types/admin"
+import type {
+  AuthPermissions,
+  CurrentUserEnvelope,
+  LoginResponse,
+  SexFlag,
+} from "@/types/admin"
+
+export type UpdateCurrentUserProfilePayload = {
+  nick_name: string
+  email: string
+  phone_number: string
+  sex: SexFlag
+  avatar: string
+}
 
 export async function getCurrentUser() {
   const response = await http.get<CurrentUserEnvelope>("/auth/me")
   return response.user
+}
+
+export async function updateCurrentUserProfile(
+  payload: UpdateCurrentUserProfilePayload
+) {
+  const response = await http.put<CurrentUserEnvelope>("/auth/me", payload)
+  return response.user
+}
+
+export function getAuthPermissions() {
+  return http.get<AuthPermissions>("/auth/permissions")
 }
 
 export function login(payload: { username: string; password: string }) {

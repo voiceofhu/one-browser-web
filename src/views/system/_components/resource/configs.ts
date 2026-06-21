@@ -58,7 +58,6 @@ import {
   userColumns,
 } from "./columns"
 import {
-  booleanPayload,
   defaultValues,
   deptSchema,
   dictDataSchema,
@@ -112,11 +111,22 @@ export type DashboardResourceConfig<TData> = {
   tree?: ResourceTreeConfig<TData>
   isProtected?: (record: TData) => boolean
   statusFilters?: readonly ResourceStatusFilterOption[]
+  permissions?: ResourceActionPermissions
   userActions?: {
     getRoleIds: (record: TData) => Promise<number[]>
     setRoleIds: (record: TData, roleIds: number[]) => Promise<void>
     resetPassword: (record: TData, password: string) => Promise<void>
   }
+}
+
+export type ResourceActionPermissions = {
+  create?: string
+  update?: string
+  delete?: string
+  createChild?: string
+  reorder?: string
+  resetPassword?: string
+  assignRoles?: string
 }
 
 export type ResourceReorderPayload<TData> = {
@@ -137,6 +147,13 @@ export const RESOURCE_CONFIGS = {
     noun: "用户",
     list: listUsers,
     statusFilters: STATUS_FILTERS,
+    permissions: {
+      create: "system:user:create",
+      update: "system:user:update",
+      delete: "system:user:delete",
+      resetPassword: "system:user:reset-password",
+      assignRoles: "system:user:assign-role",
+    },
     columns: userColumns,
     getId: (record) => record.user_id,
     getName: (record) => record.user_name || record.nick_name,
@@ -174,6 +191,11 @@ export const RESOURCE_CONFIGS = {
     noun: "角色",
     list: listRoles,
     statusFilters: STATUS_FILTERS,
+    permissions: {
+      create: "system:role:create",
+      update: "system:role:update",
+      delete: "system:role:delete",
+    },
     columns: roleColumns,
     getId: (record) => record.role_id,
     getName: (record) => record.role_name,
@@ -198,6 +220,12 @@ export const RESOURCE_CONFIGS = {
     noun: "权限",
     list: listMenus,
     statusFilters: STATUS_FILTERS,
+    permissions: {
+      create: "system:menu:create",
+      update: "system:menu:update",
+      delete: "system:menu:delete",
+      createChild: "system:menu:create",
+    },
     columns: menuColumns,
     getId: (record) => record.menu_id,
     getName: (record) => record.menu_name,
@@ -221,6 +249,12 @@ export const RESOURCE_CONFIGS = {
     noun: "部门",
     list: listDepts,
     statusFilters: STATUS_FILTERS,
+    permissions: {
+      create: "system:dept:create",
+      update: "system:dept:update",
+      delete: "system:dept:delete",
+      reorder: "system:dept:order",
+    },
     columns: deptColumns,
     getId: (record) => record.dept_id,
     getName: (record) => record.dept_name,
@@ -244,6 +278,11 @@ export const RESOURCE_CONFIGS = {
     noun: "岗位",
     list: listPosts,
     statusFilters: STATUS_FILTERS,
+    permissions: {
+      create: "system:post:create",
+      update: "system:post:update",
+      delete: "system:post:delete",
+    },
     columns: postColumns,
     defaultColumnVisibility: {
       post_code: false,
@@ -264,6 +303,11 @@ export const RESOURCE_CONFIGS = {
     noun: "字典类型",
     list: listDictTypes,
     statusFilters: STATUS_FILTERS,
+    permissions: {
+      create: "system:dict:create",
+      update: "system:dict:update",
+      delete: "system:dict:delete",
+    },
     columns: dictTypeColumns,
     getId: (record) => record.dict_id,
     getName: (record) => record.dict_name,
@@ -281,6 +325,11 @@ export const RESOURCE_CONFIGS = {
     noun: "字典数据",
     list: listDictData,
     statusFilters: STATUS_FILTERS,
+    permissions: {
+      create: "system:dict:data:create",
+      update: "system:dict:data:update",
+      delete: "system:dict:data:delete",
+    },
     columns: dictDataColumns,
     getId: (record) => record.dict_code,
     getName: (record) => record.dict_label,
@@ -332,8 +381,6 @@ function rolePayload(values: ResourceFormValues) {
     role_key: textPayload(values, "role_key"),
     role_sort: numberPayload(values, "role_sort"),
     data_scope: textPayload(values, "data_scope", "1"),
-    menu_check_strictly: booleanPayload(values, "menu_check_strictly"),
-    dept_check_strictly: booleanPayload(values, "dept_check_strictly"),
     status: textPayload(values, "status", "0"),
     remark: nullableTextPayload(values, "remark"),
   }

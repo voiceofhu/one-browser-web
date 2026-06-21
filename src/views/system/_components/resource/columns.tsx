@@ -13,6 +13,8 @@ import { setRoleStatus } from "@/api/system/role"
 import { setUserStatus } from "@/api/system/user"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
+import { useAuthPermissions } from "@/hooks/use-auth"
+import { hasPermission } from "@/lib/auth-permissions"
 import { formatAbsoluteDateTime, formatRelativeTime } from "@/lib/datetime"
 import { systemQueryKeys } from "@/lib/query-keys"
 
@@ -81,16 +83,6 @@ export const roleColumns: ColumnDef<RoleResource>[] = [
     ),
     meta: { label: "数据范围" },
   },
-  booleanColumn("menu_check_strictly", "菜单联动", {
-    invert: true,
-    trueLabel: "联动",
-    falseLabel: "独立",
-  }),
-  booleanColumn("dept_check_strictly", "部门联动", {
-    invert: true,
-    trueLabel: "联动",
-    falseLabel: "独立",
-  }),
   {
     accessorKey: "status",
     header: ({ column }) => tableHeader(column, "状态"),
@@ -121,7 +113,6 @@ export const menuColumns: ColumnDef<MenuResource>[] = [
 
 export const deptColumns: ColumnDef<DeptResource>[] = [
   textColumn("dept_name", "部门名称", "min-w-72 max-w-96"),
-  numberColumn("order_num", "排序"),
   textColumn("leader", "负责人"),
   textColumn("phone", "电话"),
   textColumn("email", "邮箱"),
@@ -235,32 +226,6 @@ function statusColumn<
   }
 }
 
-function booleanColumn<TData, TKey extends keyof TData & string>(
-  key: TKey,
-  label: string,
-  options?: {
-    invert?: boolean
-    trueLabel?: string
-    falseLabel?: string
-  }
-): ColumnDef<TData> {
-  return {
-    accessorKey: key,
-    header: ({ column }) => tableHeader(column, label),
-    cell: ({ getValue }) => {
-      const rawValue = getValue<boolean>()
-      const value = options?.invert ? !rawValue : rawValue
-
-      return (
-        <Badge variant={value ? "secondary" : "outline"}>
-          {value ? (options?.trueLabel ?? "是") : (options?.falseLabel ?? "否")}
-        </Badge>
-      )
-    },
-    meta: { label },
-  }
-}
-
 function yesNoColumn<
   TData extends Record<TKey, YesNoFlag>,
   TKey extends keyof TData & string,
@@ -310,6 +275,7 @@ function MenuNameCell({ menu }: { menu: MenuResource }) {
 
 function UserStatusSwitch({ user }: { user: UserResource }) {
   const queryClient = useQueryClient()
+  const authPermissions = useAuthPermissions()
   const mutation = useMutation({
     mutationFn: (status: StatusFlag) => setUserStatus(user.user_id, status),
     onSuccess: async (updatedUser) => {
@@ -329,12 +295,16 @@ function UserStatusSwitch({ user }: { user: UserResource }) {
   const enabled = mutation.isPending
     ? mutation.variables === "0"
     : user.status === "0"
+  const canChangeStatus = hasPermission(
+    authPermissions.data,
+    "system:user:status"
+  )
 
   return (
     <div className="flex items-center gap-2">
       <Switch
         checked={enabled}
-        disabled={user.is_super_admin || mutation.isPending}
+        disabled={!canChangeStatus || user.is_super_admin || mutation.isPending}
         aria-label={`${enabled ? "停用" : "启用"}用户 ${
           user.nick_name || user.user_name
         }`}
@@ -349,6 +319,7 @@ function UserStatusSwitch({ user }: { user: UserResource }) {
 
 function RoleStatusSwitch({ role }: { role: RoleResource }) {
   const queryClient = useQueryClient()
+  const authPermissions = useAuthPermissions()
   const mutation = useMutation({
     mutationFn: (status: StatusFlag) => setRoleStatus(role, status),
     onSuccess: async (updatedRole) => {
@@ -368,12 +339,16 @@ function RoleStatusSwitch({ role }: { role: RoleResource }) {
   const enabled = mutation.isPending
     ? mutation.variables === "0"
     : role.status === "0"
+  const canChangeStatus = hasPermission(
+    authPermissions.data,
+    "system:role:status"
+  )
 
   return (
     <div className="flex items-center gap-2">
       <Switch
         checked={enabled}
-        disabled={mutation.isPending}
+        disabled={!canChangeStatus || mutation.isPending}
         aria-label={`${enabled ? "停用" : "启用"}角色 ${role.role_name}`}
         onCheckedChange={(checked) => mutation.mutate(checked ? "0" : "1")}
       />
@@ -386,6 +361,7 @@ function RoleStatusSwitch({ role }: { role: RoleResource }) {
 
 function MenuStatusSwitch({ menu }: { menu: MenuResource }) {
   const queryClient = useQueryClient()
+  const authPermissions = useAuthPermissions()
   const mutation = useMutation({
     mutationFn: (status: StatusFlag) => setMenuStatus(menu, status),
     onSuccess: async (updatedMenu) => {
@@ -405,12 +381,16 @@ function MenuStatusSwitch({ menu }: { menu: MenuResource }) {
   const enabled = mutation.isPending
     ? mutation.variables === "0"
     : menu.status === "0"
+  const canChangeStatus = hasPermission(
+    authPermissions.data,
+    "system:menu:status"
+  )
 
   return (
     <div className="flex items-center gap-2">
       <Switch
         checked={enabled}
-        disabled={mutation.isPending}
+        disabled={!canChangeStatus || mutation.isPending}
         aria-label={`${enabled ? "停用" : "启用"}权限 ${menu.menu_name}`}
         onCheckedChange={(checked) => mutation.mutate(checked ? "0" : "1")}
       />
@@ -423,6 +403,7 @@ function MenuStatusSwitch({ menu }: { menu: MenuResource }) {
 
 function DeptStatusSwitch({ dept }: { dept: DeptResource }) {
   const queryClient = useQueryClient()
+  const authPermissions = useAuthPermissions()
   const mutation = useMutation({
     mutationFn: (status: StatusFlag) => setDeptStatus(dept, status),
     onSuccess: async (updatedDept) => {
@@ -442,12 +423,16 @@ function DeptStatusSwitch({ dept }: { dept: DeptResource }) {
   const enabled = mutation.isPending
     ? mutation.variables === "0"
     : dept.status === "0"
+  const canChangeStatus = hasPermission(
+    authPermissions.data,
+    "system:dept:status"
+  )
 
   return (
     <div className="flex items-center gap-2">
       <Switch
         checked={enabled}
-        disabled={mutation.isPending}
+        disabled={!canChangeStatus || mutation.isPending}
         aria-label={`${enabled ? "停用" : "设为正常"}部门 ${dept.dept_name}`}
         onCheckedChange={(checked) => mutation.mutate(checked ? "0" : "1")}
       />
@@ -460,6 +445,7 @@ function DeptStatusSwitch({ dept }: { dept: DeptResource }) {
 
 function PostStatusSwitch({ post }: { post: PostResource }) {
   const queryClient = useQueryClient()
+  const authPermissions = useAuthPermissions()
   const mutation = useMutation({
     mutationFn: (status: StatusFlag) => setPostStatus(post, status),
     onSuccess: async (updatedPost) => {
@@ -479,12 +465,16 @@ function PostStatusSwitch({ post }: { post: PostResource }) {
   const enabled = mutation.isPending
     ? mutation.variables === "0"
     : post.status === "0"
+  const canChangeStatus = hasPermission(
+    authPermissions.data,
+    "system:post:status"
+  )
 
   return (
     <div className="flex items-center gap-2">
       <Switch
         checked={enabled}
-        disabled={mutation.isPending}
+        disabled={!canChangeStatus || mutation.isPending}
         aria-label={`${enabled ? "停用" : "启用"}岗位 ${post.post_name}`}
         onCheckedChange={(checked) => mutation.mutate(checked ? "0" : "1")}
       />
@@ -497,6 +487,7 @@ function PostStatusSwitch({ post }: { post: PostResource }) {
 
 function DictTypeStatusSwitch({ dictType }: { dictType: DictTypeResource }) {
   const queryClient = useQueryClient()
+  const authPermissions = useAuthPermissions()
   const mutation = useMutation({
     mutationFn: (status: StatusFlag) => setDictTypeStatus(dictType, status),
     onSuccess: async (updatedDictType) => {
@@ -518,12 +509,16 @@ function DictTypeStatusSwitch({ dictType }: { dictType: DictTypeResource }) {
   const enabled = mutation.isPending
     ? mutation.variables === "0"
     : dictType.status === "0"
+  const canChangeStatus = hasPermission(
+    authPermissions.data,
+    "system:dict:status"
+  )
 
   return (
     <div className="flex items-center gap-2">
       <Switch
         checked={enabled}
-        disabled={mutation.isPending}
+        disabled={!canChangeStatus || mutation.isPending}
         aria-label={`${enabled ? "停用" : "启用"}字典类型 ${
           dictType.dict_name
         }`}

@@ -23,6 +23,7 @@ type LogTableProps<TData> = {
   statusFilterLabel: string
   columnVisibilityResetKey: React.Key
   defaultColumnVisibility?: Record<string, boolean>
+  renderRowActions?: (record: TData) => React.ReactNode
 }
 
 const LOG_STATUS_FILTERS = [
@@ -42,6 +43,7 @@ export function LogTable<TData>({
   statusFilterLabel,
   columnVisibilityResetKey,
   defaultColumnVisibility,
+  renderRowActions,
 }: LogTableProps<TData>) {
   const [search, setSearch] = React.useState("")
   const debouncedSearch = useDebouncedValue(search, 300)
@@ -49,15 +51,21 @@ export function LogTable<TData>({
     React.useState<ResourceStatusFilterValue>("all")
   const [pageIndex, setPageIndex] = React.useState(0)
   const [pageSize, setPageSize] = React.useState(10)
-  const params = React.useMemo(
-    () => ({
+  const params = React.useMemo(() => {
+    const nextParams: ListParams = {
       page: pageIndex + 1,
       page_size: pageSize,
-      keyword: debouncedSearch || undefined,
-      status: statusFilter === "all" ? undefined : statusFilter,
-    }),
-    [debouncedSearch, pageIndex, pageSize, statusFilter]
-  )
+    }
+
+    if (debouncedSearch) {
+      nextParams.keyword = debouncedSearch
+    }
+    if (statusFilter !== "all") {
+      nextParams.status = statusFilter
+    }
+
+    return nextParams
+  }, [debouncedSearch, pageIndex, pageSize, statusFilter])
   const listQueryKey = React.useMemo(
     () => [...queryKey, params] as const,
     [queryKey, params]
@@ -113,6 +121,7 @@ export function LogTable<TData>({
         isFiltered={hasActiveFilters}
         getRowId={getRowId}
         selectionResetKey={`${statusFilter}:${debouncedSearch}`}
+        renderRowActions={renderRowActions}
       />
     </div>
   )

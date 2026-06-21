@@ -17,12 +17,12 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+  ResponsiveDialog,
+  ResponsiveDialogContent,
+  ResponsiveDialogDescription,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+} from "@/components/ui/responsive-dialog"
 import { Spinner } from "@/components/ui/spinner"
 import { systemQueryKeys } from "@/lib/query-keys"
 import type { DictDataResource, DictTypeResource } from "@/types/admin"
@@ -186,7 +186,7 @@ export function DictDataListDialog({
   }
 
   return (
-    <Dialog
+    <ResponsiveDialog
       open={open}
       onOpenChange={(nextOpen) => {
         if (!nextOpen && (isSubmitting || deleteMutation.isPending)) {
@@ -199,15 +199,15 @@ export function DictDataListDialog({
         onOpenChange(nextOpen)
       }}
     >
-      <DialogContent className="max-h-[85vh] gap-0 overflow-hidden p-0 sm:max-w-6xl">
-        <DialogHeader className="border-b px-4 py-3 lg:px-6">
-          <DialogTitle>
+      <ResponsiveDialogContent className="max-h-[85vh] gap-0 overflow-hidden p-0 sm:max-w-6xl">
+        <ResponsiveDialogHeader className="border-b px-4 py-3 text-left lg:px-6">
+          <ResponsiveDialogTitle>
             {dictType ? `${dictType.dict_name} 字典列表` : "字典列表"}
-          </DialogTitle>
-          <DialogDescription>
+          </ResponsiveDialogTitle>
+          <ResponsiveDialogDescription>
             {dictType ? dictType.dict_type : "查看当前字典类型下的字典数据。"}
-          </DialogDescription>
-        </DialogHeader>
+          </ResponsiveDialogDescription>
+        </ResponsiveDialogHeader>
         <div className="flex min-h-[520px] flex-1 overflow-hidden">
           <ResourceTable
             data={query.data?.items ?? []}
@@ -329,7 +329,7 @@ export function DictDataListDialog({
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-      </DialogContent>
-    </Dialog>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   )
 }

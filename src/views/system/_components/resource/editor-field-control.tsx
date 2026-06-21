@@ -270,11 +270,16 @@ function renderControl({
 
   if (field.type === "radio") {
     const optionCount = field.options?.length ?? 0
+    const optionValues = field.options?.map((option) => option.value) ?? []
+    const rawValue = String(watch(field.name) ?? "")
+    const value = optionValues.includes(rawValue)
+      ? rawValue
+      : getRadioFallbackValue(field, optionValues)
 
     return (
       <RadioGroup
         id={controlId}
-        value={String(watch(field.name) ?? "")}
+        value={value}
         disabled={isDisabled}
         aria-invalid={invalid}
         className={cn(
@@ -400,23 +405,15 @@ function renderControl({
     const menuIds = Array.isArray(value)
       ? value.filter((item): item is number => typeof item === "number")
       : []
-    const linked = watch("menu_check_strictly") !== true
 
     return (
       <RoleMenuPermissionTree
         value={menuIds}
         roleId={mode === "edit" ? recordId : undefined}
-        linked={linked}
         disabled={isDisabled}
         invalid={invalid}
         onChange={(nextValue) =>
           setValue(field.name, nextValue, {
-            shouldDirty: true,
-            shouldValidate: true,
-          })
-        }
-        onLinkedChange={(nextLinked) =>
-          setValue("menu_check_strictly", !nextLinked, {
             shouldDirty: true,
             shouldValidate: true,
           })
@@ -544,6 +541,17 @@ function getDeptAncestors(parentDept: DeptResource | null) {
   return parentAncestors
     ? `${parentAncestors},${parentDept.dept_id}`
     : `0,${parentDept.dept_id}`
+}
+
+function getRadioFallbackValue(
+  field: ResourceField,
+  optionValues: string[]
+): string {
+  if (field.name === "sex" && optionValues.includes("2")) {
+    return "2"
+  }
+
+  return optionValues[0] ?? ""
 }
 
 function normalizeMenuType(value: unknown): MenuTypeFlag {

@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils"
 type ResourceToolbarActionsProps = {
   isRefreshing: boolean
   onRefresh: () => void
-  onCreate: () => void
+  onCreate?: () => void
 }
 
 export function ResourceToolbarActions({
@@ -31,10 +31,12 @@ export function ResourceToolbarActions({
         />
         刷新
       </Button>
-      <Button type="button" size="sm" onClick={onCreate}>
-        <PlusIcon data-icon="inline-start" />
-        新增
-      </Button>
+      {onCreate ? (
+        <Button type="button" size="sm" onClick={onCreate}>
+          <PlusIcon data-icon="inline-start" />
+          新增
+        </Button>
+      ) : null}
     </>
   )
 }

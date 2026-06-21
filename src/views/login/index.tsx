@@ -1,12 +1,10 @@
 import { useEffect } from "react"
-import { useQuery } from "@tanstack/react-query"
 import { Navigate, useNavigate, useSearchParams } from "react-router"
 import { toast } from "sonner"
 
 import { LoginForm } from "@/components/login-form"
-import { consumeAuthExpiredNotice, isUnauthorizedError } from "@/lib/request"
-import { getCurrentUser } from "@/api/auth"
-import { authQueryKeys, useLoginMutation } from "@/hooks/use-auth"
+import { consumeAuthExpiredNotice } from "@/lib/request"
+import { useCurrentUser, useLoginMutation } from "@/hooks/use-auth"
 
 function normalizeRedirect(value: string | null) {
   if (!value || !value.startsWith("/") || value.startsWith("//")) {
@@ -25,12 +23,7 @@ export default function LoginPage() {
   const [searchParams] = useSearchParams()
   const redirectTo = normalizeRedirect(searchParams.get("redirect"))
   const loginMutation = useLoginMutation()
-  const currentUser = useQuery({
-    queryKey: authQueryKeys.currentUser,
-    queryFn: getCurrentUser,
-    retry: (failureCount, error) =>
-      isUnauthorizedError(error) ? false : failureCount < 3,
-  })
+  const currentUser = useCurrentUser()
 
   useEffect(() => {
     if (consumeAuthExpiredNotice()) {

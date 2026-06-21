@@ -1,3 +1,5 @@
+import { NavLink } from "react-router"
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import type { CurrentUser } from "@/types/admin"
 import {
@@ -16,7 +18,6 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import {
-  BellIcon,
   CircleUserRoundIcon,
   EllipsisVerticalIcon,
   LogOutIcon,
@@ -83,13 +84,11 @@ export function NavUser({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <CircleUserRoundIcon />
-                账号
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <BellIcon />
-                通知
+              <DropdownMenuItem asChild>
+                <NavLink to="/account/profile">
+                  <CircleUserRoundIcon />
+                  账号设置
+                </NavLink>
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />

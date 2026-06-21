@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
-import { getCurrentUser, login, logout } from "@/api/auth"
+import { getAuthPermissions, getCurrentUser, login, logout } from "@/api/auth"
 import { authQueryKeys, systemQueryKeys } from "@/lib/query-keys"
 import { HttpError } from "@/lib/request"
 
@@ -22,13 +22,22 @@ export function useCurrentUser() {
   })
 }
 
+export function useAuthPermissions() {
+  return useQuery({
+    queryKey: authQueryKeys.permissions,
+    queryFn: getAuthPermissions,
+    retry: shouldRetryAuth,
+  })
+}
+
 export function useLoginMutation() {
   const queryClient = useQueryClient()
 
   return useMutation({
     mutationFn: login,
-    onSuccess: (response) => {
-      queryClient.setQueryData(authQueryKeys.currentUser, response.user)
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: authQueryKeys.currentUser })
+      queryClient.invalidateQueries({ queryKey: authQueryKeys.permissions })
     },
   })
 }

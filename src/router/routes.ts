@@ -9,6 +9,7 @@ export type AppRouteId =
   | "operation-logs"
   | "login-logs"
   | "health"
+  | "account"
 
 export interface AppRouteMeta {
   id: AppRouteId
@@ -91,6 +92,13 @@ export const APP_ROUTES: AppRouteMeta[] = [
     description: "查看应用、数据库和缓存的运行状态。",
     path: "/monitor/health",
   },
+  {
+    id: "account",
+    label: "个人账号",
+    title: "个人账号",
+    description: "管理当前登录账号的基础资料。",
+    path: "/account/profile",
+  },
 ]
 
 export const APP_ROUTE_GROUPS = [
@@ -156,6 +164,8 @@ export const LEGACY_ROUTE_REDIRECTS: Record<string, string> = {
   "/dashboard/system/log/login": "/system/log/login",
   "/dashboard/health": "/monitor/health",
   "/dashboard/monitor/health": "/monitor/health",
+  "/profile": "/account/profile",
+  "/account": "/account/profile",
 }
 
 export const STATUS_LABELS = {
@@ -166,7 +176,7 @@ export const STATUS_LABELS = {
 export const SEX_LABELS = {
   "0": "男",
   "1": "女",
-  "2": "未知",
+  "2": "不愿透露",
 } as const
 
 export const DATA_SCOPE_LABELS = {

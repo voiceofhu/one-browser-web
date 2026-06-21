@@ -2,10 +2,12 @@ import { lazy, Suspense } from "react"
 import { BrowserRouter, Navigate, Route, Routes } from "react-router"
 
 import { Spinner } from "@/components/ui/spinner"
+import { RouteProgressBar } from "@/layout/components/route-progress-bar"
 import { RequireAuth } from "@/router/guards/require-auth"
 import { LEGACY_ROUTE_REDIRECTS } from "@/router/routes"
 
 const AppLayout = lazy(() => import("@/layout"))
+const AccountProfilePage = lazy(() => import("@/views/account/profile"))
 const IndexPage = lazy(() => import("@/views/index"))
 const LoginPage = lazy(() => import("@/views/login"))
 const HealthPage = lazy(() => import("@/views/monitor/health"))
@@ -21,6 +23,7 @@ const LoginLogPage = lazy(() => import("@/views/system/log/login"))
 export function AppRouter() {
   return (
     <BrowserRouter basename={import.meta.env.VITE_BASE_URL}>
+      <RouteProgressBar />
       <Suspense fallback={<RouteLoading />}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
@@ -34,6 +37,7 @@ export function AppRouter() {
           >
             <Route index element={<Navigate to="/index" replace />} />
             <Route path="index" element={<IndexPage />} />
+            <Route path="account/profile" element={<AccountProfilePage />} />
             <Route path="system/user" element={<UserPage />} />
             <Route path="system/role" element={<RolePage />} />
             <Route path="system/menu" element={<MenuPage />} />

@@ -7,14 +7,14 @@ import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+  ResponsiveDialog,
+  ResponsiveDialogClose,
+  ResponsiveDialogContent,
+  ResponsiveDialogDescription,
+  ResponsiveDialogFooter,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+} from "@/components/ui/responsive-dialog"
 import {
   Field,
   FieldDescription,
@@ -67,15 +67,15 @@ export function ResetPasswordDialog<TData>({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+    <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
+      <ResponsiveDialogContent>
         <form className="grid gap-4" onSubmit={handleSubmit}>
-          <DialogHeader>
-            <DialogTitle>重置密码</DialogTitle>
-            <DialogDescription>
+          <ResponsiveDialogHeader>
+            <ResponsiveDialogTitle>重置密码</ResponsiveDialogTitle>
+            <ResponsiveDialogDescription>
               为“{record ? getName(record) : ""}”设置新的登录密码。
-            </DialogDescription>
-          </DialogHeader>
+            </ResponsiveDialogDescription>
+          </ResponsiveDialogHeader>
           <Field data-invalid={Boolean(error)}>
             <FieldLabel htmlFor="reset-user-password">新密码</FieldLabel>
             <div className="relative">
@@ -103,20 +103,20 @@ export function ResetPasswordDialog<TData>({
             <FieldDescription>至少 10 位，保存后立即生效。</FieldDescription>
             <FieldError>{error}</FieldError>
           </Field>
-          <DialogFooter>
-            <DialogClose asChild>
+          <ResponsiveDialogFooter>
+            <ResponsiveDialogClose asChild>
               <Button type="button" variant="outline" disabled={isSubmitting}>
                 取消
               </Button>
-            </DialogClose>
+            </ResponsiveDialogClose>
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? <Spinner data-icon="inline-start" /> : null}
               确认重置
             </Button>
-          </DialogFooter>
+          </ResponsiveDialogFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   )
 }
 
@@ -140,14 +140,14 @@ export function RoleAssignmentDialog<TData>({
   })
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>重新分配角色</DialogTitle>
-          <DialogDescription>
+    <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
+      <ResponsiveDialogContent>
+        <ResponsiveDialogHeader>
+          <ResponsiveDialogTitle>重新分配角色</ResponsiveDialogTitle>
+          <ResponsiveDialogDescription>
             调整“{record ? getName(record) : ""}”拥有的系统角色。
-          </DialogDescription>
-        </DialogHeader>
+          </ResponsiveDialogDescription>
+        </ResponsiveDialogHeader>
         {rolesQuery.isError ? (
           <div className="grid min-h-32 place-items-center gap-3 text-center">
             <FieldError>角色绑定加载失败，请稍后重试。</FieldError>
@@ -173,8 +173,8 @@ export function RoleAssignmentDialog<TData>({
             <Spinner />
           </div>
         )}
-      </DialogContent>
-    </Dialog>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   )
 }
 
@@ -215,17 +215,17 @@ function RoleAssignmentForm<TData>({
           onChange={setRoleIds}
         />
       </Field>
-      <DialogFooter>
-        <DialogClose asChild>
+      <ResponsiveDialogFooter>
+        <ResponsiveDialogClose asChild>
           <Button type="button" variant="outline" disabled={isSubmitting}>
             取消
           </Button>
-        </DialogClose>
+        </ResponsiveDialogClose>
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting ? <Spinner data-icon="inline-start" /> : null}
           保存角色
         </Button>
-      </DialogFooter>
+      </ResponsiveDialogFooter>
     </form>
   )
 }

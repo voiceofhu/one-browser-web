@@ -11,12 +11,36 @@ export interface CurrentUser {
   user_name: string
   nick_name: string
   email: string
+  phone_number: string
+  sex: SexFlag
   avatar: string
   user_type: string
 }
 
 export interface CurrentUserEnvelope {
   user: CurrentUser
+}
+
+export interface AuthPermissions {
+  roles: string[]
+  permissions: string[]
+  routes: AuthRoute[]
+}
+
+export interface AuthRoute {
+  id: number
+  parent_id: number | null
+  name: string
+  path: string
+  hidden: boolean
+  menu_type: MenuTypeFlag
+  meta: AuthRouteMeta
+  children?: AuthRoute[]
+}
+
+export interface AuthRouteMeta {
+  title: string
+  icon: string
 }
 
 export interface LoginResponse {
@@ -138,8 +162,6 @@ export interface RoleResource {
   role_key: string
   role_sort: number
   data_scope: DataScopeFlag
-  menu_check_strictly: boolean
-  dept_check_strictly: boolean
   status: StatusFlag
   created_at: string
   updated_at: string | null

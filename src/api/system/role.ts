@@ -29,8 +29,6 @@ export function setRoleStatus(role: RoleResource, status: StatusFlag) {
     role_key: role.role_key,
     role_sort: role.role_sort,
     data_scope: role.data_scope,
-    menu_check_strictly: role.menu_check_strictly,
-    dept_check_strictly: role.dept_check_strictly,
     status,
     remark: role.remark,
   })

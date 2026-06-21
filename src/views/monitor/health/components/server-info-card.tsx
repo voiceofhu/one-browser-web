@@ -8,6 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
+import { formatAbsoluteDateTime } from "@/lib/datetime"
 
 import type { HealthResponse } from "@/types/admin"
 
@@ -61,8 +62,8 @@ export function ServerInfoCard({
         />
         <InfoRow label="服务器开机时间" value={bootTime} />
         <InfoRow
-          label="当前时间"
-          value={formatDateTime(health?.server?.current_time)}
+          label="服务器时间"
+          value={formatAbsoluteDateTime(health?.server?.current_time)}
         />
       </CardContent>
     </Card>

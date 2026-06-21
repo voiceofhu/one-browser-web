@@ -13,14 +13,14 @@ import type { ZodType } from "zod"
 
 import { Button } from "@/components/ui/button"
 import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+  ResponsiveDialog,
+  ResponsiveDialogClose,
+  ResponsiveDialogContent,
+  ResponsiveDialogDescription,
+  ResponsiveDialogFooter,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+} from "@/components/ui/responsive-dialog"
 import { FieldGroup } from "@/components/ui/field"
 import { Spinner } from "@/components/ui/spinner"
 
@@ -121,9 +121,10 @@ export function ResourceEditorDialog({
     )
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
+    <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
+      <ResponsiveDialogContent
         className={cn("gap-4", isCompactForm ? "sm:max-w-md" : "sm:max-w-3xl")}
+        onInteractOutside={(event) => event.preventDefault()}
       >
         <form
           className="grid gap-3"
@@ -132,14 +133,14 @@ export function ResourceEditorDialog({
             handleInvalidSubmit
           )}
         >
-          <DialogHeader>
-            <DialogTitle>{title}</DialogTitle>
-            <DialogDescription>
+          <ResponsiveDialogHeader>
+            <ResponsiveDialogTitle>{title}</ResponsiveDialogTitle>
+            <ResponsiveDialogDescription>
               {mode === "create"
                 ? `填写信息后创建新的${noun}。`
                 : `修改${noun}信息并保存到后台。`}
-            </DialogDescription>
-          </DialogHeader>
+            </ResponsiveDialogDescription>
+          </ResponsiveDialogHeader>
 
           <FieldGroup
             className={cn(
@@ -163,8 +164,8 @@ export function ResourceEditorDialog({
             ))}
           </FieldGroup>
 
-          <DialogFooter>
-            <DialogClose asChild>
+          <ResponsiveDialogFooter>
+            <ResponsiveDialogClose asChild>
               <Button
                 type="button"
                 variant="outline"
@@ -172,15 +173,15 @@ export function ResourceEditorDialog({
               >
                 取消
               </Button>
-            </DialogClose>
+            </ResponsiveDialogClose>
             <Button type="submit" disabled={isSubmitting || isLoadingBinding}>
               {isSubmitting ? <Spinner data-icon="inline-start" /> : null}
               {mode === "create" ? "创建" : "保存"}
             </Button>
-          </DialogFooter>
+          </ResponsiveDialogFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   )
 }
 

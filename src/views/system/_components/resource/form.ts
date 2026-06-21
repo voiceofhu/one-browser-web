@@ -56,11 +56,19 @@ const requiredText = (label: string) =>
   z.string().trim().min(1, `${label}不能为空`)
 
 const optionalText = z.string().trim().optional()
-const optionalNullableNumber = z.number().int().nullable()
+const optionalNullableNumber = z
+  .number()
+  .int()
+  .nullish()
+  .transform((value) => value ?? null)
 const requiredNumber = z.number().int()
 
 const status = z.enum(["0", "1"])
 const sex = z.enum(["0", "1", "2"])
+const userSex = z.preprocess(
+  (value) => (["0", "1", "2"].includes(String(value)) ? value : "2"),
+  sex
+)
 const dataScope = z.enum(["1", "2", "3", "4", "5"])
 const menuType = z.enum(["M", "C", "F"])
 const visible = z.enum(["0", "1"])
@@ -73,7 +81,7 @@ export const statusOptions = options<StatusFlag>({
 export const sexOptions = options<SexFlag>({
   "0": "男",
   "1": "女",
-  "2": "未知",
+  "2": "不愿透露",
 })
 export const menuTypeOptions = options<MenuTypeFlag>({
   M: "目录",
@@ -103,9 +111,9 @@ const userBaseSchema = z.object({
       message: "邮箱格式不正确",
     }),
   phone_number: optionalText,
-  sex,
+  sex: userSex,
   avatar: optionalText,
-  status,
+  status: status.optional().default("0"),
   remark: optionalText,
 })
 
@@ -122,8 +130,6 @@ export const roleSchema = z.object({
   role_key: requiredText("权限标识").max(64, "权限标识不能超过 64 个字符"),
   role_sort: requiredNumber.optional().default(0),
   data_scope: dataScope.default("1"),
-  menu_check_strictly: z.boolean().default(false),
-  dept_check_strictly: z.boolean().default(false),
   menu_ids: z.array(z.number().int()).default([]),
   status: status.optional().default("0"),
   remark: optionalText,
@@ -172,9 +178,9 @@ export const menuSchema = z
 
 export const deptSchema = z.object({
   parent_id: optionalNullableNumber,
-  ancestors: optionalText,
+  ancestors: optionalText.default("0"),
   dept_name: requiredText("部门名称").max(64, "部门名称不能超过 64 个字符"),
-  order_num: requiredNumber,
+  order_num: requiredNumber.optional().default(0),
   leader: optionalText,
   phone: optionalText,
   email: z
@@ -183,19 +189,19 @@ export const deptSchema = z.object({
     .refine((value) => !value || z.email().safeParse(value).success, {
       message: "邮箱格式不正确",
     }),
-  status,
+  status: status.optional().default("0"),
 })
 
 export const postSchema = z.object({
   post_name: requiredText("岗位名称").max(64, "岗位名称不能超过 64 个字符"),
-  status,
+  status: status.optional().default("0"),
   remark: optionalText,
 })
 
 export const dictTypeSchema = z.object({
   dict_name: requiredText("字典名称").max(64, "字典名称不能超过 64 个字符"),
   dict_type: requiredText("字典类型").max(128, "字典类型不能超过 128 个字符"),
-  status,
+  status: status.optional().default("0"),
   remark: optionalText,
 })
 
@@ -318,8 +324,6 @@ export const defaultValues = {
     role_key: "",
     role_sort: 0,
     data_scope: "1" satisfies DataScopeFlag,
-    menu_check_strictly: false,
-    dept_check_strictly: false,
     menu_ids: [],
     status: "0" satisfies StatusFlag,
     remark: "",
@@ -396,10 +400,6 @@ export function numberPayload(
 export function nullableNumberPayload(values: ResourceFormValues, key: string) {
   const value = values[key]
   return typeof value === "number" && Number.isFinite(value) ? value : null
-}
-
-export function booleanPayload(values: ResourceFormValues, key: string) {
-  return values[key] === true
 }
 
 export function mergeRecord(

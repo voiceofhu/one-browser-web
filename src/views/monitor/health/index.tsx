@@ -114,19 +114,20 @@ export default function HealthPage() {
       >
         <header
           data-monitor-animate
-          className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between"
+          className="flex items-start justify-between gap-3"
         >
-          <div className="flex flex-col gap-1">
+          <div className="min-w-0 flex-1">
             <h1 className="text-2xl font-semibold tracking-normal">服务监控</h1>
             <p className="text-sm text-muted-foreground">
               聚焦后台服务器程序，CPU / 内存 / 存储。
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex shrink-0 flex-col items-end gap-2 sm:flex-row sm:items-center">
             <ConnectionBadge status={healthStream.status} />
             {healthStream.status === "closed" ? (
               <Button
                 type="button"
+                size="sm"
                 variant="outline"
                 onClick={healthStream.reconnect}
               >
