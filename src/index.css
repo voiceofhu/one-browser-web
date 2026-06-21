@@ -272,8 +272,8 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    height: 30px;
-    min-height: 30px;
+    height: var(--tags-bar-height);
+    min-height: var(--tags-bar-height);
     margin: 0 0 -1px;
     padding: 0 12px;
     color: var(--tags-chrome-tab-text);

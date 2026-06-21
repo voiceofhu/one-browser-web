@@ -8,6 +8,7 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import {
   ResponsiveDialog,
+  ResponsiveDialogBody,
   ResponsiveDialogClose,
   ResponsiveDialogContent,
   ResponsiveDialogDescription,
@@ -69,40 +70,45 @@ export function ResetPasswordDialog<TData>({
   return (
     <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
       <ResponsiveDialogContent>
-        <form className="grid gap-4" onSubmit={handleSubmit}>
+        <form
+          className="flex min-h-0 flex-1 flex-col gap-0 md:gap-4"
+          onSubmit={handleSubmit}
+        >
           <ResponsiveDialogHeader>
             <ResponsiveDialogTitle>重置密码</ResponsiveDialogTitle>
             <ResponsiveDialogDescription>
               为“{record ? getName(record) : ""}”设置新的登录密码。
             </ResponsiveDialogDescription>
           </ResponsiveDialogHeader>
-          <Field data-invalid={Boolean(error)}>
-            <FieldLabel htmlFor="reset-user-password">新密码</FieldLabel>
-            <div className="relative">
-              <Input
-                id="reset-user-password"
-                type={showPassword ? "text" : "password"}
-                value={password}
-                disabled={isSubmitting}
-                autoComplete="new-password"
-                className="pr-10"
-                onChange={(event) => setPassword(event.target.value)}
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                disabled={isSubmitting}
-                aria-label={showPassword ? "隐藏密码" : "显示密码"}
-                className="absolute top-1/2 right-1 size-7 -translate-y-1/2 text-muted-foreground"
-                onClick={() => setShowPassword((value) => !value)}
-              >
-                {showPassword ? <EyeOffIcon /> : <EyeIcon />}
-              </Button>
-            </div>
-            <FieldDescription>至少 10 位，保存后立即生效。</FieldDescription>
-            <FieldError>{error}</FieldError>
-          </Field>
+          <ResponsiveDialogBody>
+            <Field data-invalid={Boolean(error)}>
+              <FieldLabel htmlFor="reset-user-password">新密码</FieldLabel>
+              <div className="relative">
+                <Input
+                  id="reset-user-password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  disabled={isSubmitting}
+                  autoComplete="new-password"
+                  className="pr-10"
+                  onChange={(event) => setPassword(event.target.value)}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  disabled={isSubmitting}
+                  aria-label={showPassword ? "隐藏密码" : "显示密码"}
+                  className="absolute top-1/2 right-1 size-7 -translate-y-1/2 text-muted-foreground"
+                  onClick={() => setShowPassword((value) => !value)}
+                >
+                  {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+                </Button>
+              </div>
+              <FieldDescription>至少 10 位，保存后立即生效。</FieldDescription>
+              <FieldError>{error}</FieldError>
+            </Field>
+          </ResponsiveDialogBody>
           <ResponsiveDialogFooter>
             <ResponsiveDialogClose asChild>
               <Button type="button" variant="outline" disabled={isSubmitting}>
@@ -149,7 +155,7 @@ export function RoleAssignmentDialog<TData>({
           </ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
         {rolesQuery.isError ? (
-          <div className="grid min-h-32 place-items-center gap-3 text-center">
+          <ResponsiveDialogBody className="grid min-h-32 place-items-center gap-3 text-center">
             <FieldError>角色绑定加载失败，请稍后重试。</FieldError>
             <Button
               type="button"
@@ -159,7 +165,7 @@ export function RoleAssignmentDialog<TData>({
             >
               重新加载
             </Button>
-          </div>
+          </ResponsiveDialogBody>
         ) : record && rolesQuery.data ? (
           <RoleAssignmentForm
             key={rolesQuery.data.join("-")}
@@ -169,9 +175,9 @@ export function RoleAssignmentDialog<TData>({
             onSubmit={onSubmit}
           />
         ) : (
-          <div className="flex min-h-32 items-center justify-center">
+          <ResponsiveDialogBody className="flex min-h-32 items-center justify-center">
             <Spinner />
-          </div>
+          </ResponsiveDialogBody>
         )}
       </ResponsiveDialogContent>
     </ResponsiveDialog>
@@ -206,15 +212,20 @@ function RoleAssignmentForm<TData>({
   }
 
   return (
-    <form className="grid gap-4" onSubmit={handleSubmit}>
-      <Field>
-        <FieldLabel>角色</FieldLabel>
-        <RoleMultiSelect
-          value={roleIds}
-          disabled={isSubmitting}
-          onChange={setRoleIds}
-        />
-      </Field>
+    <form
+      className="flex min-h-0 flex-1 flex-col gap-0 md:gap-4"
+      onSubmit={handleSubmit}
+    >
+      <ResponsiveDialogBody>
+        <Field>
+          <FieldLabel>角色</FieldLabel>
+          <RoleMultiSelect
+            value={roleIds}
+            disabled={isSubmitting}
+            onChange={setRoleIds}
+          />
+        </Field>
+      </ResponsiveDialogBody>
       <ResponsiveDialogFooter>
         <ResponsiveDialogClose asChild>
           <Button type="button" variant="outline" disabled={isSubmitting}>

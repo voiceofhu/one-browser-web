@@ -90,7 +90,7 @@ export function OperationLogDetailDialog({
   return (
     <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
       <ResponsiveDialogContent className="max-h-[88svh] gap-0 p-0 sm:max-w-5xl">
-        <ResponsiveDialogHeader className="px-5 pt-5 pb-3 text-left">
+        <ResponsiveDialogHeader className="px-5 py-2 pr-12 text-left">
           <ResponsiveDialogTitle className="flex items-center gap-2">
             操作日志详情
             {record ? <LogStatusBadge status={record.status} /> : null}
@@ -170,7 +170,7 @@ export function LoginLogDetailDialog({
   return (
     <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
       <ResponsiveDialogContent className="max-h-[88svh] gap-0 p-0 sm:max-w-3xl">
-        <ResponsiveDialogHeader className="px-5 pt-5 pb-3 text-left">
+        <ResponsiveDialogHeader className="px-5 py-2 pr-12 text-left">
           <ResponsiveDialogTitle className="flex items-center gap-2">
             登录日志详情
             {record ? <LogStatusBadge status={record.status} /> : null}

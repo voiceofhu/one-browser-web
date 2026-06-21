@@ -119,7 +119,7 @@ export function MenuIconSelect({
         </Button>
       </ResponsiveDialogTrigger>
       <ResponsiveDialogContent className="gap-3 p-3 sm:max-w-4xl">
-        <ResponsiveDialogHeader className="gap-1 pr-8">
+        <ResponsiveDialogHeader className="gap-0 pr-12">
           <ResponsiveDialogTitle className="text-base">
             选择菜单图标
           </ResponsiveDialogTitle>

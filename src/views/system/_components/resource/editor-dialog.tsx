@@ -14,6 +14,7 @@ import type { ZodType } from "zod"
 import { Button } from "@/components/ui/button"
 import {
   ResponsiveDialog,
+  ResponsiveDialogBody,
   ResponsiveDialogClose,
   ResponsiveDialogContent,
   ResponsiveDialogDescription,
@@ -127,7 +128,7 @@ export function ResourceEditorDialog({
         onInteractOutside={(event) => event.preventDefault()}
       >
         <form
-          className="grid gap-3"
+          className="flex min-h-0 flex-1 flex-col gap-0 md:gap-3"
           onSubmit={form.handleSubmit(
             (formValues) => onSubmit(formValues),
             handleInvalidSubmit
@@ -142,27 +143,31 @@ export function ResourceEditorDialog({
             </ResponsiveDialogDescription>
           </ResponsiveDialogHeader>
 
-          <FieldGroup
-            className={cn(
-              "grid max-h-[68vh] gap-y-3 overflow-y-auto p-1",
-              !isCompactForm && "gap-x-4 md:grid-cols-2"
-            )}
-          >
-            {visibleFields.map((field) => (
-              <ResourceFieldControl
-                key={field.name}
-                field={field}
-                mode={mode}
-                recordId={recordId}
-                error={form.formState.errors[field.name] as HookFormFieldError}
-                register={form.register}
-                watch={form.watch}
-                setValue={form.setValue}
-                disabled={isSubmitting || isLoadingBinding}
-                useMultiColumn={!isCompactForm}
-              />
-            ))}
-          </FieldGroup>
+          <ResponsiveDialogBody>
+            <FieldGroup
+              className={cn(
+                "grid gap-y-3 p-1 md:max-h-[68vh] md:overflow-y-auto",
+                !isCompactForm && "gap-x-4 md:grid-cols-2"
+              )}
+            >
+              {visibleFields.map((field) => (
+                <ResourceFieldControl
+                  key={field.name}
+                  field={field}
+                  mode={mode}
+                  recordId={recordId}
+                  error={
+                    form.formState.errors[field.name] as HookFormFieldError
+                  }
+                  register={form.register}
+                  watch={form.watch}
+                  setValue={form.setValue}
+                  disabled={isSubmitting || isLoadingBinding}
+                  useMultiColumn={!isCompactForm}
+                />
+              ))}
+            </FieldGroup>
+          </ResponsiveDialogBody>
 
           <ResponsiveDialogFooter>
             <ResponsiveDialogClose asChild>

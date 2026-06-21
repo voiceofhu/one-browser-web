@@ -90,7 +90,7 @@ function ResponsiveDialogContent({
   if (mode === "drawer") {
     return (
       <DrawerContent
-        className={cn("max-h-[90svh] overflow-hidden p-4", className)}
+        className={cn("h-[90svh] max-h-[90svh] overflow-hidden p-0", className)}
         {...props}
       >
         {children}
@@ -129,9 +129,33 @@ function ResponsiveDialogHeader({
   const mode = useResponsiveDialogMode()
 
   return mode === "drawer" ? (
-    <DrawerHeader className={cn("p-0 text-left", className)} {...props} />
+    <DrawerHeader
+      className={cn(
+        "shrink-0 border-b px-4 py-2 pr-12 text-left group-data-[vaul-drawer-direction=bottom]/drawer-content:text-left group-data-[vaul-drawer-direction=top]/drawer-content:text-left",
+        className
+      )}
+      {...props}
+    />
   ) : (
     <DialogHeader className={className} {...props} />
+  )
+}
+
+function ResponsiveDialogBody({
+  className,
+  ...props
+}: React.ComponentProps<"div">) {
+  const mode = useResponsiveDialogMode()
+
+  return (
+    <div
+      data-slot="responsive-dialog-body"
+      className={cn(
+        mode === "drawer" ? "min-h-0 flex-1 overflow-y-auto p-4" : "min-h-0",
+        className
+      )}
+      {...props}
+    />
   )
 }
 
@@ -142,7 +166,14 @@ function ResponsiveDialogFooter({
   const mode = useResponsiveDialogMode()
 
   return mode === "drawer" ? (
-    <DrawerFooter className={cn("p-0", className)} {...props} />
+    <DrawerFooter
+      className={cn(
+        "sticky bottom-0 mt-auto grid shrink-0 grid-cols-5 gap-2 border-t bg-popover p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]",
+        "[&>*]:w-full [&>*:first-child]:order-2 [&>*:first-child]:col-span-2 [&>*:last-child]:order-1 [&>*:last-child]:col-span-3",
+        className
+      )}
+      {...props}
+    />
   ) : (
     <DialogFooter className={className} {...props} />
   )
@@ -162,20 +193,22 @@ function ResponsiveDialogTitle({
 }
 
 function ResponsiveDialogDescription({
+  className,
   ...props
 }: React.ComponentProps<typeof DialogDescription> &
   React.ComponentProps<typeof DrawerDescription>) {
   const mode = useResponsiveDialogMode()
 
   return mode === "drawer" ? (
-    <DrawerDescription {...props} />
+    <DrawerDescription className={cn("sr-only", className)} {...props} />
   ) : (
-    <DialogDescription {...props} />
+    <DialogDescription className={className} {...props} />
   )
 }
 
 export {
   ResponsiveDialog,
+  ResponsiveDialogBody,
   ResponsiveDialogClose,
   ResponsiveDialogContent,
   ResponsiveDialogDescription,

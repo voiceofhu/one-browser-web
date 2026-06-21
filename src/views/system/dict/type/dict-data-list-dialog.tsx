@@ -200,7 +200,7 @@ export function DictDataListDialog({
       }}
     >
       <ResponsiveDialogContent className="max-h-[85vh] gap-0 overflow-hidden p-0 sm:max-w-6xl">
-        <ResponsiveDialogHeader className="border-b px-4 py-3 text-left lg:px-6">
+        <ResponsiveDialogHeader className="border-b px-4 py-2 pr-12 text-left lg:px-6">
           <ResponsiveDialogTitle>
             {dictType ? `${dictType.dict_name} 字典列表` : "字典列表"}
           </ResponsiveDialogTitle>
