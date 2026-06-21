@@ -27,6 +27,18 @@ export async function updateCurrentUserProfile(
   return response.user
 }
 
+export async function uploadCurrentUserAvatar(file: File) {
+  const formData = new FormData()
+  formData.set("file", file)
+
+  const response = await http.post<
+    CurrentUserEnvelope & {
+      avatar: string
+    }
+  >("/auth/avatar", formData)
+  return response.user
+}
+
 export function getAuthPermissions() {
   return http.get<AuthPermissions>("/auth/permissions")
 }
