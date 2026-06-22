@@ -3,20 +3,25 @@ import { buildQueryPath, http } from "@/lib/request"
 import type {
   ListParams,
   PageResponse,
+  ResourceMutationResult,
   RoleResource,
   StatusFlag,
 } from "@/types/admin"
 
 type RolePayload = Record<string, unknown>
 
-const ROLE_PATH = "/system/role"
+const ROLE_PATH = "/system/roles"
 
 export function listRoles(params?: ListParams) {
   return http.get<PageResponse<RoleResource>>(buildQueryPath(ROLE_PATH, params))
 }
 
+export function getRole(roleId: number) {
+  return http.get<RoleResource>(`${ROLE_PATH}/${roleId}`)
+}
+
 export function createRole(payload: RolePayload) {
-  return http.post<RoleResource>(ROLE_PATH, payload)
+  return http.post<ResourceMutationResult>(ROLE_PATH, payload)
 }
 
 export function updateRole(roleId: number, payload: RolePayload) {
@@ -39,9 +44,9 @@ export function deleteRole(roleId: number) {
 }
 
 export function getRoleMenuIds(roleId: number) {
-  return http.get<{ ids: number[] }>(`${ROLE_PATH}/${roleId}/menu`)
+  return http.get<{ ids: number[] }>(`${ROLE_PATH}/${roleId}/menus`)
 }
 
 export function setRoleMenuIds(roleId: number, menuIds: number[]) {
-  return http.put<void>(`${ROLE_PATH}/${roleId}/menu`, { ids: menuIds })
+  return http.put<void>(`${ROLE_PATH}/${roleId}/menus`, { ids: menuIds })
 }

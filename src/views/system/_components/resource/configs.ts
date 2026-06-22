@@ -4,6 +4,7 @@ import type { ZodType } from "zod"
 import {
   createDept,
   deleteDept,
+  getDept,
   listDepts,
   setDeptOrder,
   updateDept,
@@ -13,26 +14,39 @@ import {
   createDictType,
   deleteDictData,
   deleteDictType,
+  getDictData,
+  getDictType,
   listDictData,
   listDictTypes,
+  setDictDataOrder,
   updateDictData,
   updateDictType,
 } from "@/api/system/dict"
 import {
   createMenu,
   deleteMenu,
+  getMenu,
   listMenus,
   updateMenu,
 } from "@/api/system/menu"
 import {
+  createNotice,
+  deleteNotice,
+  getNotice,
+  listNotices,
+  updateNotice,
+} from "@/api/system/notice"
+import {
   createPost,
   deletePost,
+  getPost,
   listPosts,
   updatePost,
 } from "@/api/system/post"
 import {
   createRole,
   deleteRole,
+  getRole,
   listRoles,
   setRoleMenuIds,
   updateRole,
@@ -40,6 +54,7 @@ import {
 import {
   createUser,
   deleteUser,
+  getUser,
   getUserRoleIds,
   listUsers,
   resetUserPassword,
@@ -53,6 +68,7 @@ import {
   dictDataColumns,
   dictTypeColumns,
   menuColumns,
+  noticeColumns,
   postColumns,
   roleColumns,
   userColumns,
@@ -66,6 +82,7 @@ import {
   mergeRecord,
   nullableNumberPayload,
   nullableTextPayload,
+  noticeSchema,
   numberPayload,
   postSchema,
   resourceFields,
@@ -83,6 +100,8 @@ import type {
   DictTypeResource,
   ListParams,
   MenuResource,
+  NoticeSummaryResource,
+  NoticeResource,
   PageResponse,
   PostResource,
   RoleResource,
@@ -91,7 +110,7 @@ import type {
 import type { ResourceStatusFilterOption } from "./status-filter-tabs"
 import type { ResourceTreeConfig } from "./tree"
 
-export type DashboardResourceConfig<TData> = {
+export type DashboardResourceConfig<TData, TDetail extends TData = TData> = {
   queryKey: readonly unknown[]
   noun: string
   list: (params?: ListParams) => Promise<PageResponse<TData>>
@@ -102,10 +121,11 @@ export type DashboardResourceConfig<TData> = {
   fields: ResourceField[]
   schema: (mode: ResourceFormMode) => ZodType<ResourceFormValues>
   getDefaultValues: () => ResourceFormValues
-  getEditValues: (record: TData) => ResourceFormValues
+  getEditValues: (record: TDetail) => ResourceFormValues
   getChildCreateValues?: (record: TData) => ResourceFormValues | null
-  create: (payload: ResourceFormValues) => Promise<TData>
-  update: (record: TData, payload: ResourceFormValues) => Promise<TData>
+  detail?: (record: TData) => Promise<TDetail>
+  create: (payload: ResourceFormValues) => Promise<unknown>
+  update: (record: TDetail, payload: ResourceFormValues) => Promise<TDetail>
   remove: (record: TData) => Promise<void>
   reorder?: (payload: ResourceReorderPayload<TData>) => Promise<number>
   tree?: ResourceTreeConfig<TData>
@@ -161,13 +181,14 @@ export const RESOURCE_CONFIGS = {
     schema: (mode) => (mode === "create" ? userCreateSchema : userUpdateSchema),
     getDefaultValues: () => ({ ...defaultValues.users }),
     getEditValues: (record) => mergeRecord(defaultValues.users, record),
+    detail: (record) => getUser(record.user_id),
     create: async (values) => {
-      const user = await createUser(userPayload(values, true))
+      const result = await createUser(userPayload(values, true))
       await Promise.all([
-        setUserRoleIds(user.user_id, idsPayload(values, "role_ids")),
-        setUserPostIds(user.user_id, idsPayload(values, "post_ids")),
+        setUserRoleIds(result.id, idsPayload(values, "role_ids")),
+        setUserPostIds(result.id, idsPayload(values, "post_ids")),
       ])
-      return user
+      return result
     },
     update: async (record, values) => {
       const user = await updateUser(record.user_id, userPayload(values))
@@ -203,10 +224,11 @@ export const RESOURCE_CONFIGS = {
     schema: () => roleSchema,
     getDefaultValues: () => ({ ...defaultValues.roles }),
     getEditValues: (record) => mergeRecord(defaultValues.roles, record),
+    detail: (record) => getRole(record.role_id),
     create: async (values) => {
-      const role = await createRole(rolePayload(values))
-      await setRoleMenuIds(role.role_id, idsPayload(values, "menu_ids"))
-      return role
+      const result = await createRole(rolePayload(values))
+      await setRoleMenuIds(result.id, idsPayload(values, "menu_ids"))
+      return result
     },
     update: async (record, values) => {
       const role = await updateRole(record.role_id, rolePayload(values))
@@ -234,6 +256,7 @@ export const RESOURCE_CONFIGS = {
     getDefaultValues: () => ({ ...defaultValues.menus }),
     getEditValues: (record) => mergeRecord(defaultValues.menus, record),
     getChildCreateValues: menuChildCreateValues,
+    detail: (record) => getMenu(record.menu_id),
     create: (values) => createMenu(menuPayload(values)),
     update: (record, values) => updateMenu(record.menu_id, menuPayload(values)),
     remove: (record) => deleteMenu(record.menu_id),
@@ -262,6 +285,7 @@ export const RESOURCE_CONFIGS = {
     schema: () => deptSchema,
     getDefaultValues: () => ({ ...defaultValues.depts }),
     getEditValues: (record) => mergeRecord(defaultValues.depts, record),
+    detail: (record) => getDept(record.dept_id),
     create: (values) => createDept(deptPayload(values)),
     update: (record, values) => updateDept(record.dept_id, deptPayload(values)),
     remove: (record) => deleteDept(record.dept_id),
@@ -294,13 +318,14 @@ export const RESOURCE_CONFIGS = {
     schema: () => postSchema,
     getDefaultValues: () => ({ ...defaultValues.posts }),
     getEditValues: (record) => mergeRecord(defaultValues.posts, record),
+    detail: (record) => getPost(record.post_id),
     create: (values) => createPost(postPayload(values)),
     update: (record, values) => updatePost(record.post_id, postPayload(values)),
     remove: (record) => deletePost(record.post_id),
   },
   "dict-types": {
     queryKey: systemQueryKeys.dictTypes,
-    noun: "字典类型",
+    noun: "字典",
     list: listDictTypes,
     statusFilters: STATUS_FILTERS,
     permissions: {
@@ -315,6 +340,7 @@ export const RESOURCE_CONFIGS = {
     schema: () => dictTypeSchema,
     getDefaultValues: () => ({ ...defaultValues.dictTypes }),
     getEditValues: (record) => mergeRecord(defaultValues.dictTypes, record),
+    detail: (record) => getDictType(record.dict_id),
     create: (values) => createDictType(dictTypePayload(values)),
     update: (record, values) =>
       updateDictType(record.dict_id, dictTypePayload(values)),
@@ -329,6 +355,7 @@ export const RESOURCE_CONFIGS = {
       create: "system:dict:data:create",
       update: "system:dict:data:update",
       delete: "system:dict:data:delete",
+      reorder: "system:dict:data:update",
     },
     columns: dictDataColumns,
     getId: (record) => record.dict_code,
@@ -337,10 +364,38 @@ export const RESOURCE_CONFIGS = {
     schema: () => dictDataSchema,
     getDefaultValues: () => ({ ...defaultValues.dictData }),
     getEditValues: (record) => mergeRecord(defaultValues.dictData, record),
+    detail: (record) => getDictData(record.dict_code),
     create: (values) => createDictData(dictDataPayload(values)),
     update: (record, values) =>
       updateDictData(record.dict_code, dictDataPayload(values)),
     remove: (record) => deleteDictData(record.dict_code),
+    reorder: reorderDictDataRows,
+  },
+  notices: {
+    queryKey: systemQueryKeys.notices,
+    noun: "通知",
+    list: listNotices,
+    statusFilters: STATUS_FILTERS,
+    permissions: {
+      create: "system:notice:create",
+      update: "system:notice:update",
+      delete: "system:notice:delete",
+    },
+    columns: noticeColumns,
+    defaultColumnVisibility: {
+      updated_at: false,
+    },
+    getId: (record) => record.notice_id,
+    getName: (record) => record.notice_title,
+    fields: resourceFields.notices,
+    schema: () => noticeSchema,
+    getDefaultValues: () => ({ ...defaultValues.notices }),
+    getEditValues: (record) => mergeRecord(defaultValues.notices, record),
+    detail: (record) => getNotice(record.notice_id),
+    create: (values) => createNotice(noticePayload(values)),
+    update: (record, values) =>
+      updateNotice(record.notice_id, noticePayload(values)),
+    remove: (record) => deleteNotice(record.notice_id),
   },
 } satisfies {
   users: DashboardResourceConfig<UserResource>
@@ -350,6 +405,7 @@ export const RESOURCE_CONFIGS = {
   posts: DashboardResourceConfig<PostResource>
   "dict-types": DashboardResourceConfig<DictTypeResource>
   "dict-data": DashboardResourceConfig<DictDataResource>
+  notices: DashboardResourceConfig<NoticeSummaryResource, NoticeResource>
 }
 
 function userPayload(values: ResourceFormValues, includePassword = false) {
@@ -487,6 +543,44 @@ function dictDataPayload(values: ResourceFormValues) {
     css_class: nullableTextPayload(values, "css_class"),
     list_class: nullableTextPayload(values, "list_class"),
     is_default: textPayload(values, "is_default", "N"),
+    status: textPayload(values, "status", "0"),
+    remark: nullableTextPayload(values, "remark"),
+  }
+}
+
+async function reorderDictDataRows({
+  active,
+  over,
+  orderedRecords,
+}: ResourceReorderPayload<DictDataResource>) {
+  if (active.dict_type !== over.dict_type) {
+    throw new Error("字典数据只能在同一个字典类型下拖拽排序")
+  }
+
+  const rows = orderedRecords.filter(
+    (record) => record.dict_type === active.dict_type
+  )
+  const nextSorts = rows
+    .map((record) => record.dict_sort)
+    .sort((left, right) => left - right)
+  const updates = rows
+    .map((record, index) => ({
+      record,
+      dictSort: nextSorts[index] ?? index + 1,
+    }))
+    .filter(({ record, dictSort }) => record.dict_sort !== dictSort)
+
+  await Promise.all(
+    updates.map(({ record, dictSort }) => setDictDataOrder(record, dictSort))
+  )
+  return updates.length
+}
+
+function noticePayload(values: ResourceFormValues) {
+  return {
+    notice_title: textPayload(values, "notice_title"),
+    notice_type: textPayload(values, "notice_type", "1"),
+    notice_content: nullableTextPayload(values, "notice_content"),
     status: textPayload(values, "status", "0"),
     remark: nullableTextPayload(values, "remark"),
   }

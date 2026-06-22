@@ -8,8 +8,8 @@ import {
   showResourceReorderSuccess,
 } from "./toast"
 
-export function useResourceReorder<TData>(
-  config: DashboardResourceConfig<TData>
+export function useResourceReorder<TData, TDetail extends TData = TData>(
+  config: DashboardResourceConfig<TData, TDetail>
 ) {
   const queryClient = useQueryClient()
 

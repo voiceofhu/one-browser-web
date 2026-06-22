@@ -3,36 +3,25 @@
 /* eslint-disable react-refresh/only-export-components */
 import type { ColumnDef } from "@tanstack/react-table"
 
+import { OverflowTooltipText } from "@/components/overflow-tooltip-text"
 import { Badge } from "@/components/ui/badge"
 import { formatAbsoluteDateTime, formatRelativeTime } from "@/lib/datetime"
 import type {
-  LoginLogResource,
-  LogStatusFlag,
-  OperationLogResource,
+  LoginLogSummaryResource,
+  OperationLogSummaryResource,
 } from "@/types/admin"
 import { ResourceTableColumnHeader } from "@/views/system/_components/resource/table"
+import { businessTypeLabel } from "@/views/system/log/constants"
+import { LogStatusBadge } from "@/views/system/log/log-status-badge"
 
-const LOG_STATUS_LABELS = {
-  "0": "成功",
-  "1": "失败",
-} as const
-
-const BUSINESS_TYPE_LABELS: Record<number, string> = {
-  0: "其他",
-  1: "新增",
-  2: "修改",
-  3: "删除",
-}
-
-export const operationLogColumns: ColumnDef<OperationLogResource>[] = [
+export const operationLogColumns: ColumnDef<OperationLogSummaryResource>[] = [
   textColumn("title", "操作模块", "min-w-48 max-w-80"),
   {
     accessorKey: "business_type",
     header: ({ column }) => tableHeader(column, "业务类型"),
     cell: ({ row }) => (
       <Badge variant="outline">
-        {BUSINESS_TYPE_LABELS[row.original.business_type] ??
-          row.original.business_type}
+        {businessTypeLabel(row.original.business_type)}
       </Badge>
     ),
     meta: { label: "业务类型" },
@@ -49,17 +38,11 @@ export const operationLogColumns: ColumnDef<OperationLogResource>[] = [
   },
   numberColumn("cost_time", "耗时(ms)", "w-28"),
   dateTimeColumn("operated_at", "操作时间"),
-  textColumn("error_msg", "错误信息", "max-w-64", "-"),
-  textColumn("oper_param", "请求参数", "max-w-80", "-"),
-  textColumn("json_result", "返回结果", "max-w-64", "-"),
 ]
 
-export const loginLogColumns: ColumnDef<LoginLogResource>[] = [
+export const loginLogColumns: ColumnDef<LoginLogSummaryResource>[] = [
   textColumn("user_name", "登录账号", "w-40"),
   textColumn("ip_addr", "登录地址", "w-40"),
-  textColumn("login_location", "登录地点", "w-40", "-"),
-  textColumn("browser", "浏览器", "min-w-56 max-w-80", "-"),
-  textColumn("os", "操作系统", "w-40", "-"),
   {
     accessorKey: "status",
     header: ({ column }) => tableHeader(column, "状态"),
@@ -120,14 +103,6 @@ function tableHeader<TData, TValue>(
   return <ResourceTableColumnHeader column={column} title={title} />
 }
 
-function LogStatusBadge({ status }: { status: LogStatusFlag }) {
-  return (
-    <Badge variant={status === "0" ? "secondary" : "destructive"}>
-      {LOG_STATUS_LABELS[status]}
-    </Badge>
-  )
-}
-
 function TextCell({
   value,
   emptyText = "-",
@@ -135,9 +110,14 @@ function TextCell({
   value: unknown
   emptyText?: string
 }) {
-  const text = value == null || value === "" ? emptyText : String(value)
+  const isEmpty = value == null || value === ""
+  const text = isEmpty ? emptyText : String(value)
 
-  return <span className="block truncate">{text}</span>
+  if (isEmpty) {
+    return <span className="block truncate">{text}</span>
+  }
+
+  return <OverflowTooltipText text={text} />
 }
 
 function DateTimeCell({ value }: { value: string }) {

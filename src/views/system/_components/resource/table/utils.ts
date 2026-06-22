@@ -2,6 +2,7 @@ import type { Column } from "@tanstack/react-table"
 
 type ResourceColumnMeta = {
   label?: string
+  headerClassName?: string
   cellClassName?: string
 }
 

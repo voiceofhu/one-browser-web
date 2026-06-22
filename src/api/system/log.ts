@@ -3,20 +3,31 @@ import { buildQueryPath, http } from "@/lib/request"
 import type {
   ListParams,
   LoginLogResource,
+  LoginLogSummaryResource,
   OperationLogResource,
+  OperationLogSummaryResource,
   PageResponse,
 } from "@/types/admin"
 
-const LOG_PATH = "/system/log"
+const OPERATION_LOG_PATH = "/system/operation-logs"
+const LOGIN_LOG_PATH = "/system/login-logs"
 
 export function listOperationLogs(params?: ListParams) {
-  return http.get<PageResponse<OperationLogResource>>(
-    buildQueryPath(`${LOG_PATH}/operation`, params)
+  return http.get<PageResponse<OperationLogSummaryResource>>(
+    buildQueryPath(OPERATION_LOG_PATH, params)
   )
 }
 
+export function getOperationLog(operId: number) {
+  return http.get<OperationLogResource>(`${OPERATION_LOG_PATH}/${operId}`)
+}
+
 export function listLoginLogs(params?: ListParams) {
-  return http.get<PageResponse<LoginLogResource>>(
-    buildQueryPath(`${LOG_PATH}/login`, params)
+  return http.get<PageResponse<LoginLogSummaryResource>>(
+    buildQueryPath(LOGIN_LOG_PATH, params)
   )
+}
+
+export function getLoginLog(infoId: number) {
+  return http.get<LoginLogResource>(`${LOGIN_LOG_PATH}/${infoId}`)
 }

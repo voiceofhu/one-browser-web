@@ -76,13 +76,13 @@ export function LogTable<TData>({
     placeholderData: (previousData) => previousData,
   })
   const records = React.useMemo(
-    () => query.data?.items ?? [],
-    [query.data?.items]
+    () => query.data?.list ?? [],
+    [query.data?.list]
   )
   const hasActiveFilters = search.trim().length > 0 || statusFilter !== "all"
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="flex h-full min-h-0 flex-1 flex-col">
       <ResourceTable
         data={records}
         columns={columns}

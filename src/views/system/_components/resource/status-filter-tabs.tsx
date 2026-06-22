@@ -13,6 +13,9 @@ type ResourceStatusFilterTabsProps = {
   options: readonly ResourceStatusFilterOption[]
   value: ResourceStatusFilterValue
   onValueChange: (value: ResourceStatusFilterValue) => void
+  listClassName?: string
+  triggerClassName?: string
+  highlightClassName?: string
 }
 
 export function ResourceStatusFilterTabs({
@@ -20,12 +23,18 @@ export function ResourceStatusFilterTabs({
   options,
   value,
   onValueChange,
+  listClassName,
+  triggerClassName,
+  highlightClassName,
 }: ResourceStatusFilterTabsProps) {
   return (
     <AnimatedSegmentedTabs
       label={label}
       options={options}
       value={value}
+      listClassName={listClassName}
+      triggerClassName={triggerClassName}
+      highlightClassName={highlightClassName}
       onValueChange={onValueChange}
     />
   )

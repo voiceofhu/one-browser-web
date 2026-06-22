@@ -1,7 +1,15 @@
 import { Navigate, useLocation } from "react-router"
+import { RefreshCwIcon, ShieldAlertIcon } from "lucide-react"
 
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty"
 import { Spinner } from "@/components/ui/spinner"
 import { isUnauthorizedError } from "@/lib/request"
 import { useAuthPermissions, useCurrentUser } from "@/hooks/use-auth"
@@ -11,6 +19,12 @@ export function RequireAuth({ children }: React.PropsWithChildren) {
   const location = useLocation()
   const currentUser = useCurrentUser()
   const authPermissions = useAuthPermissions()
+  const isAuthRefreshing = currentUser.isFetching || authPermissions.isFetching
+
+  function retryAuthState() {
+    void currentUser.refetch()
+    void authPermissions.refetch()
+  }
 
   if (currentUser.isLoading || authPermissions.isLoading) {
     return (
@@ -38,29 +52,14 @@ export function RequireAuth({ children }: React.PropsWithChildren) {
     const error = currentUser.error ?? authPermissions.error
 
     return (
-      <main className="flex min-h-svh items-center justify-center bg-muted/30 p-4">
-        <Alert variant="destructive" className="max-w-md">
-          <AlertTitle>无法验证登录状态</AlertTitle>
-          <AlertDescription className="flex flex-col items-start gap-3">
-            <span>{getErrorMessage(error)}</span>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                currentUser.refetch()
-                authPermissions.refetch()
-              }}
-              disabled={currentUser.isFetching || authPermissions.isFetching}
-            >
-              {currentUser.isFetching || authPermissions.isFetching ? (
-                <Spinner data-icon="inline-start" />
-              ) : null}
-              重试
-            </Button>
-          </AlertDescription>
-        </Alert>
-      </main>
+      <AuthStateError
+        title="无法验证登录状态"
+        description="暂时无法连接后台服务，请确认服务已启动或网络连接正常。"
+        detail={getErrorMessage(error)}
+        actionLabel="重新验证"
+        pending={isAuthRefreshing}
+        onAction={retryAuthState}
+      />
     )
   }
 
@@ -68,14 +67,10 @@ export function RequireAuth({ children }: React.PropsWithChildren) {
     const target = getFirstAuthorizedPath(authPermissions.data)
     if (!target) {
       return (
-        <main className="flex min-h-svh items-center justify-center bg-muted/30 p-4">
-          <Alert variant="destructive" className="max-w-md">
-            <AlertTitle>没有可访问菜单</AlertTitle>
-            <AlertDescription>
-              当前账号没有分配任何可访问的菜单，请联系管理员调整角色权限。
-            </AlertDescription>
-          </Alert>
-        </main>
+        <AuthStateError
+          title="没有可访问菜单"
+          description="当前账号没有分配任何可访问的菜单，请联系管理员调整角色权限。"
+        />
       )
     }
 
@@ -83,6 +78,59 @@ export function RequireAuth({ children }: React.PropsWithChildren) {
   }
 
   return children
+}
+
+function AuthStateError({
+  title,
+  description,
+  detail,
+  actionLabel,
+  pending,
+  onAction,
+}: {
+  title: string
+  description: string
+  detail?: string
+  actionLabel?: string
+  pending?: boolean
+  onAction?: () => void
+}) {
+  return (
+    <main className="flex min-h-svh items-center justify-center bg-background p-4">
+      <Empty className="max-w-lg border bg-card p-8 shadow-none sm:p-10">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <ShieldAlertIcon />
+          </EmptyMedia>
+          <EmptyTitle>{title}</EmptyTitle>
+          <EmptyDescription>{description}</EmptyDescription>
+        </EmptyHeader>
+        <EmptyContent>
+          {detail ? (
+            <div className="w-full rounded-lg bg-muted px-3 py-2 text-left text-xs text-muted-foreground">
+              {detail}
+            </div>
+          ) : null}
+          {onAction && actionLabel ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onAction}
+              disabled={pending}
+            >
+              {pending ? (
+                <Spinner data-icon="inline-start" />
+              ) : (
+                <RefreshCwIcon data-icon="inline-start" />
+              )}
+              {actionLabel}
+            </Button>
+          ) : null}
+        </EmptyContent>
+      </Empty>
+    </main>
+  )
 }
 
 function getErrorMessage(error: unknown) {

@@ -55,7 +55,7 @@ export function MenuParentSelect({
     queryFn: () => listMenus({ page: 1, page_size: 1_000 }),
     staleTime: 30_000,
   })
-  const menus = React.useMemo(() => query.data?.items ?? [], [query.data])
+  const menus = React.useMemo(() => query.data?.list ?? [], [query.data])
   const selectableMenus = React.useMemo(
     () => filterSelectableMenus(menus, currentMenuId, allowedTypes),
     [allowedTypes, currentMenuId, menus]

@@ -1,4 +1,4 @@
-import { useQuery, type UseQueryResult } from "@tanstack/react-query"
+import { useQuery } from "@tanstack/react-query"
 import { NavLink } from "react-router"
 import {
   ArrowRightIcon,
@@ -7,6 +7,7 @@ import {
   HeartPulseIcon,
   KeyRoundIcon,
   LayoutDashboardIcon,
+  MegaphoneIcon,
   ShieldIcon,
   UsersIcon,
 } from "lucide-react"
@@ -25,26 +26,18 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
 
-import { getCurrentUser } from "@/api/auth"
-import { getHealth } from "@/api/monitor/health"
-import { listDepts } from "@/api/system/dept"
-import { listDictData, listDictTypes } from "@/api/system/dict"
-import { listMenus } from "@/api/system/menu"
-import { listPosts } from "@/api/system/post"
-import { listRoles } from "@/api/system/role"
-import { listUsers } from "@/api/system/user"
 import {
-  authQueryKeys,
-  monitorQueryKeys,
-  systemQueryKeys,
-} from "@/lib/query-keys"
+  getIndexOverview,
+  type IndexOverviewCount,
+  type IndexOverviewRecentResource,
+  type OverviewSection,
+} from "@/api/index"
+import { indexQueryKeys } from "@/lib/query-keys"
 import { formatAbsoluteDateTime, formatRelativeTime } from "@/lib/datetime"
 import { cn } from "@/lib/utils"
 import { APP_ROUTE_BY_ID } from "@/router/routes"
-import type { CurrentUser, HealthResponse, PageResponse } from "@/types/admin"
+import type { CurrentUser, HealthResponse } from "@/types/admin"
 
-type CountQuery = UseQueryResult<PageResponse<unknown>, Error>
-type HealthQuery = UseQueryResult<HealthResponse, Error>
 type ResourceSummary = ReturnType<typeof resourceSummary>
 
 const quickActions = [
@@ -55,30 +48,93 @@ const quickActions = [
 ] as const
 
 export default function IndexPage() {
-  const data = useOverviewData()
+  const overview = useOverviewData()
+  const overviewData = overview.data
+  const resources = overviewData?.resources
+  const overviewErrorMessage = overview.error
+    ? getErrorMessage(overview.error)
+    : null
   const resourceCards = [
-    resourceSummary("用户", "后台账号", data.users, UsersIcon),
-    resourceSummary("角色", "权限角色", data.roles, ShieldIcon),
-    resourceSummary("权限", "菜单与按钮权限", data.menus, KeyRoundIcon),
-    resourceSummary("部门", "组织部门", data.depts, LayoutDashboardIcon),
-    resourceSummary("岗位", "组织岗位", data.posts, FileTextIcon),
-    resourceSummary("字典类型", "字典定义", data.dictTypes, DatabaseIcon),
-    resourceSummary("字典数据", "字典键值", data.dictData, DatabaseIcon),
+    resourceSummary(
+      "用户",
+      "后台账号",
+      resources?.users,
+      overview.isLoading,
+      UsersIcon,
+      overviewErrorMessage
+    ),
+    resourceSummary(
+      "角色",
+      "权限角色",
+      resources?.roles,
+      overview.isLoading,
+      ShieldIcon,
+      overviewErrorMessage
+    ),
+    resourceSummary(
+      "权限",
+      "菜单与按钮权限",
+      resources?.menus,
+      overview.isLoading,
+      KeyRoundIcon,
+      overviewErrorMessage
+    ),
+    resourceSummary(
+      "部门",
+      "组织部门",
+      resources?.depts,
+      overview.isLoading,
+      LayoutDashboardIcon,
+      overviewErrorMessage
+    ),
+    resourceSummary(
+      "岗位",
+      "组织岗位",
+      resources?.posts,
+      overview.isLoading,
+      FileTextIcon,
+      overviewErrorMessage
+    ),
+    resourceSummary(
+      "字典类型",
+      "字典定义",
+      resources?.dict_types,
+      overview.isLoading,
+      DatabaseIcon,
+      overviewErrorMessage
+    ),
+    resourceSummary(
+      "字典数据",
+      "字典键值",
+      resources?.dict_data,
+      overview.isLoading,
+      DatabaseIcon,
+      overviewErrorMessage
+    ),
+    resourceSummary(
+      "通知",
+      "通知公告",
+      resources?.notices,
+      overview.isLoading,
+      MegaphoneIcon,
+      overviewErrorMessage
+    ),
   ]
-  const recentItems = buildRecentItems(data)
+  const recentItems = buildRecentItems(overviewData?.recent)
 
   return (
     <div className="flex flex-col gap-3 px-4 pt-4 lg:px-6">
-      {data.currentUser.error ? (
+      {overview.error ? (
         <Alert variant="destructive">
-          <AlertTitle>需要登录</AlertTitle>
-          <AlertDescription>
-            {getErrorMessage(data.currentUser.error)}
-          </AlertDescription>
+          <AlertTitle>首页数据加载失败</AlertTitle>
+          <AlertDescription>{getErrorMessage(overview.error)}</AlertDescription>
         </Alert>
       ) : null}
 
-      <StatusStrip user={data.currentUser.data} health={data.health} />
+      <StatusStrip
+        user={overviewData?.current_user}
+        health={overviewData?.health}
+      />
 
       <div className="grid grid-cols-1 gap-3 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
         {resourceCards.slice(0, 4).map((card, index) => (
@@ -93,8 +149,16 @@ export default function IndexPage() {
         </div>
         <div className="grid content-start gap-3">
           <QuickActions />
-          <HealthCard query={data.health} />
-          <DependencyHealthCard query={data.health} />
+          <HealthCard
+            health={overviewData?.health}
+            isLoading={overview.isLoading}
+            error={overview.error}
+          />
+          <DependencyHealthCard
+            health={overviewData?.health}
+            isLoading={overview.isLoading}
+            error={overview.error}
+          />
         </div>
       </div>
     </div>
@@ -106,10 +170,10 @@ function StatusStrip({
   health,
 }: {
   user?: CurrentUser
-  health: HealthQuery
+  health?: OverviewSection<HealthResponse>
 }) {
-  const environment = health.data?.environment ?? "unknown"
-  const serviceStatus = health.data?.status ?? "unknown"
+  const environment = health?.data?.environment ?? "unknown"
+  const serviceStatus = health?.data?.status ?? "unknown"
 
   return (
     <Card size="sm" className="bg-muted/40 shadow-none ring-0">
@@ -296,57 +360,75 @@ function RecentResources({ items }: { items: RecentItem[] }) {
   )
 }
 
-function HealthCard({ query }: { query: HealthQuery }) {
-  const status = query.data?.status ?? "unknown"
+function HealthCard({
+  health,
+  isLoading,
+  error,
+}: {
+  health?: OverviewSection<HealthResponse>
+  isLoading: boolean
+  error?: unknown
+}) {
+  const status = health?.data?.status ?? "unknown"
   const isOk = status === "ok"
+  const errorMessage = getSectionError(health, error)
 
   return (
     <Card size="sm" className="bg-muted/35 shadow-none ring-0">
       <CardHeader>
         <CardDescription>服务健康</CardDescription>
-        <CardTitle>{query.isLoading ? "检查中" : status}</CardTitle>
+        <CardTitle>{isLoading ? "检查中" : status}</CardTitle>
         <CardAction>
-          <Badge variant={query.error || !isOk ? "destructive" : "secondary"}>
-            {query.error ? "错误" : isOk ? "健康" : "注意"}
+          <Badge variant={errorMessage || !isOk ? "destructive" : "secondary"}>
+            {errorMessage ? "错误" : isOk ? "健康" : "注意"}
           </Badge>
         </CardAction>
       </CardHeader>
       <CardContent className="text-sm text-muted-foreground">
-        {query.error
-          ? getErrorMessage(query.error)
-          : query.data
-            ? `${query.data.service} / ${query.data.environment}`
+        {errorMessage
+          ? errorMessage
+          : health?.data
+            ? `${health.data.service} / ${health.data.environment}`
             : "等待健康检查返回。"}
       </CardContent>
     </Card>
   )
 }
 
-function DependencyHealthCard({ query }: { query: HealthQuery }) {
-  const status = query.data?.status ?? "unknown"
+function DependencyHealthCard({
+  health,
+  isLoading,
+  error,
+}: {
+  health?: OverviewSection<HealthResponse>
+  isLoading: boolean
+  error?: unknown
+}) {
+  const status = health?.data?.status ?? "unknown"
   const isOk = status === "ok"
+  const errorMessage = getSectionError(health, error)
 
   return (
     <Card size="sm" className="bg-muted/35 shadow-none ring-0">
       <CardHeader>
         <CardDescription>依赖健康</CardDescription>
-        <CardTitle>{query.isLoading ? "检查中" : status}</CardTitle>
+        <CardTitle>{isLoading ? "检查中" : status}</CardTitle>
         <CardAction>
-          <Badge variant={query.error || !isOk ? "destructive" : "secondary"}>
-            {query.error ? "错误" : isOk ? "健康" : "降级"}
+          <Badge variant={errorMessage || !isOk ? "destructive" : "secondary"}>
+            {errorMessage ? "错误" : isOk ? "健康" : "降级"}
           </Badge>
         </CardAction>
       </CardHeader>
       <CardContent className="grid gap-2 text-sm text-muted-foreground">
-        {query.error ? (
-          getErrorMessage(query.error)
-        ) : query.data ? (
+        {errorMessage ? (
+          errorMessage
+        ) : health?.data ? (
           <>
-            <div>Postgres：{query.data.postgres}</div>
+            <div>Postgres：{health.data.postgres}</div>
             <Separator />
-            <div>SeaORM：{query.data.sea_orm}</div>
+            <div>SeaORM：{health.data.sea_orm}</div>
             <Separator />
-            <div>Redis：{query.data.redis}</div>
+            <div>Redis：{health.data.redis}</div>
           </>
         ) : (
           "等待健康检查返回。"
@@ -359,12 +441,13 @@ function DependencyHealthCard({ query }: { query: HealthQuery }) {
 function resourceSummary(
   title: string,
   description: string,
-  query: CountQuery,
-  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>
+  count: IndexOverviewCount | undefined,
+  isLoading: boolean,
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>,
+  fallbackErrorMessage: string | null
 ) {
-  const isLoading = query.isLoading || (query.isFetching && !query.data)
-  const value = query.data?.total ?? 0
-  const errorMessage = query.error ? getErrorMessage(query.error) : null
+  const value = count?.total ?? 0
+  const errorMessage = fallbackErrorMessage ?? count?.error ?? null
 
   return {
     title,
@@ -385,90 +468,35 @@ type RecentItem = {
   timestamp: number
 }
 
-type OverviewData = ReturnType<typeof useOverviewData>
-
 function useOverviewData() {
-  const listParams = { page: 1, page_size: 100 }
-  const currentUser = useQuery({
-    queryKey: authQueryKeys.currentUser,
-    queryFn: getCurrentUser,
+  return useQuery({
+    queryKey: indexQueryKeys.overview,
+    queryFn: getIndexOverview,
   })
-  const health = useQuery({
-    queryKey: monitorQueryKeys.health,
-    queryFn: getHealth,
-  })
-  const users = useQuery({
-    queryKey: [...systemQueryKeys.users, "overview", listParams],
-    queryFn: () => listUsers(listParams),
-  })
-  const roles = useQuery({
-    queryKey: [...systemQueryKeys.roles, "overview", listParams],
-    queryFn: () => listRoles(listParams),
-  })
-  const menus = useQuery({
-    queryKey: [...systemQueryKeys.menus, "overview", listParams],
-    queryFn: () => listMenus(listParams),
-  })
-  const depts = useQuery({
-    queryKey: [...systemQueryKeys.depts, "overview", listParams],
-    queryFn: () => listDepts(listParams),
-  })
-  const posts = useQuery({
-    queryKey: [...systemQueryKeys.posts, "overview", listParams],
-    queryFn: () => listPosts(listParams),
-  })
-  const dictTypes = useQuery({
-    queryKey: [...systemQueryKeys.dictTypes, "overview", listParams],
-    queryFn: () => listDictTypes(listParams),
-  })
-  const dictData = useQuery({
-    queryKey: [...systemQueryKeys.dictData, "overview", listParams],
-    queryFn: () => listDictData(listParams),
-  })
-
-  return {
-    currentUser,
-    health,
-    users,
-    roles,
-    menus,
-    depts,
-    posts,
-    dictTypes,
-    dictData,
-  }
 }
 
-function buildRecentItems(data: OverviewData): RecentItem[] {
-  return [
-    ...(data.users.data?.items ?? []).map((item) => ({
-      kind: "用户",
-      name: item.user_name || item.nick_name,
+function buildRecentItems(items?: IndexOverviewRecentResource[]): RecentItem[] {
+  return (items ?? [])
+    .map((item) => ({
+      kind: item.kind,
+      name: item.name,
       createdAt: item.created_at,
       timestamp: Date.parse(item.created_at),
-    })),
-    ...(data.roles.data?.items ?? []).map((item) => ({
-      kind: "角色",
-      name: item.role_name,
-      createdAt: item.created_at,
-      timestamp: Date.parse(item.created_at),
-    })),
-    ...(data.menus.data?.items ?? []).map((item) => ({
-      kind: "权限",
-      name: item.menu_name,
-      createdAt: item.created_at,
-      timestamp: Date.parse(item.created_at),
-    })),
-    ...(data.posts.data?.items ?? []).map((item) => ({
-      kind: "岗位",
-      name: item.post_name,
-      createdAt: item.created_at,
-      timestamp: Date.parse(item.created_at),
-    })),
-  ]
+    }))
     .filter((item) => Number.isFinite(item.timestamp))
     .sort((left, right) => right.timestamp - left.timestamp)
     .slice(0, 6)
+}
+
+function getSectionError<T>(
+  section: OverviewSection<T> | undefined,
+  rootError?: unknown
+) {
+  if (rootError) {
+    return getErrorMessage(rootError)
+  }
+
+  return section?.error ?? null
 }
 
 function getErrorMessage(error: unknown) {

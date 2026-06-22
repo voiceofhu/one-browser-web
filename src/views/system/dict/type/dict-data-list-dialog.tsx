@@ -19,13 +19,16 @@ import {
 import {
   ResponsiveDialog,
   ResponsiveDialogContent,
-  ResponsiveDialogDescription,
   ResponsiveDialogHeader,
   ResponsiveDialogTitle,
 } from "@/components/ui/responsive-dialog"
 import { Spinner } from "@/components/ui/spinner"
 import { systemQueryKeys } from "@/lib/query-keys"
-import type { DictDataResource, DictTypeResource } from "@/types/admin"
+import type {
+  DictDataResource,
+  DictTypeResource,
+  PageResponse,
+} from "@/types/admin"
 import { dictDataColumns } from "@/views/system/_components/resource/columns"
 import { RESOURCE_CONFIGS } from "@/views/system/_components/resource/configs"
 import { ResourceEditorDialog } from "@/views/system/_components/resource/editor-dialog"
@@ -44,9 +47,14 @@ import {
   showResourceDeleteSuccess,
   showResourceError,
   showResourceRefreshSuccess,
+  showResourceReorderSuccess,
   showResourceUpdateSuccess,
 } from "@/views/system/_components/resource/toast"
 import { ResourceToolbarActions } from "@/views/system/_components/resource/toolbar-actions"
+import {
+  ResourceStatusFilterTabs,
+  type ResourceStatusFilterValue,
+} from "@/views/system/_components/resource/status-filter-tabs"
 
 type DictDataListDialogProps = {
   dictType: DictTypeResource | null
@@ -59,6 +67,10 @@ type EditorState =
   | { mode: "edit"; record: DictDataResource }
 
 const dictDataConfig = RESOURCE_CONFIGS["dict-data"]
+const DICT_DATA_DIALOG_PAGE_SIZE = 1_000
+type DictDataReorderPayload = Parameters<
+  NonNullable<typeof dictDataConfig.reorder>
+>[0]
 
 export function DictDataListDialog({
   dictType,
@@ -68,8 +80,8 @@ export function DictDataListDialog({
   const queryClient = useQueryClient()
   const [search, setSearch] = React.useState("")
   const debouncedSearch = useDebouncedValue(search, 300)
-  const [pageIndex, setPageIndex] = React.useState(0)
-  const [pageSize, setPageSize] = React.useState(10)
+  const [statusFilter, setStatusFilter] =
+    React.useState<ResourceStatusFilterValue>("all")
   const [editor, setEditor] = React.useState<EditorState | null>(null)
   const [deletingRecord, setDeletingRecord] =
     React.useState<DictDataResource | null>(null)
@@ -96,15 +108,20 @@ export function DictDataListDialog({
   )
   const params = React.useMemo(
     () => ({
-      page: pageIndex + 1,
-      page_size: pageSize,
+      page: 1,
+      page_size: DICT_DATA_DIALOG_PAGE_SIZE,
       keyword: debouncedSearch || undefined,
       dict_type: dictTypeValue,
+      status: statusFilter === "all" ? undefined : statusFilter,
     }),
-    [debouncedSearch, dictTypeValue, pageIndex, pageSize]
+    [debouncedSearch, dictTypeValue, statusFilter]
+  )
+  const dictDataQueryKey = React.useMemo(
+    () => [...systemQueryKeys.dictData, "dialog", params] as const,
+    [params]
   )
   const query = useQuery({
-    queryKey: [...systemQueryKeys.dictData, "dialog", params],
+    queryKey: dictDataQueryKey,
     queryFn: () => listDictData(params),
     enabled: open && Boolean(dictTypeValue),
     placeholderData: (previousData) => previousData,
@@ -113,7 +130,6 @@ export function DictDataListDialog({
     mutationFn: (values: ResourceFormValues) =>
       dictDataConfig.create(withDialogDictType(values)),
     onSuccess: async () => {
-      setPageIndex(0)
       await queryClient.invalidateQueries({
         queryKey: systemQueryKeys.dictData,
       })
@@ -142,7 +158,6 @@ export function DictDataListDialog({
   const deleteMutation = useMutation({
     mutationFn: (record: DictDataResource) => dictDataConfig.remove(record),
     onSuccess: async () => {
-      setPageIndex(0)
       await queryClient.invalidateQueries({
         queryKey: systemQueryKeys.dictData,
       })
@@ -151,8 +166,23 @@ export function DictDataListDialog({
     },
     onError: showResourceError,
   })
+  const reorderMutation = useMutation({
+    mutationFn: (payload: DictDataReorderPayload) => {
+      if (!dictDataConfig.reorder) {
+        throw new Error("字典数据暂不支持拖拽排序")
+      }
+
+      return dictDataConfig.reorder(payload)
+    },
+    onSuccess: async (count) => {
+      await queryClient.invalidateQueries({
+        queryKey: systemQueryKeys.dictData,
+      })
+      showResourceReorderSuccess("字典数据", count)
+    },
+  })
   const isSubmitting = createMutation.isPending || updateMutation.isPending
-  const hasActiveFilters = search.trim().length > 0
+  const hasActiveFilters = search.trim().length > 0 || statusFilter !== "all"
 
   function withDialogDictType(values: ResourceFormValues): ResourceFormValues {
     if (!dictTypeValue) {
@@ -167,6 +197,39 @@ export function DictDataListDialog({
 
   function handleCreate() {
     setEditor({ mode: "create" })
+  }
+
+  function handleRowReorder(payload: DictDataReorderPayload) {
+    queryClient.setQueryData<PageResponse<DictDataResource>>(
+      dictDataQueryKey,
+      (current) =>
+        current
+          ? {
+              ...current,
+              list: payload.orderedRecords,
+            }
+          : current
+    )
+    reorderMutation.mutate(payload, {
+      onError: async (error) => {
+        showResourceError(error)
+        await queryClient.invalidateQueries({ queryKey: dictDataQueryKey })
+      },
+    })
+  }
+
+  async function handleEdit(record: DictDataResource) {
+    if (!dictDataConfig.detail) {
+      setEditor({ mode: "edit", record })
+      return
+    }
+
+    try {
+      const detailRecord = await dictDataConfig.detail(record)
+      setEditor({ mode: "edit", record: detailRecord })
+    } catch (error) {
+      showResourceError(error)
+    }
   }
 
   async function handleRefresh() {
@@ -199,18 +262,16 @@ export function DictDataListDialog({
         onOpenChange(nextOpen)
       }}
     >
-      <ResponsiveDialogContent className="max-h-[85vh] gap-0 overflow-hidden p-0 sm:max-w-6xl">
-        <ResponsiveDialogHeader className="border-b px-4 py-2 pr-12 text-left lg:px-6">
-          <ResponsiveDialogTitle>
+      <ResponsiveDialogContent className="max-h-[76vh] gap-0 overflow-hidden p-0 sm:max-w-[880px]">
+        <ResponsiveDialogHeader className="min-h-14 border-b px-5 py-3 pr-12 text-left">
+          <ResponsiveDialogTitle className="text-lg leading-7 font-semibold">
             {dictType ? `${dictType.dict_name} 字典列表` : "字典列表"}
           </ResponsiveDialogTitle>
-          <ResponsiveDialogDescription>
-            {dictType ? dictType.dict_type : "查看当前字典类型下的字典数据。"}
-          </ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
-        <div className="flex min-h-[520px] flex-1 overflow-hidden">
+        <div className="flex h-[320px] max-h-[52vh] min-h-[240px] flex-1 overflow-hidden md:h-[360px]">
           <ResourceTable
-            data={query.data?.items ?? []}
+            density="compact"
+            data={query.data?.list ?? []}
             columns={dictDataColumns}
             defaultColumnVisibility={{
               dict_type: false,
@@ -218,18 +279,12 @@ export function DictDataListDialog({
             }}
             columnVisibilityResetKey={dictTypeValue ?? "dict-data-dialog"}
             totalRows={query.data?.total ?? 0}
-            pageIndex={pageIndex}
-            pageSize={pageSize}
+            pageIndex={0}
+            pageSize={DICT_DATA_DIALOG_PAGE_SIZE}
             searchValue={search}
-            onSearchChange={(value) => {
-              setSearch(value)
-              setPageIndex(0)
-            }}
-            onPageIndexChange={setPageIndex}
-            onPageSizeChange={(value) => {
-              setPageSize(value)
-              setPageIndex(0)
-            }}
+            onSearchChange={setSearch}
+            onPageIndexChange={() => undefined}
+            onPageSizeChange={() => undefined}
             isLoading={query.isLoading}
             isFetching={query.isFetching}
             error={query.error}
@@ -240,7 +295,20 @@ export function DictDataListDialog({
             onEmptyAction={handleCreate}
             isFiltered={hasActiveFilters}
             getRowId={(row, index) => String(row.dict_code || index)}
-            selectionResetKey={`${dictTypeValue}:${debouncedSearch}`}
+            selectionResetKey={`${dictTypeValue}:${debouncedSearch}:${statusFilter}`}
+            toolbarLeading={
+              dictDataConfig.statusFilters ? (
+                <ResourceStatusFilterTabs
+                  label="字典数据状态"
+                  options={dictDataConfig.statusFilters}
+                  value={statusFilter}
+                  listClassName="h-7 rounded-md p-0.5"
+                  triggerClassName="px-2 text-xs"
+                  highlightClassName="rounded-sm"
+                  onValueChange={setStatusFilter}
+                />
+              ) : null
+            }
             toolbarActions={
               <ResourceToolbarActions
                 isRefreshing={isManualRefreshing}
@@ -251,10 +319,15 @@ export function DictDataListDialog({
             renderRowActions={(record) => (
               <RowActions
                 noun="字典数据"
-                onEdit={() => setEditor({ mode: "edit", record })}
+                onEdit={() => void handleEdit(record)}
                 onDelete={() => setDeletingRecord(record)}
               />
             )}
+            onRowReorder={handleRowReorder}
+            isRowReordering={reorderMutation.isPending}
+            showColumnControls={false}
+            showPaginationFooter={false}
+            showPaginationControls={false}
           />
         </div>
 

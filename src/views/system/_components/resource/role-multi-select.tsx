@@ -35,7 +35,7 @@ export function RoleMultiSelect({
     queryFn: () => listRoles({ page: 1, page_size: 100 }),
     staleTime: 30_000,
   })
-  const roles = (rolesQuery.data?.items ?? []).filter(
+  const roles = (rolesQuery.data?.list ?? []).filter(
     (role) => role.status === "0"
   )
 
@@ -70,7 +70,7 @@ export function PostMultiSelect({
     queryFn: () => listPosts({ page: 1, page_size: 100 }),
     staleTime: 30_000,
   })
-  const posts = (postsQuery.data?.items ?? []).filter(
+  const posts = (postsQuery.data?.list ?? []).filter(
     (post) => post.status === "0"
   )
 

@@ -3,6 +3,7 @@ import { z } from "zod"
 import type {
   DataScopeFlag,
   MenuTypeFlag,
+  NoticeTypeFlag,
   SexFlag,
   StatusFlag,
   VisibleFlag,
@@ -73,6 +74,7 @@ const dataScope = z.enum(["1", "2", "3", "4", "5"])
 const menuType = z.enum(["M", "C", "F"])
 const visible = z.enum(["0", "1"])
 const yesNo = z.enum(["Y", "N"])
+const noticeType = z.enum(["1", "2"])
 
 export const statusOptions = options<StatusFlag>({
   "0": "启用",
@@ -95,6 +97,10 @@ export const visibleOptions = options<VisibleFlag>({
 export const yesNoOptions = options<YesNoFlag>({
   Y: "是",
   N: "否",
+})
+export const noticeTypeOptions = options<NoticeTypeFlag>({
+  "1": "通知",
+  "2": "公告",
 })
 
 const userBaseSchema = z.object({
@@ -199,21 +205,32 @@ export const postSchema = z.object({
 })
 
 export const dictTypeSchema = z.object({
-  dict_name: requiredText("字典名称").max(64, "字典名称不能超过 64 个字符"),
-  dict_type: requiredText("字典类型").max(128, "字典类型不能超过 128 个字符"),
+  dict_name: requiredText("字典类型").max(64, "字典类型不能超过 64 个字符"),
+  dict_type: requiredText("字典代码").max(128, "字典代码不能超过 128 个字符"),
   status: status.optional().default("0"),
   remark: optionalText,
 })
 
 export const dictDataSchema = z.object({
-  dict_sort: requiredNumber,
+  dict_sort: requiredNumber.optional().default(0),
   dict_label: requiredText("字典标签").max(64, "字典标签不能超过 64 个字符"),
   dict_value: requiredText("字典键值").max(128, "字典键值不能超过 128 个字符"),
   dict_type: requiredText("字典类型").max(128, "字典类型不能超过 128 个字符"),
   css_class: optionalText,
   list_class: optionalText,
-  is_default: yesNo,
-  status,
+  is_default: yesNo.optional().default("N"),
+  status: status.optional().default("0"),
+  remark: optionalText,
+})
+
+export const noticeSchema = z.object({
+  notice_title: requiredText("通知标题").max(
+    100,
+    "通知标题不能超过 100 个字符"
+  ),
+  notice_type: noticeType.default("1"),
+  notice_content: optionalText,
+  status: status.optional().default("0"),
   remark: optionalText,
 })
 
@@ -285,21 +302,23 @@ export const resourceFields = {
     textareaField("remark", "备注"),
   ],
   dictTypes: [
-    textField("dict_name", "字典名称", undefined, true),
-    textField("dict_type", "字典类型", undefined, true),
+    textField("dict_name", "字典类型", undefined, true),
+    textField("dict_type", "字典代码", undefined, true),
     statusSwitchField("status", "状态", { hiddenOnCreate: true }),
     textareaField("remark", "备注"),
   ],
   dictData: [
-    numberField("dict_sort", "排序", undefined, true),
     textField("dict_label", "字典标签", undefined, true),
     textField("dict_value", "字典键值", undefined, true),
     textField("dict_type", "字典类型", undefined, true),
-    textField("css_class", "CSS 类名"),
-    textField("list_class", "列表样式"),
-    selectField("is_default", "是否默认", yesNoOptions),
-    selectField("status", "状态", statusOptions),
     textareaField("remark", "备注"),
+  ],
+  notices: [
+    textField("notice_title", "通知标题", "请输入通知标题", true),
+    selectField("notice_type", "通知类型", noticeTypeOptions, true),
+    statusSwitchField("status", "状态", { hiddenOnCreate: true }),
+    textareaField("notice_content", "通知内容", { colSpan: "full" }),
+    textareaField("remark", "备注", { colSpan: "full" }),
   ],
 } satisfies Record<string, ResourceField[]>
 
@@ -369,6 +388,13 @@ export const defaultValues = {
     css_class: "",
     list_class: "",
     is_default: "N" satisfies YesNoFlag,
+    status: "0" satisfies StatusFlag,
+    remark: "",
+  },
+  notices: {
+    notice_title: "",
+    notice_type: "1" satisfies NoticeTypeFlag,
+    notice_content: "",
     status: "0" satisfies StatusFlag,
     remark: "",
   },
@@ -451,8 +477,12 @@ function numberField(
   return { name, label, type: "number", description, required, ...options }
 }
 
-function textareaField(name: string, label: string): ResourceField {
-  return { name, label, type: "textarea" }
+function textareaField(
+  name: string,
+  label: string,
+  options?: Pick<ResourceField, "colSpan">
+): ResourceField {
+  return { name, label, type: "textarea", ...options }
 }
 
 function selectField(

@@ -184,6 +184,7 @@ export default function AppLayout() {
 
   return (
     <SidebarProvider
+      className="h-svh overflow-hidden"
       style={
         {
           "--sidebar-width": "calc(var(--spacing) * 64)",
@@ -230,7 +231,7 @@ export default function AppLayout() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      <SidebarInset className="overflow-hidden">
+      <SidebarInset className="h-svh min-h-0 overflow-hidden md:h-[calc(100svh-1rem)]">
         <SiteHeader>
           <TagsView
             activeRoute={routeMeta.id}
@@ -246,7 +247,7 @@ export default function AppLayout() {
             onSelectTag={handleSelectTag}
           />
         </SiteHeader>
-        <main className="@container/main flex flex-1 flex-col bg-background">
+        <main className="@container/main flex min-h-0 flex-1 flex-col overflow-hidden bg-background">
           <PageTransition
             routeKey={routeTransitionKey}
             transitionKey={pageTransitionKey}
@@ -283,12 +284,18 @@ function getRefreshQueryKeys(routeId: AppRouteMeta["id"]) {
       return [systemQueryKeys.posts]
     case "dict":
       return [systemQueryKeys.dictTypes, systemQueryKeys.dictData]
+    case "notices":
+      return [systemQueryKeys.notices]
     case "operation-logs":
       return [systemQueryKeys.operationLogs]
     case "login-logs":
       return [systemQueryKeys.loginLogs]
     case "health":
       return [monitorQueryKeys.health]
+    case "online-users":
+      return [monitorQueryKeys.onlineUsers]
+    case "jobs":
+      return [monitorQueryKeys.jobs]
     case "account":
       return [authQueryKeys.currentUser]
   }

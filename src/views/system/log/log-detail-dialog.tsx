@@ -2,27 +2,33 @@
 
 import { useEffect, useState } from "react"
 import type * as React from "react"
-import { CheckCircle2Icon, CopyIcon, EyeIcon, XCircleIcon } from "lucide-react"
+import { useQuery } from "@tanstack/react-query"
+import { CopyIcon, EyeIcon } from "lucide-react"
 import { toast } from "sonner"
 
+import { getLoginLog, getOperationLog } from "@/api/system/log"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   ResponsiveDialog,
+  ResponsiveDialogBody,
   ResponsiveDialogContent,
   ResponsiveDialogDescription,
   ResponsiveDialogHeader,
   ResponsiveDialogTitle,
 } from "@/components/ui/responsive-dialog"
-import { ScrollArea } from "@/components/ui/scroll-area"
+import { Spinner } from "@/components/ui/spinner"
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { formatAbsoluteDateTime } from "@/lib/datetime"
+import { systemQueryKeys } from "@/lib/query-keys"
 import type {
-  LoginLogResource,
+  LoginLogSummaryResource,
   LogStatusFlag,
-  OperationLogResource,
+  OperationLogSummaryResource,
 } from "@/types/admin"
+import { businessTypeLabel } from "@/views/system/log/constants"
+import { LogStatusBadge } from "@/views/system/log/log-status-badge"
 
 type DetailDialogProps<TData> = {
   open: boolean
@@ -31,19 +37,6 @@ type DetailDialogProps<TData> = {
 }
 
 type DetailField = { label: string; value: React.ReactNode }
-
-const BUSINESS_TYPE_LABELS: Record<number, string> = {
-  0: "其他",
-  1: "新增",
-  2: "修改",
-  3: "删除",
-  4: "授权",
-}
-
-const LOG_STATUS_LABELS = {
-  "0": "成功",
-  "1": "失败",
-} as const
 
 type IpLocationLookup = {
   address: string
@@ -80,53 +73,59 @@ export function OperationLogDetailDialog({
   open,
   record,
   onOpenChange,
-}: DetailDialogProps<OperationLogResource>) {
+}: DetailDialogProps<OperationLogSummaryResource>) {
+  const detailQuery = useQuery({
+    queryKey: [...systemQueryKeys.operationLogs, "detail", record?.oper_id],
+    queryFn: () => getOperationLog(record!.oper_id),
+    enabled: open && Boolean(record),
+  })
+  const detail = detailQuery.data
   const locationLookup = useIpLocationLookup(
     open,
-    record?.oper_ip,
-    record?.oper_location
+    detail?.oper_ip,
+    detail?.oper_location
   )
 
   return (
     <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
-      <ResponsiveDialogContent className="max-h-[88svh] gap-0 p-0 sm:max-w-5xl">
-        <ResponsiveDialogHeader className="px-5 py-2 pr-12 text-left">
-          <ResponsiveDialogTitle className="flex items-center gap-2">
-            操作日志详情
-            {record ? <LogStatusBadge status={record.status} /> : null}
-          </ResponsiveDialogTitle>
-          <ResponsiveDialogDescription className="sr-only">
-            查看本次后台操作的请求、参数和执行结果。
-          </ResponsiveDialogDescription>
-        </ResponsiveDialogHeader>
-        <ScrollArea className="max-h-[calc(88svh-4.5rem)] px-5 pb-5">
-          {record ? (
+      <ResponsiveDialogContent className="flex max-h-[90svh] flex-col gap-0 overflow-hidden p-0 data-[vaul-drawer-direction=bottom]:min-h-[32svh] sm:max-w-5xl">
+        <LogDetailHeader
+          title="操作日志详情"
+          status={record?.status}
+          description="查看本次后台操作的请求、参数和执行结果。"
+        />
+        <ResponsiveDialogBody className="max-h-[calc(90svh-3.75rem)] min-h-0 flex-none overflow-y-auto px-5 pt-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
+          {detailQuery.isPending ? (
+            <DetailLoading />
+          ) : detailQuery.isError ? (
+            <DetailError />
+          ) : detail ? (
             <div className="flex flex-col gap-3">
               <CompactDetailTable
                 title="概要"
                 fields={[
-                  { label: "操作模块", value: record.title },
+                  { label: "操作模块", value: detail.title },
                   {
                     label: "业务类型",
                     value: (
                       <Badge variant="outline">
-                        {businessTypeLabel(record.business_type)}
+                        {businessTypeLabel(detail.business_type)}
                       </Badge>
                     ),
                   },
                   {
                     label: "操作时间",
-                    value: formatAbsoluteDateTime(record.operated_at),
+                    value: formatAbsoluteDateTime(detail.operated_at),
                   },
-                  { label: "消耗时间", value: `${record.cost_time} 毫秒` },
-                  { label: "操作人员", value: record.oper_name || "系统" },
-                  { label: "所属部门", value: record.dept_name },
+                  { label: "消耗时间", value: `${detail.cost_time} 毫秒` },
+                  { label: "操作人员", value: detail.oper_name || "系统" },
+                  { label: "所属部门", value: detail.dept_name },
                   {
                     label: "操作地址",
                     value: (
                       <AddressValue
-                        ip={record.oper_ip}
-                        storedLocation={record.oper_location}
+                        ip={detail.oper_ip}
+                        storedLocation={detail.oper_location}
                         lookup={locationLookup}
                       />
                     ),
@@ -135,22 +134,22 @@ export function OperationLogDetailDialog({
                     label: "请求地址",
                     value: (
                       <RequestAddress
-                        method={record.request_method}
-                        url={record.oper_url}
+                        method={detail.request_method}
+                        url={detail.oper_url}
                       />
                     ),
                   },
-                  { label: "操作方法", value: record.method },
+                  { label: "操作方法", value: detail.method },
                 ]}
               />
-              <PayloadSection title="请求参数" value={record.oper_param} />
-              <PayloadSection title="返回参数" value={record.json_result} />
-              {record.error_msg ? (
-                <PayloadSection title="异常信息" value={record.error_msg} />
+              <PayloadSection title="请求参数" value={detail.oper_param} />
+              <PayloadSection title="返回参数" value={detail.json_result} />
+              {detail.error_msg ? (
+                <PayloadSection title="异常信息" value={detail.error_msg} />
               ) : null}
             </div>
           ) : null}
-        </ScrollArea>
+        </ResponsiveDialogBody>
       </ResponsiveDialogContent>
     </ResponsiveDialog>
   )
@@ -160,56 +159,79 @@ export function LoginLogDetailDialog({
   open,
   record,
   onOpenChange,
-}: DetailDialogProps<LoginLogResource>) {
+}: DetailDialogProps<LoginLogSummaryResource>) {
+  const detailQuery = useQuery({
+    queryKey: [...systemQueryKeys.loginLogs, "detail", record?.info_id],
+    queryFn: () => getLoginLog(record!.info_id),
+    enabled: open && Boolean(record),
+  })
+  const detail = detailQuery.data
   const locationLookup = useIpLocationLookup(
     open,
-    record?.ip_addr,
-    record?.login_location
+    detail?.ip_addr,
+    detail?.login_location
   )
 
   return (
     <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
-      <ResponsiveDialogContent className="max-h-[88svh] gap-0 p-0 sm:max-w-3xl">
-        <ResponsiveDialogHeader className="px-5 py-2 pr-12 text-left">
-          <ResponsiveDialogTitle className="flex items-center gap-2">
-            登录日志详情
-            {record ? <LogStatusBadge status={record.status} /> : null}
-          </ResponsiveDialogTitle>
-          <ResponsiveDialogDescription className="sr-only">
-            查看本次登录的账号、客户端和执行状态。
-          </ResponsiveDialogDescription>
-        </ResponsiveDialogHeader>
-        <ScrollArea className="max-h-[calc(88svh-4.5rem)] px-5 pb-5">
-          {record ? (
+      <ResponsiveDialogContent className="flex max-h-[90svh] flex-col gap-0 overflow-hidden p-0 data-[vaul-drawer-direction=bottom]:min-h-[32svh] sm:max-w-3xl">
+        <LogDetailHeader
+          title="登录日志详情"
+          status={record?.status}
+          description="查看本次登录的账号、客户端和执行状态。"
+        />
+        <ResponsiveDialogBody className="max-h-[calc(90svh-3.75rem)] min-h-0 flex-none overflow-y-auto px-5 pt-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
+          {detailQuery.isPending ? (
+            <DetailLoading />
+          ) : detailQuery.isError ? (
+            <DetailError />
+          ) : detail ? (
             <div className="flex flex-col gap-3">
               <CompactDetailTable
                 title="概要"
                 fields={[
-                  { label: "登录账号", value: record.user_name },
+                  { label: "登录账号", value: detail.user_name },
                   {
                     label: "登录时间",
-                    value: formatAbsoluteDateTime(record.login_at),
+                    value: formatAbsoluteDateTime(detail.login_at),
                   },
-                  { label: "提示消息", value: record.msg },
+                  { label: "提示消息", value: detail.msg },
                   {
                     label: "登录地址",
                     value: (
                       <AddressValue
-                        ip={record.ip_addr}
-                        storedLocation={record.login_location}
+                        ip={detail.ip_addr}
+                        storedLocation={detail.login_location}
                         lookup={locationLookup}
                       />
                     ),
                   },
-                  { label: "浏览器", value: record.browser },
-                  { label: "操作系统", value: record.os },
+                  { label: "浏览器", value: detail.browser },
+                  { label: "操作系统", value: detail.os },
                 ]}
               />
             </div>
           ) : null}
-        </ScrollArea>
+        </ResponsiveDialogBody>
       </ResponsiveDialogContent>
     </ResponsiveDialog>
+  )
+}
+
+function DetailLoading() {
+  return (
+    <div className="flex min-h-32 items-center justify-center gap-2 text-sm text-muted-foreground">
+      <Spinner />
+      加载详情中...
+    </div>
+  )
+}
+
+function DetailError() {
+  return (
+    <div className="flex min-h-32 items-center justify-center text-sm text-muted-foreground">
+      详情加载失败，请关闭后重试。
+    </div>
   )
 }
 
@@ -296,31 +318,36 @@ function RequestAddress({ method, url }: { method: string; url: string }) {
   )
 }
 
+function LogDetailHeader({
+  title,
+  status,
+  description,
+}: {
+  title: string
+  status?: LogStatusFlag
+  description: string
+}) {
+  return (
+    <ResponsiveDialogHeader className="border-b px-5 pt-4 pr-12 pb-3 text-left sm:px-6">
+      <div className="flex min-w-0 items-center gap-2">
+        <ResponsiveDialogTitle className="min-w-0 truncate text-base leading-tight font-semibold tracking-tight">
+          {title}
+        </ResponsiveDialogTitle>
+        {status ? <LogStatusBadge status={status} /> : null}
+      </div>
+      <ResponsiveDialogDescription className="sr-only">
+        {description}
+      </ResponsiveDialogDescription>
+    </ResponsiveDialogHeader>
+  )
+}
+
 function chunkFields(fields: DetailField[], size: number) {
   const rows: DetailField[][] = []
   for (let index = 0; index < fields.length; index += size) {
     rows.push(fields.slice(index, index + size))
   }
   return rows
-}
-
-function LogStatusBadge({ status }: { status: LogStatusFlag }) {
-  const isSuccess = status === "0"
-
-  return (
-    <Badge variant={isSuccess ? "secondary" : "destructive"}>
-      {isSuccess ? (
-        <CheckCircle2Icon data-icon="inline-start" />
-      ) : (
-        <XCircleIcon data-icon="inline-start" />
-      )}
-      {LOG_STATUS_LABELS[status]}
-    </Badge>
-  )
-}
-
-function businessTypeLabel(value: number) {
-  return BUSINESS_TYPE_LABELS[value] ?? String(value)
 }
 
 function AddressValue({
@@ -368,28 +395,43 @@ function useIpLocationLookup(
   const [lookup, setLookup] = useState<IpLocationLookup>(EMPTY_IP_LOOKUP)
 
   useEffect(() => {
+    let isActive = true
+    const deferLookup = (nextLookup: IpLocationLookup) => {
+      queueMicrotask(() => {
+        if (isActive) {
+          setLookup(nextLookup)
+        }
+      })
+    }
+
     if (!open || !normalizedIp || fallbackLocation) {
-      setLookup(EMPTY_IP_LOOKUP)
-      return
+      deferLookup(EMPTY_IP_LOOKUP)
+      return () => {
+        isActive = false
+      }
     }
 
     if (!isPublicIpCandidate(normalizedIp)) {
-      setLookup(EMPTY_IP_LOOKUP)
-      return
+      deferLookup(EMPTY_IP_LOOKUP)
+      return () => {
+        isActive = false
+      }
     }
 
     const cachedAddress = IP_LOCATION_CACHE.get(normalizedIp)
     if (cachedAddress) {
-      setLookup({
+      deferLookup({
         address: cachedAddress,
         error: null,
         isLoading: false,
       })
-      return
+      return () => {
+        isActive = false
+      }
     }
 
     const controller = new AbortController()
-    setLookup({
+    deferLookup({
       address: "",
       error: null,
       isLoading: true,
@@ -413,6 +455,9 @@ function useIpLocationLookup(
         if (address) {
           IP_LOCATION_CACHE.set(normalizedIp, address)
         }
+        if (!isActive) {
+          return
+        }
         setLookup({
           address,
           error: address ? null : "empty address",
@@ -423,6 +468,9 @@ function useIpLocationLookup(
         if (controller.signal.aborted) {
           return
         }
+        if (!isActive) {
+          return
+        }
         setLookup({
           address: "",
           error: error instanceof Error ? error.message : "IP lookup failed",
@@ -430,7 +478,10 @@ function useIpLocationLookup(
         })
       })
 
-    return () => controller.abort()
+    return () => {
+      isActive = false
+      controller.abort()
+    }
   }, [fallbackLocation, normalizedIp, open])
 
   return lookup

@@ -139,16 +139,18 @@
 @layer components {
   .tags-view-chrome {
     --tags-bar-height: 34px;
+    --tags-tab-height: 32px;
     --tags-nav-width: 28px;
     --tags-chrome-wing-r: 14px;
     --tags-chrome-wing-offset: -14px;
     --tags-chrome-wing-half: 7px;
     --tags-chrome-wing-half-negative: -7px;
     --tags-ruoyi-primary: #409eff;
+    --tags-chrome-track-bg: color-mix(in srgb, var(--muted) 76%, var(--border));
     --tags-chrome-active-bg: color-mix(
       in srgb,
       var(--tags-ruoyi-primary) 15%,
-      var(--background)
+      var(--tags-chrome-track-bg)
     );
     --tags-chrome-active-text: var(--tags-ruoyi-primary);
     --tags-chrome-tab-text: var(--muted-foreground);
@@ -159,7 +161,7 @@
     height: var(--tags-bar-height);
     min-width: 0;
     overflow: visible;
-    background: var(--background);
+    background: var(--tags-chrome-track-bg);
     border-bottom: 1px solid var(--border);
   }
 
@@ -171,7 +173,7 @@
     justify-content: center;
     height: var(--tags-bar-height);
     color: var(--muted-foreground);
-    background: transparent;
+    background: var(--tags-chrome-track-bg);
     border: 0;
     border-radius: 0;
     transition:
@@ -183,7 +185,7 @@
   .tags-view-chrome__nav:hover,
   .tags-view-chrome__action:hover {
     color: var(--foreground);
-    background: transparent;
+    background: var(--tags-chrome-track-bg);
   }
 
   .tags-view-chrome__nav {
@@ -244,6 +246,7 @@
     height: 100%;
     overflow-x: auto;
     overflow-y: hidden;
+    background: var(--tags-chrome-track-bg);
     scrollbar-width: none;
     -ms-overflow-style: none;
   }
@@ -258,6 +261,7 @@
     align-items: flex-end;
     min-width: max-content;
     height: 100%;
+    background: var(--tags-chrome-track-bg);
     padding-right: var(--tags-chrome-wing-r);
     padding-left: 0;
   }
@@ -272,8 +276,8 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    height: var(--tags-bar-height);
-    min-height: var(--tags-bar-height);
+    height: var(--tags-tab-height);
+    min-height: var(--tags-tab-height);
     margin: 0 0 -1px;
     padding: 0 12px;
     color: var(--tags-chrome-tab-text);
@@ -346,8 +350,8 @@
 
   .tags-view-chrome__item.active {
     z-index: 2;
-    height: var(--tags-bar-height);
-    min-height: var(--tags-bar-height);
+    height: var(--tags-tab-height);
+    min-height: var(--tags-tab-height);
     margin-bottom: 0;
     padding: 0 14px;
     color: var(--tags-chrome-active-text);

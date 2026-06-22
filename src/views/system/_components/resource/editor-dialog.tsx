@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query"
 import { zodResolver } from "@hookform/resolvers/zod"
 import {
   useForm,
+  useWatch,
   type FieldError as HookFormFieldError,
   type FieldErrors,
   type Resolver,
@@ -66,7 +67,7 @@ export function ResourceEditorDialog({
     defaultValues: values,
   })
   const { reset } = form
-  const watchedValues = form.watch()
+  const watchedValues = useWatch({ control: form.control })
   const hasRoleField = fields.some(
     (field) => field.type === "role-multi-select"
   )

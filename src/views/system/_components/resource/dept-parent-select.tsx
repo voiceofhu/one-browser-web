@@ -57,7 +57,7 @@ export function DeptParentSelect({
     queryFn: () => listDepts({ page: 1, page_size: 500 }),
     staleTime: 30_000,
   })
-  const depts = React.useMemo(() => query.data?.items ?? [], [query.data])
+  const depts = React.useMemo(() => query.data?.list ?? [], [query.data])
   const selectableDepts = React.useMemo(
     () => filterSelectableDepts(depts, currentDeptId),
     [currentDeptId, depts]

@@ -10,23 +10,18 @@ import {
   OperationLogDetailDialog,
 } from "@/views/system/log/log-detail-dialog"
 import { LogTable } from "@/views/system/log/log-table"
-import type { OperationLogResource } from "@/types/admin"
+import type { OperationLogSummaryResource } from "@/types/admin"
 
 export default function OperationLogPage() {
   const [detailRecord, setDetailRecord] =
-    React.useState<OperationLogResource | null>(null)
+    React.useState<OperationLogSummaryResource | null>(null)
 
   return (
     <>
-      <LogTable<OperationLogResource>
+      <LogTable<OperationLogSummaryResource>
         queryKey={systemQueryKeys.operationLogs}
         list={listOperationLogs}
         columns={operationLogColumns}
-        defaultColumnVisibility={{
-          oper_param: false,
-          json_result: false,
-          error_msg: false,
-        }}
         columnVisibilityResetKey="operation-log"
         getRowId={(row, index) => String(row.oper_id || index)}
         searchPlaceholder="搜索模块、人员、路径、IP..."

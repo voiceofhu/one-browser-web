@@ -1,20 +1,29 @@
 import { buildQueryPath, http } from "@/lib/request"
 
-import type { ListParams, PageResponse, UserResource } from "@/types/admin"
+import type {
+  ListParams,
+  PageResponse,
+  ResourceMutationResult,
+  UserResource,
+} from "@/types/admin"
 
 type UserPayload = Record<string, unknown>
 type IdsPayload = {
   ids: number[]
 }
 
-const USER_PATH = "/system/user"
+const USER_PATH = "/system/users"
 
 export function listUsers(params?: ListParams) {
   return http.get<PageResponse<UserResource>>(buildQueryPath(USER_PATH, params))
 }
 
+export function getUser(userId: number) {
+  return http.get<UserResource>(`${USER_PATH}/${userId}`)
+}
+
 export function createUser(payload: UserPayload) {
-  return http.post<UserResource>(USER_PATH, payload)
+  return http.post<ResourceMutationResult>(USER_PATH, payload)
 }
 
 export function updateUser(userId: number, payload: UserPayload) {
@@ -26,19 +35,19 @@ export function deleteUser(userId: number) {
 }
 
 export function getUserRoleIds(userId: number) {
-  return http.get<IdsPayload>(`${USER_PATH}/${userId}/role`)
+  return http.get<IdsPayload>(`${USER_PATH}/${userId}/roles`)
 }
 
 export function setUserRoleIds(userId: number, roleIds: number[]) {
-  return http.put<void>(`${USER_PATH}/${userId}/role`, { ids: roleIds })
+  return http.put<void>(`${USER_PATH}/${userId}/roles`, { ids: roleIds })
 }
 
 export function getUserPostIds(userId: number) {
-  return http.get<IdsPayload>(`${USER_PATH}/${userId}/post`)
+  return http.get<IdsPayload>(`${USER_PATH}/${userId}/posts`)
 }
 
 export function setUserPostIds(userId: number, postIds: number[]) {
-  return http.put<void>(`${USER_PATH}/${userId}/post`, { ids: postIds })
+  return http.put<void>(`${USER_PATH}/${userId}/posts`, { ids: postIds })
 }
 
 export function setUserStatus(userId: number, status: "0" | "1") {
@@ -46,5 +55,5 @@ export function setUserStatus(userId: number, status: "0" | "1") {
 }
 
 export function resetUserPassword(userId: number, password: string) {
-  return http.put<void>(`${USER_PATH}/${userId}/reset-password`, { password })
+  return http.post<void>(`${USER_PATH}/${userId}/password-reset`, { password })
 }

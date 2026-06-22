@@ -90,7 +90,10 @@ function ResponsiveDialogContent({
   if (mode === "drawer") {
     return (
       <DrawerContent
-        className={cn("h-[90svh] max-h-[90svh] overflow-hidden p-0", className)}
+        className={cn(
+          "max-h-[90svh] overflow-hidden p-0 data-[vaul-drawer-direction=bottom]:max-h-[90svh]",
+          className
+        )}
         {...props}
       >
         {children}

@@ -45,24 +45,24 @@ import {
   RoleAssignmentDialog,
 } from "./user-action-dialogs"
 
-type ResourceManagerProps<TData> = {
-  config: DashboardResourceConfig<TData>
+type ResourceManagerProps<TData, TDetail extends TData = TData> = {
+  config: DashboardResourceConfig<TData, TDetail>
   renderInlineRowActions?: (record: TData) => React.ReactNode
 }
 
-type EditorState<TData> =
+type EditorState<TDetail> =
   | { mode: "create"; values?: ResourceFormValues; record?: undefined }
-  | { mode: "edit"; record: TData }
+  | { mode: "edit"; record: TDetail }
 
 type BulkDeleteState<TData> = {
   records: TData[]
   clearSelection: () => void
 }
 
-export function ResourceManager<TData>({
+export function ResourceManager<TData, TDetail extends TData = TData>({
   config,
   renderInlineRowActions,
-}: ResourceManagerProps<TData>) {
+}: ResourceManagerProps<TData, TDetail>) {
   const queryClient = useQueryClient()
   const authPermissions = useAuthPermissions()
   const [search, setSearch] = React.useState("")
@@ -102,8 +102,8 @@ export function ResourceManager<TData>({
     placeholderData: (previousData) => previousData,
   })
   const records = React.useMemo(
-    () => query.data?.items ?? [],
-    [query.data?.items]
+    () => query.data?.list ?? [],
+    [query.data?.list]
   )
   const tableData = React.useMemo(
     () =>
@@ -114,7 +114,7 @@ export function ResourceManager<TData>({
   )
   const tableTotalRows = treeConfig ? records.length : (query.data?.total ?? 0)
   const tablePageSize = treeConfig ? Math.max(records.length, 1) : pageSize
-  const [editor, setEditor] = React.useState<EditorState<TData> | null>(null)
+  const [editor, setEditor] = React.useState<EditorState<TDetail> | null>(null)
   const [deletingRecord, setDeletingRecord] = React.useState<TData | null>(null)
   const [bulkDeletingState, setBulkDeletingState] =
     React.useState<BulkDeleteState<TData> | null>(null)
@@ -142,7 +142,7 @@ export function ResourceManager<TData>({
       record,
       values,
     }: {
-      record: TData
+      record: TDetail
       values: ResourceFormValues
     }) => config.update(record, values),
     onSuccess: async () => {
@@ -282,6 +282,20 @@ export function ResourceManager<TData>({
     setEditor(values ? { mode: "create", values } : { mode: "create" })
   }
 
+  async function handleEdit(record: TData) {
+    if (!config.detail) {
+      setEditor({ mode: "edit", record: record as TDetail })
+      return
+    }
+
+    try {
+      const detailRecord = await config.detail(record)
+      setEditor({ mode: "edit", record: detailRecord })
+    } catch (error) {
+      showResourceError(error)
+    }
+  }
+
   async function handleRefresh() {
     setIsManualRefreshing(true)
     try {
@@ -299,7 +313,7 @@ export function ResourceManager<TData>({
   }
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="flex h-full min-h-0 flex-1 flex-col">
       <ResourceTable
         data={tableData}
         columns={config.columns}
@@ -385,7 +399,7 @@ export function ResourceManager<TData>({
                       noun={config.noun}
                       onEdit={
                         canUpdate && !isProtected
-                          ? () => setEditor({ mode: "edit", record })
+                          ? () => void handleEdit(record)
                           : undefined
                       }
                       onDelete={

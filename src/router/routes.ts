@@ -6,9 +6,12 @@ export type AppRouteId =
   | "depts"
   | "posts"
   | "dict"
+  | "notices"
   | "operation-logs"
   | "login-logs"
   | "health"
+  | "online-users"
+  | "jobs"
   | "account"
 
 export interface AppRouteMeta {
@@ -72,6 +75,13 @@ export const APP_ROUTES: AppRouteMeta[] = [
     path: "/system/dict",
   },
   {
+    id: "notices",
+    label: "通知管理",
+    title: "通知管理",
+    description: "管理后台通知公告、发布状态和展示内容。",
+    path: "/system/notice",
+  },
+  {
     id: "operation-logs",
     label: "操作日志",
     title: "操作日志",
@@ -93,6 +103,20 @@ export const APP_ROUTES: AppRouteMeta[] = [
     path: "/monitor/health",
   },
   {
+    id: "online-users",
+    label: "在线用户",
+    title: "在线用户",
+    description: "查看当前登录会话，并可按需强制用户下线。",
+    path: "/monitor/online",
+  },
+  {
+    id: "jobs",
+    label: "定时任务",
+    title: "定时任务",
+    description: "管理后台白名单调度任务、状态和手动执行。",
+    path: "/monitor/job",
+  },
+  {
     id: "account",
     label: "个人账号",
     title: "个人账号",
@@ -108,7 +132,7 @@ export const APP_ROUTE_GROUPS = [
   },
   {
     label: "系统管理",
-    routes: ["users", "roles", "menus", "depts", "posts", "dict"],
+    routes: ["users", "roles", "menus", "depts", "posts", "dict", "notices"],
   },
   {
     label: "系统日志",
@@ -116,7 +140,7 @@ export const APP_ROUTE_GROUPS = [
   },
   {
     label: "系统监控",
-    routes: ["health"],
+    routes: ["health", "online-users", "jobs"],
   },
 ] satisfies {
   label: string
@@ -156,6 +180,9 @@ export const LEGACY_ROUTE_REDIRECTS: Record<string, string> = {
   "/dashboard/dict-data": "/system/dict",
   "/dashboard/system/dict-data": "/system/dict",
   "/dashboard/system/dict": "/system/dict",
+  "/dashboard/notices": "/system/notice",
+  "/dashboard/system/notices": "/system/notice",
+  "/dashboard/system/notice": "/system/notice",
   "/dashboard/operation-logs": "/system/log/operation",
   "/dashboard/system/operation-logs": "/system/log/operation",
   "/dashboard/system/log/operation": "/system/log/operation",
@@ -201,6 +228,11 @@ export const VISIBLE_LABELS = {
 export const YES_NO_LABELS = {
   Y: "是",
   N: "否",
+} as const
+
+export const NOTICE_TYPE_LABELS = {
+  "1": "通知",
+  "2": "公告",
 } as const
 
 export function getLabel<T extends string>(

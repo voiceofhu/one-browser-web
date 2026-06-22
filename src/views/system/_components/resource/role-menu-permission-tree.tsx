@@ -58,7 +58,7 @@ export function RoleMenuPermissionTree({
   }, [onChange, roleMenusQuery.data])
 
   const menus = React.useMemo(
-    () => menusQuery.data?.items ?? [],
+    () => menusQuery.data?.list ?? [],
     [menusQuery.data]
   )
   const tree = React.useMemo(() => buildMenuTree(menus), [menus])

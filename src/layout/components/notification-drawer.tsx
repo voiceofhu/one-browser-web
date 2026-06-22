@@ -1,5 +1,12 @@
+import * as React from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { BellIcon, BellOffIcon, CheckIcon, CircleAlertIcon } from "lucide-react"
+import { gsap } from "gsap"
+import {
+  BellIcon,
+  CheckCheckIcon,
+  CircleAlertIcon,
+  RefreshCwIcon,
+} from "lucide-react"
 import { toast } from "sonner"
 
 import {
@@ -11,35 +18,29 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty"
-import {
-  Item,
-  ItemContent,
-  ItemDescription,
-  ItemGroup,
-  ItemHeader,
-  ItemTitle,
-} from "@/components/ui/item"
+  AnimatedSegmentedTabs,
+  type AnimatedSegmentedTabsOption,
+} from "@/components/ui/animated-segmented-tabs"
+import { ItemGroup } from "@/components/ui/item"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Separator } from "@/components/ui/separator"
 import {
   Sheet,
   SheetContent,
-  SheetDescription,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet"
-import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
 import { useCurrentUser } from "@/hooks/use-auth"
 import { formatAbsoluteDateTime, formatRelativeTime } from "@/lib/datetime"
 import { buildQueryPath, http } from "@/lib/request"
+import {
+  NoticeItem,
+  NotificationEmpty,
+  NotificationFilterLabel,
+  NotificationSkeleton,
+  type NotificationFilter,
+} from "@/layout/components/notification-drawer-items"
 
 type Notice = {
   notice_id: number
@@ -69,6 +70,10 @@ export function NotificationDrawer() {
   const queryClient = useQueryClient()
   const currentUser = useCurrentUser()
   const userId = currentUser.data?.user_id
+  const listRef = React.useRef<HTMLDivElement>(null)
+  const refreshIconRef = React.useRef<SVGSVGElement>(null)
+  const [filter, setFilter] = React.useState<NotificationFilter>("all")
+  const [isManualRefreshing, setIsManualRefreshing] = React.useState(false)
   const noticesQuery = useQuery({
     queryKey: notificationQueryKeys.notices,
     queryFn: () => http.get<Notice[]>("/notices"),
@@ -85,23 +90,28 @@ export function NotificationDrawer() {
     enabled: userId !== undefined,
   })
   const markRead = useMutation({
-    mutationFn: (noticeId: number) => {
-      if (userId === undefined) {
-        throw new Error("当前用户信息尚未加载完成")
-      }
-
-      return http.post<NoticeRead>(
-        buildQueryPath(`/notices/${noticeId}/read`, { user_id: userId })
-      )
-    },
+    mutationFn: (noticeId: number) => markNoticeRead(noticeId, userId),
     onSuccess: (read) => {
       queryClient.setQueryData<NoticeRead[]>(
         notificationQueryKeys.reads(read.user_id),
-        (current = []) =>
-          current.some((item) => item.notice_id === read.notice_id)
-            ? current
-            : [read, ...current]
+        (current = []) => mergeReads(current, [read])
       )
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "通知标记已读失败")
+    },
+  })
+  const markAllRead = useMutation({
+    mutationFn: (noticeIds: number[]) =>
+      Promise.all(
+        noticeIds.map((noticeId) => markNoticeRead(noticeId, userId))
+      ),
+    onSuccess: (reads) => {
+      queryClient.setQueryData<NoticeRead[]>(
+        notificationQueryKeys.reads(userId),
+        (current = []) => mergeReads(current, reads)
+      )
+      toast.success("未读通知已全部处理")
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : "通知标记已读失败")
@@ -114,23 +124,113 @@ export function NotificationDrawer() {
   const readNoticeIds = new Set(
     (readsQuery.data ?? []).map((read) => read.notice_id)
   )
-  const unreadCount =
+  const unreadNotices =
     noticesQuery.isSuccess && readsQuery.isSuccess
-      ? notices.filter((notice) => !readNoticeIds.has(notice.notice_id)).length
+      ? notices.filter((notice) => !readNoticeIds.has(notice.notice_id))
+      : []
+  const unreadCount = unreadNotices.length
+  const readCount =
+    noticesQuery.isSuccess && readsQuery.isSuccess
+      ? notices.length - unreadCount
       : 0
+  const filteredNotices = filterNotices(notices, readNoticeIds, filter)
   const isLoading =
     currentUser.isPending ||
     noticesQuery.isPending ||
     (userId !== undefined && readsQuery.isPending)
   const hasError =
     currentUser.isError || noticesQuery.isError || readsQuery.isError
+  const isMutating = markRead.isPending || markAllRead.isPending
+  const isRefreshing =
+    currentUser.isRefetching ||
+    noticesQuery.isRefetching ||
+    (userId !== undefined && readsQuery.isRefetching)
+  const isRefreshButtonBusy = isRefreshing || isManualRefreshing
   const triggerLabel = unreadCount > 0 ? `通知，${unreadCount} 条未读` : "通知"
+  const filterOptions: AnimatedSegmentedTabsOption<NotificationFilter>[] = [
+    {
+      label: <NotificationFilterLabel label="全部" count={notices.length} />,
+      value: "all",
+    },
+    {
+      label: <NotificationFilterLabel label="未读" count={unreadCount} />,
+      value: "unread",
+    },
+    {
+      label: <NotificationFilterLabel label="已读" count={readCount} />,
+      value: "read",
+    },
+  ]
 
-  function retry() {
-    void currentUser.refetch()
-    void noticesQuery.refetch()
+  React.useLayoutEffect(() => {
+    const list = listRef.current
+
+    if (!list || isLoading || hasError || prefersReducedMotion()) {
+      return
+    }
+
+    const ctx = gsap.context(() => {
+      gsap.fromTo(
+        list.children,
+        { autoAlpha: 0, y: 6 },
+        {
+          autoAlpha: 1,
+          clearProps: "opacity,transform,visibility",
+          duration: 0.2,
+          ease: "power2.out",
+          stagger: 0.025,
+          y: 0,
+        }
+      )
+    }, list)
+
+    return () => ctx.revert()
+  }, [filter, filteredNotices.length, hasError, isLoading])
+
+  async function retry() {
+    const requests: Array<Promise<{ isError: boolean }>> = [
+      currentUser.refetch(),
+      noticesQuery.refetch(),
+    ]
+
     if (userId !== undefined) {
-      void readsQuery.refetch()
+      requests.push(readsQuery.refetch())
+    }
+
+    try {
+      const results = await Promise.all(requests)
+      return !results.some((result) => result.isError)
+    } catch {
+      return false
+    }
+  }
+
+  async function refreshWithFeedback() {
+    if (isManualRefreshing) {
+      return
+    }
+
+    setIsManualRefreshing(true)
+
+    try {
+      const [succeeded] = await Promise.all([
+        retry(),
+        rotateRefreshIcon(refreshIconRef.current),
+      ])
+
+      if (succeeded) {
+        toast.success("通知已刷新")
+      } else {
+        toast.error("通知刷新失败")
+      }
+    } finally {
+      setIsManualRefreshing(false)
+    }
+  }
+
+  function markUnreadNoticesRead() {
+    if (unreadNotices.length > 0) {
+      markAllRead.mutate(unreadNotices.map((notice) => notice.notice_id))
     }
   }
 
@@ -139,7 +239,7 @@ export function NotificationDrawer() {
       <SheetTrigger asChild>
         <Button
           aria-label={triggerLabel}
-          className="relative"
+          className="relative overflow-visible"
           size="icon-sm"
           title={triggerLabel}
           variant="outline"
@@ -148,7 +248,7 @@ export function NotificationDrawer() {
           {unreadCount > 0 ? (
             <Badge
               aria-hidden="true"
-              className="absolute -top-1.5 -right-1.5 h-4 min-w-4 px-1 text-[10px]"
+              className="pointer-events-none absolute -top-0.5 -right-0.5 z-10 h-4 min-w-4 rounded-full bg-destructive px-1 text-[10px] leading-none text-background ring-2 ring-background"
               variant="destructive"
             >
               {unreadCount > 99 ? "99+" : unreadCount}
@@ -156,16 +256,54 @@ export function NotificationDrawer() {
           ) : null}
         </Button>
       </SheetTrigger>
-      <SheetContent className="gap-0" side="right">
-        <SheetHeader className="pr-12">
-          <SheetTitle>通知</SheetTitle>
-          <SheetDescription>
-            {isLoading
-              ? "正在加载通知"
-              : `共 ${notices.length} 条，${unreadCount} 条未读`}
-          </SheetDescription>
+      <SheetContent className="gap-0 p-0 sm:max-w-md" side="right">
+        <SheetHeader className="relative border-b px-4 pt-3 pb-2">
+          <div className="flex h-7 items-center pr-24">
+            <SheetTitle className="truncate text-base leading-none">
+              通知中心
+            </SheetTitle>
+          </div>
+          <div className="absolute top-3 right-12 flex items-center gap-0.5">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              aria-label="全部标记为已读"
+              title="全部标记为已读"
+              disabled={unreadCount === 0 || isMutating}
+              onClick={markUnreadNoticesRead}
+            >
+              {markAllRead.isPending ? (
+                <Spinner />
+              ) : (
+                <CheckCheckIcon data-icon="inline-start" />
+              )}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              aria-label="刷新通知"
+              title="刷新通知"
+              disabled={isLoading || isRefreshButtonBusy}
+              onClick={() => void refreshWithFeedback()}
+            >
+              <RefreshCwIcon ref={refreshIconRef} data-icon="inline-start" />
+            </Button>
+          </div>
+
+          <AnimatedSegmentedTabs
+            label="通知筛选"
+            options={filterOptions}
+            value={filter}
+            onValueChange={setFilter}
+            className="mt-2"
+            listClassName="grid h-8 w-full grid-cols-3"
+            triggerClassName="w-full gap-1.5 px-2 text-sm"
+            highlightClassName="shadow-none"
+          />
         </SheetHeader>
-        <Separator />
+
         <ScrollArea className="min-h-0 flex-1">
           {isLoading ? (
             <NotificationSkeleton />
@@ -180,76 +318,38 @@ export function NotificationDrawer() {
                   )}
                 </AlertDescription>
                 <AlertAction>
-                  <Button onClick={retry} size="xs" variant="outline">
+                  <Button
+                    onClick={() => void refreshWithFeedback()}
+                    size="xs"
+                    variant="outline"
+                  >
                     重试
                   </Button>
                 </AlertAction>
               </Alert>
             </div>
-          ) : notices.length === 0 ? (
-            <Empty>
-              <EmptyHeader>
-                <EmptyMedia variant="icon">
-                  <BellOffIcon />
-                </EmptyMedia>
-                <EmptyTitle>暂无通知</EmptyTitle>
-                <EmptyDescription>
-                  当前没有可显示的通知或公告。
-                </EmptyDescription>
-              </EmptyHeader>
-            </Empty>
+          ) : filteredNotices.length === 0 ? (
+            <NotificationEmpty filter={filter} />
           ) : (
-            <ItemGroup className="gap-1 p-2">
-              {notices.map((notice) => {
+            <ItemGroup ref={listRef} className="gap-0">
+              {filteredNotices.map((notice) => {
                 const isUnread = !readNoticeIds.has(notice.notice_id)
                 const date = getNoticeDate(notice.created_at)
                 const isMarkingRead =
-                  markRead.isPending && markRead.variables === notice.notice_id
+                  (markRead.isPending &&
+                    markRead.variables === notice.notice_id) ||
+                  (markAllRead.isPending &&
+                    markAllRead.variables?.includes(notice.notice_id))
 
                 return (
-                  <Item
+                  <NoticeItem
                     key={notice.notice_id}
-                    size="sm"
-                    variant={isUnread ? "muted" : "default"}
-                  >
-                    <ItemContent>
-                      <ItemHeader>
-                        <div className="flex min-w-0 flex-1 items-center gap-2">
-                          <ItemTitle className="min-w-0">
-                            {notice.notice_title}
-                          </ItemTitle>
-                          <Badge variant="outline">
-                            {notice.notice_type === "1" ? "通知" : "公告"}
-                          </Badge>
-                          {isUnread ? <Badge>未读</Badge> : null}
-                        </div>
-                        {isUnread ? (
-                          <Button
-                            aria-label={`将“${notice.notice_title}”标记为已读`}
-                            disabled={isMarkingRead}
-                            onClick={() => markRead.mutate(notice.notice_id)}
-                            size="icon-xs"
-                            title="标记为已读"
-                            variant="ghost"
-                          >
-                            {isMarkingRead ? <Spinner /> : <CheckIcon />}
-                          </Button>
-                        ) : null}
-                      </ItemHeader>
-                      {notice.notice_content ? (
-                        <ItemDescription title={notice.notice_content}>
-                          {notice.notice_content}
-                        </ItemDescription>
-                      ) : null}
-                      <time
-                        className="text-xs text-muted-foreground"
-                        dateTime={notice.created_at}
-                        title={date.absolute}
-                      >
-                        {date.relative}
-                      </time>
-                    </ItemContent>
-                  </Item>
+                    notice={notice}
+                    date={date}
+                    isUnread={isUnread}
+                    isMarkingRead={Boolean(isMarkingRead)}
+                    onMarkRead={() => markRead.mutate(notice.notice_id)}
+                  />
                 )
               })}
             </ItemGroup>
@@ -260,17 +360,36 @@ export function NotificationDrawer() {
   )
 }
 
-function NotificationSkeleton() {
-  return (
-    <div className="flex flex-col gap-3 p-4" aria-label="正在加载通知">
-      {Array.from({ length: 3 }, (_, index) => (
-        <div className="flex flex-col gap-2" key={index}>
-          <Skeleton className="h-4 w-2/3" />
-          <Skeleton className="h-3 w-full" />
-          <Skeleton className="h-3 w-1/3" />
-        </div>
-      ))}
-    </div>
+function filterNotices(
+  notices: Notice[],
+  readNoticeIds: Set<number>,
+  filter: NotificationFilter
+) {
+  if (filter === "unread") {
+    return notices.filter((notice) => !readNoticeIds.has(notice.notice_id))
+  }
+
+  if (filter === "read") {
+    return notices.filter((notice) => readNoticeIds.has(notice.notice_id))
+  }
+
+  return notices
+}
+
+function mergeReads(current: NoticeRead[], incoming: NoticeRead[]) {
+  const existingIds = new Set(current.map((item) => item.notice_id))
+  const nextReads = incoming.filter((item) => !existingIds.has(item.notice_id))
+
+  return [...nextReads, ...current]
+}
+
+function markNoticeRead(noticeId: number, userId: number | undefined) {
+  if (userId === undefined) {
+    throw new Error("当前用户信息尚未加载完成")
+  }
+
+  return http.post<NoticeRead>(
+    buildQueryPath(`/notices/${noticeId}/read`, { user_id: userId })
   )
 }
 
@@ -283,4 +402,25 @@ function getNoticeDate(value: string) {
 
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : "操作失败，请稍后重试。"
+}
+
+function rotateRefreshIcon(icon: SVGSVGElement | null) {
+  if (!icon || prefersReducedMotion()) {
+    return Promise.resolve()
+  }
+
+  return new Promise<void>((resolve) => {
+    gsap.killTweensOf(icon)
+    gsap.to(icon, {
+      duration: 0.55,
+      ease: "power2.inOut",
+      onComplete: resolve,
+      rotation: "+=360",
+      transformOrigin: "50% 50%",
+    })
+  })
+}
+
+function prefersReducedMotion() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches
 }

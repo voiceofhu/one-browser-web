@@ -4,19 +4,24 @@ import type {
   ListParams,
   MenuResource,
   PageResponse,
+  ResourceMutationResult,
   StatusFlag,
 } from "@/types/admin"
 
 type MenuPayload = Record<string, unknown>
 
-const MENU_PATH = "/system/menu"
+const MENU_PATH = "/system/menus"
 
 export function listMenus(params?: ListParams) {
   return http.get<PageResponse<MenuResource>>(buildQueryPath(MENU_PATH, params))
 }
 
+export function getMenu(menuId: number) {
+  return http.get<MenuResource>(`${MENU_PATH}/${menuId}`)
+}
+
 export function createMenu(payload: MenuPayload) {
-  return http.post<MenuResource>(MENU_PATH, payload)
+  return http.post<ResourceMutationResult>(MENU_PATH, payload)
 }
 
 export function updateMenu(menuId: number, payload: MenuPayload) {

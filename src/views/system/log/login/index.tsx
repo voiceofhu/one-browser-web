@@ -10,22 +10,18 @@ import {
   LoginLogDetailDialog,
 } from "@/views/system/log/log-detail-dialog"
 import { LogTable } from "@/views/system/log/log-table"
-import type { LoginLogResource } from "@/types/admin"
+import type { LoginLogSummaryResource } from "@/types/admin"
 
 export default function LoginLogPage() {
   const [detailRecord, setDetailRecord] =
-    React.useState<LoginLogResource | null>(null)
+    React.useState<LoginLogSummaryResource | null>(null)
 
   return (
     <>
-      <LogTable<LoginLogResource>
+      <LogTable<LoginLogSummaryResource>
         queryKey={systemQueryKeys.loginLogs}
         list={listLoginLogs}
         columns={loginLogColumns}
-        defaultColumnVisibility={{
-          login_location: false,
-          os: false,
-        }}
         columnVisibilityResetKey="login-log"
         getRowId={(row, index) => String(row.info_id || index)}
         searchPlaceholder="搜索账号、IP、浏览器、消息..."

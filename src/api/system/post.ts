@@ -4,19 +4,24 @@ import type {
   ListParams,
   PageResponse,
   PostResource,
+  ResourceMutationResult,
   StatusFlag,
 } from "@/types/admin"
 
 type PostPayload = Record<string, unknown>
 
-const POST_PATH = "/system/post"
+const POST_PATH = "/system/posts"
 
 export function listPosts(params?: ListParams) {
   return http.get<PageResponse<PostResource>>(buildQueryPath(POST_PATH, params))
 }
 
+export function getPost(postId: number) {
+  return http.get<PostResource>(`${POST_PATH}/${postId}`)
+}
+
 export function createPost(payload: PostPayload) {
-  return http.post<PostResource>(POST_PATH, payload)
+  return http.post<ResourceMutationResult>(POST_PATH, payload)
 }
 
 export function updatePost(postId: number, payload: PostPayload) {

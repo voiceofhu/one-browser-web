@@ -5,13 +5,19 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import type { ColumnDef } from "@tanstack/react-table"
 import { toast } from "sonner"
 
-import { setDictTypeStatus } from "@/api/system/dict"
+import {
+  setDictDataDefault,
+  setDictDataStatus,
+  setDictTypeStatus,
+} from "@/api/system/dict"
 import { setDeptStatus } from "@/api/system/dept"
 import { setMenuStatus } from "@/api/system/menu"
+import { setNoticeStatus } from "@/api/system/notice"
 import { setPostStatus } from "@/api/system/post"
 import { setRoleStatus } from "@/api/system/role"
 import { setUserStatus } from "@/api/system/user"
 import { Badge } from "@/components/ui/badge"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Switch } from "@/components/ui/switch"
 import { useAuthPermissions } from "@/hooks/use-auth"
 import { hasPermission } from "@/lib/auth-permissions"
@@ -21,10 +27,9 @@ import { systemQueryKeys } from "@/lib/query-keys"
 import {
   DATA_SCOPE_LABELS,
   getLabel,
+  NOTICE_TYPE_LABELS,
   SEX_LABELS,
-  STATUS_LABELS,
   VISIBLE_LABELS,
-  YES_NO_LABELS,
 } from "@/router/routes"
 import type {
   DeptResource,
@@ -32,11 +37,12 @@ import type {
   DictTypeResource,
   HealthResponse,
   MenuResource,
+  NoticeSummaryResource,
+  PageResponse,
   PostResource,
   RoleResource,
   StatusFlag,
   UserResource,
-  YesNoFlag,
 } from "@/types/admin"
 import { ResourceTableColumnHeader } from "./table"
 import { showResourceError } from "./toast"
@@ -140,8 +146,8 @@ export const postColumns: ColumnDef<PostResource>[] = [
 ]
 
 export const dictTypeColumns: ColumnDef<DictTypeResource>[] = [
-  textColumn("dict_name", "字典名称"),
-  textColumn("dict_type", "字典类型"),
+  textColumn("dict_name", "字典类型"),
+  textColumn("dict_type", "字典代码"),
   {
     accessorKey: "status",
     header: ({ column }) => tableHeader(column, "状态"),
@@ -155,10 +161,42 @@ export const dictDataColumns: ColumnDef<DictDataResource>[] = [
   textColumn("dict_label", "字典标签"),
   textColumn("dict_value", "字典键值"),
   textColumn("dict_type", "字典类型"),
-  numberColumn("dict_sort", "排序"),
-  yesNoColumn("is_default", "默认"),
-  statusColumn(),
+  {
+    accessorKey: "is_default",
+    header: ({ column }) => tableHeader(column, "默认"),
+    cell: ({ row }) => <DictDataDefaultRadio dictData={row.original} />,
+    meta: { label: "默认" },
+  },
+  {
+    accessorKey: "status",
+    header: ({ column }) => tableHeader(column, "状态"),
+    cell: ({ row }) => <DictDataStatusSwitch dictData={row.original} />,
+    meta: { label: "状态" },
+  },
   textColumn("remark", "备注", "max-w-64", "-"),
+]
+
+export const noticeColumns: ColumnDef<NoticeSummaryResource>[] = [
+  textColumn("notice_title", "通知标题", "min-w-52 max-w-80"),
+  {
+    accessorKey: "notice_type",
+    header: ({ column }) => tableHeader(column, "通知类型"),
+    cell: ({ row }) => (
+      <Badge variant="outline">
+        {getLabel(NOTICE_TYPE_LABELS, row.original.notice_type)}
+      </Badge>
+    ),
+    meta: { label: "通知类型" },
+  },
+  {
+    accessorKey: "status",
+    header: ({ column }) => tableHeader(column, "状态"),
+    cell: ({ row }) => <NoticeStatusSwitch notice={row.original} />,
+    meta: { label: "状态" },
+  },
+  textColumn("created_by", "创建人"),
+  dateColumn("created_at", "创建时间"),
+  dateColumn("updated_at", "更新时间"),
 ]
 
 export function DependencyHealthBody({ health }: { health?: HealthResponse }) {
@@ -215,33 +253,6 @@ function dateColumn<
   }
 }
 
-function statusColumn<
-  TData extends { status: StatusFlag },
->(): ColumnDef<TData> {
-  return {
-    accessorKey: "status",
-    header: ({ column }) => tableHeader(column, "状态"),
-    cell: ({ row }) => <StatusBadge status={row.original.status} />,
-    meta: { label: "状态" },
-  }
-}
-
-function yesNoColumn<
-  TData extends Record<TKey, YesNoFlag>,
-  TKey extends keyof TData & string,
->(key: TKey, label: string): ColumnDef<TData> {
-  return {
-    accessorKey: key,
-    header: ({ column }) => tableHeader(column, label),
-    cell: ({ getValue }) => (
-      <Badge variant={getValue<YesNoFlag>() === "Y" ? "secondary" : "outline"}>
-        {getLabel(YES_NO_LABELS, getValue<YesNoFlag>())}
-      </Badge>
-    ),
-    meta: { label },
-  }
-}
-
 function tableHeader<TData, TValue>(
   column: Parameters<
     typeof ResourceTableColumnHeader<TData, TValue>
@@ -251,12 +262,31 @@ function tableHeader<TData, TValue>(
   return <ResourceTableColumnHeader column={column} title={title} />
 }
 
-function StatusBadge({ status }: { status: StatusFlag }) {
+function ResourceStatusSwitch({
+  checked,
+  disabled,
+  label,
+  onCheckedChange,
+}: {
+  checked: boolean
+  disabled: boolean
+  label: string
+  onCheckedChange: (checked: boolean) => void
+}) {
   return (
-    <Badge variant={status === "0" ? "secondary" : "destructive"}>
-      {getLabel(STATUS_LABELS, status)}
-    </Badge>
+    <div className="flex items-center">
+      <Switch
+        checked={checked}
+        disabled={disabled}
+        aria-label={label}
+        onCheckedChange={onCheckedChange}
+      />
+    </div>
   )
+}
+
+function showStatusSuccess(name: string, noun: string, status: StatusFlag) {
+  toast.success(`${name}${noun}已${status === "0" ? "启用" : "禁用"}`)
 }
 
 function MenuNameCell({ menu }: { menu: MenuResource }) {
@@ -280,14 +310,10 @@ function UserStatusSwitch({ user }: { user: UserResource }) {
     mutationFn: (status: StatusFlag) => setUserStatus(user.user_id, status),
     onSuccess: async (updatedUser) => {
       await queryClient.invalidateQueries({ queryKey: systemQueryKeys.users })
-      toast.success(
-        `${updatedUser.nick_name || updatedUser.user_name}已${
-          updatedUser.status === "0" ? "启用" : "停用"
-        }`,
-        {
-          description: "用户状态已同步到后台。",
-          duration: 5_000,
-        }
+      showStatusSuccess(
+        updatedUser.nick_name || updatedUser.user_name,
+        "账号",
+        updatedUser.status
       )
     },
     onError: showResourceError,
@@ -301,19 +327,14 @@ function UserStatusSwitch({ user }: { user: UserResource }) {
   )
 
   return (
-    <div className="flex items-center gap-2">
-      <Switch
-        checked={enabled}
-        disabled={!canChangeStatus || user.is_super_admin || mutation.isPending}
-        aria-label={`${enabled ? "停用" : "启用"}用户 ${
-          user.nick_name || user.user_name
-        }`}
-        onCheckedChange={(checked) => mutation.mutate(checked ? "0" : "1")}
-      />
-      <span className="text-xs text-muted-foreground">
-        {enabled ? "启用" : "停用"}
-      </span>
-    </div>
+    <ResourceStatusSwitch
+      checked={enabled}
+      disabled={!canChangeStatus || user.is_super_admin || mutation.isPending}
+      label={`${enabled ? "禁用" : "启用"}账号 ${
+        user.nick_name || user.user_name
+      }`}
+      onCheckedChange={(checked) => mutation.mutate(checked ? "0" : "1")}
+    />
   )
 }
 
@@ -324,15 +345,7 @@ function RoleStatusSwitch({ role }: { role: RoleResource }) {
     mutationFn: (status: StatusFlag) => setRoleStatus(role, status),
     onSuccess: async (updatedRole) => {
       await queryClient.invalidateQueries({ queryKey: systemQueryKeys.roles })
-      toast.success(
-        `${updatedRole.role_name}已${
-          updatedRole.status === "0" ? "启用" : "停用"
-        }`,
-        {
-          description: "角色状态已同步到后台。",
-          duration: 5_000,
-        }
-      )
+      showStatusSuccess(updatedRole.role_name, "角色", updatedRole.status)
     },
     onError: showResourceError,
   })
@@ -345,17 +358,12 @@ function RoleStatusSwitch({ role }: { role: RoleResource }) {
   )
 
   return (
-    <div className="flex items-center gap-2">
-      <Switch
-        checked={enabled}
-        disabled={!canChangeStatus || mutation.isPending}
-        aria-label={`${enabled ? "停用" : "启用"}角色 ${role.role_name}`}
-        onCheckedChange={(checked) => mutation.mutate(checked ? "0" : "1")}
-      />
-      <span className="text-xs text-muted-foreground">
-        {enabled ? "启用" : "停用"}
-      </span>
-    </div>
+    <ResourceStatusSwitch
+      checked={enabled}
+      disabled={!canChangeStatus || mutation.isPending}
+      label={`${enabled ? "禁用" : "启用"}角色 ${role.role_name}`}
+      onCheckedChange={(checked) => mutation.mutate(checked ? "0" : "1")}
+    />
   )
 }
 
@@ -366,15 +374,7 @@ function MenuStatusSwitch({ menu }: { menu: MenuResource }) {
     mutationFn: (status: StatusFlag) => setMenuStatus(menu, status),
     onSuccess: async (updatedMenu) => {
       await queryClient.invalidateQueries({ queryKey: systemQueryKeys.menus })
-      toast.success(
-        `${updatedMenu.menu_name}已${
-          updatedMenu.status === "0" ? "启用" : "停用"
-        }`,
-        {
-          description: "菜单状态已同步到后台。",
-          duration: 5_000,
-        }
-      )
+      showStatusSuccess(updatedMenu.menu_name, "权限", updatedMenu.status)
     },
     onError: showResourceError,
   })
@@ -387,17 +387,12 @@ function MenuStatusSwitch({ menu }: { menu: MenuResource }) {
   )
 
   return (
-    <div className="flex items-center gap-2">
-      <Switch
-        checked={enabled}
-        disabled={!canChangeStatus || mutation.isPending}
-        aria-label={`${enabled ? "停用" : "启用"}权限 ${menu.menu_name}`}
-        onCheckedChange={(checked) => mutation.mutate(checked ? "0" : "1")}
-      />
-      <span className="text-xs text-muted-foreground">
-        {enabled ? "启用" : "停用"}
-      </span>
-    </div>
+    <ResourceStatusSwitch
+      checked={enabled}
+      disabled={!canChangeStatus || mutation.isPending}
+      label={`${enabled ? "禁用" : "启用"}权限 ${menu.menu_name}`}
+      onCheckedChange={(checked) => mutation.mutate(checked ? "0" : "1")}
+    />
   )
 }
 
@@ -408,15 +403,7 @@ function DeptStatusSwitch({ dept }: { dept: DeptResource }) {
     mutationFn: (status: StatusFlag) => setDeptStatus(dept, status),
     onSuccess: async (updatedDept) => {
       await queryClient.invalidateQueries({ queryKey: systemQueryKeys.depts })
-      toast.success(
-        `${updatedDept.dept_name}已${
-          updatedDept.status === "0" ? "设为正常" : "停用"
-        }`,
-        {
-          description: "部门状态已同步到后台。",
-          duration: 5_000,
-        }
-      )
+      showStatusSuccess(updatedDept.dept_name, "部门", updatedDept.status)
     },
     onError: showResourceError,
   })
@@ -429,17 +416,12 @@ function DeptStatusSwitch({ dept }: { dept: DeptResource }) {
   )
 
   return (
-    <div className="flex items-center gap-2">
-      <Switch
-        checked={enabled}
-        disabled={!canChangeStatus || mutation.isPending}
-        aria-label={`${enabled ? "停用" : "设为正常"}部门 ${dept.dept_name}`}
-        onCheckedChange={(checked) => mutation.mutate(checked ? "0" : "1")}
-      />
-      <span className="text-xs text-muted-foreground">
-        {enabled ? "正常" : "停用"}
-      </span>
-    </div>
+    <ResourceStatusSwitch
+      checked={enabled}
+      disabled={!canChangeStatus || mutation.isPending}
+      label={`${enabled ? "禁用" : "启用"}部门 ${dept.dept_name}`}
+      onCheckedChange={(checked) => mutation.mutate(checked ? "0" : "1")}
+    />
   )
 }
 
@@ -450,15 +432,7 @@ function PostStatusSwitch({ post }: { post: PostResource }) {
     mutationFn: (status: StatusFlag) => setPostStatus(post, status),
     onSuccess: async (updatedPost) => {
       await queryClient.invalidateQueries({ queryKey: systemQueryKeys.posts })
-      toast.success(
-        `${updatedPost.post_name}已${
-          updatedPost.status === "0" ? "启用" : "停用"
-        }`,
-        {
-          description: "岗位状态已同步到后台。",
-          duration: 5_000,
-        }
-      )
+      showStatusSuccess(updatedPost.post_name, "岗位", updatedPost.status)
     },
     onError: showResourceError,
   })
@@ -471,17 +445,12 @@ function PostStatusSwitch({ post }: { post: PostResource }) {
   )
 
   return (
-    <div className="flex items-center gap-2">
-      <Switch
-        checked={enabled}
-        disabled={!canChangeStatus || mutation.isPending}
-        aria-label={`${enabled ? "停用" : "启用"}岗位 ${post.post_name}`}
-        onCheckedChange={(checked) => mutation.mutate(checked ? "0" : "1")}
-      />
-      <span className="text-xs text-muted-foreground">
-        {enabled ? "启用" : "停用"}
-      </span>
-    </div>
+    <ResourceStatusSwitch
+      checked={enabled}
+      disabled={!canChangeStatus || mutation.isPending}
+      label={`${enabled ? "禁用" : "启用"}岗位 ${post.post_name}`}
+      onCheckedChange={(checked) => mutation.mutate(checked ? "0" : "1")}
+    />
   )
 }
 
@@ -494,14 +463,10 @@ function DictTypeStatusSwitch({ dictType }: { dictType: DictTypeResource }) {
       await queryClient.invalidateQueries({
         queryKey: systemQueryKeys.dictTypes,
       })
-      toast.success(
-        `${updatedDictType.dict_name}已${
-          updatedDictType.status === "0" ? "启用" : "停用"
-        }`,
-        {
-          description: "字典类型状态已同步到后台。",
-          duration: 5_000,
-        }
+      showStatusSuccess(
+        updatedDictType.dict_name,
+        "字典类型",
+        updatedDictType.status
       )
     },
     onError: showResourceError,
@@ -515,19 +480,157 @@ function DictTypeStatusSwitch({ dictType }: { dictType: DictTypeResource }) {
   )
 
   return (
-    <div className="flex items-center gap-2">
-      <Switch
-        checked={enabled}
-        disabled={!canChangeStatus || mutation.isPending}
-        aria-label={`${enabled ? "停用" : "启用"}字典类型 ${
-          dictType.dict_name
-        }`}
-        onCheckedChange={(checked) => mutation.mutate(checked ? "0" : "1")}
-      />
-      <span className="text-xs text-muted-foreground">
-        {enabled ? "启用" : "停用"}
-      </span>
+    <ResourceStatusSwitch
+      checked={enabled}
+      disabled={!canChangeStatus || mutation.isPending}
+      label={`${enabled ? "禁用" : "启用"}字典类型 ${dictType.dict_name}`}
+      onCheckedChange={(checked) => mutation.mutate(checked ? "0" : "1")}
+    />
+  )
+}
+
+function DictDataDefaultRadio({ dictData }: { dictData: DictDataResource }) {
+  const queryClient = useQueryClient()
+  const authPermissions = useAuthPermissions()
+  const mutation = useMutation({
+    mutationFn: () => setDictDataDefault(dictData, "Y"),
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: systemQueryKeys.dictData })
+      const snapshots = queryClient.getQueriesData<
+        PageResponse<DictDataResource>
+      >({
+        queryKey: systemQueryKeys.dictData,
+      })
+
+      for (const [queryKey, data] of snapshots) {
+        if (!data) {
+          continue
+        }
+
+        queryClient.setQueryData<PageResponse<DictDataResource>>(queryKey, {
+          ...data,
+          list: data.list.map((item) =>
+            item.dict_type === dictData.dict_type
+              ? {
+                  ...item,
+                  is_default: item.dict_code === dictData.dict_code ? "Y" : "N",
+                }
+              : item
+          ),
+        })
+      }
+
+      return { snapshots }
+    },
+    onSuccess: async (updatedDictData) => {
+      await queryClient.invalidateQueries({
+        queryKey: systemQueryKeys.dictData,
+      })
+      toast.success(`${updatedDictData.dict_label}已设为默认`)
+    },
+    onError: (error, _variables, context) => {
+      for (const [queryKey, data] of context?.snapshots ?? []) {
+        queryClient.setQueryData(queryKey, data)
+      }
+      showResourceError(error)
+    },
+  })
+  const checked = mutation.isPending ? true : dictData.is_default === "Y"
+  const canUpdate = hasPermission(
+    authPermissions.data,
+    "system:dict:data:update"
+  )
+  const value = String(dictData.dict_code)
+
+  return (
+    <div className="flex items-center">
+      <RadioGroup
+        value={checked ? value : ""}
+        className="inline-flex w-auto gap-0"
+        aria-label={`设置 ${dictData.dict_label} 为默认`}
+        onValueChange={() => {
+          if (!checked) {
+            mutation.mutate()
+          }
+        }}
+      >
+        <RadioGroupItem
+          value={value}
+          disabled={!canUpdate || mutation.isPending}
+          aria-label={`设置 ${dictData.dict_label} 为默认`}
+        />
+      </RadioGroup>
     </div>
+  )
+}
+
+function DictDataStatusSwitch({ dictData }: { dictData: DictDataResource }) {
+  const queryClient = useQueryClient()
+  const authPermissions = useAuthPermissions()
+  const mutation = useMutation({
+    mutationFn: (status: StatusFlag) => setDictDataStatus(dictData, status),
+    onSuccess: async (updatedDictData) => {
+      await queryClient.invalidateQueries({
+        queryKey: systemQueryKeys.dictData,
+      })
+      showStatusSuccess(
+        updatedDictData.dict_label,
+        "字典数据",
+        updatedDictData.status
+      )
+    },
+    onError: showResourceError,
+  })
+  const enabled = mutation.isPending
+    ? mutation.variables === "0"
+    : dictData.status === "0"
+  const canUpdate = hasPermission(
+    authPermissions.data,
+    "system:dict:data:update"
+  )
+
+  return (
+    <ResourceStatusSwitch
+      checked={enabled}
+      disabled={!canUpdate || mutation.isPending}
+      label={`${enabled ? "禁用" : "启用"}字典数据 ${dictData.dict_label}`}
+      onCheckedChange={(checked) => mutation.mutate(checked ? "0" : "1")}
+    />
+  )
+}
+
+function NoticeStatusSwitch({ notice }: { notice: NoticeSummaryResource }) {
+  const queryClient = useQueryClient()
+  const authPermissions = useAuthPermissions()
+  const mutation = useMutation({
+    mutationFn: (status: StatusFlag) => setNoticeStatus(notice, status),
+    onSuccess: async (updatedNotice) => {
+      await queryClient.invalidateQueries({
+        queryKey: systemQueryKeys.notices,
+      })
+      showStatusSuccess(
+        updatedNotice.notice_title,
+        "通知",
+        updatedNotice.status
+      )
+    },
+    onError: showResourceError,
+  })
+  const enabled = mutation.isPending
+    ? mutation.variables === "0"
+    : notice.status === "0"
+  const canChangeStatus = hasPermission(
+    authPermissions.data,
+    "system:notice:status"
+  )
+
+  return (
+    <ResourceStatusSwitch
+      checked={enabled}
+      disabled={!canChangeStatus || mutation.isPending}
+      label={`${enabled ? "禁用" : "启用"}通知 ${notice.notice_title}`}
+      onCheckedChange={(checked) => mutation.mutate(checked ? "0" : "1")}
+    />
   )
 }
 

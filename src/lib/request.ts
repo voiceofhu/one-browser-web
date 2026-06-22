@@ -3,13 +3,32 @@ import { toast } from "sonner"
 export class HttpError extends Error {
   readonly status: number
   readonly code: string
+  readonly details: unknown
 
-  constructor(status: number, code: string, message: string) {
+  constructor(
+    status: number,
+    code: string,
+    message: string,
+    details: unknown = null
+  ) {
     super(message)
     this.name = "HttpError"
     this.status = status
     this.code = code
+    this.details = details
   }
+}
+
+type ApiResponse<T> = {
+  code: number
+  message: string
+  data: T
+}
+
+type ApiErrorResponse = {
+  code: string | number
+  message: string
+  details?: unknown
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "/api"
@@ -142,18 +161,19 @@ async function parseError(response: Response) {
   const fallback = response.statusText || "Request failed"
 
   try {
-    const body = (await response.json()) as {
-      error?: string
-      message?: string
+    const body: unknown = await response.json()
+    if (!isApiErrorResponse(body)) {
+      return new HttpError(response.status, "HTTP_ERROR", fallback)
     }
 
     return new HttpError(
       response.status,
-      body.error ?? "http_error",
-      body.message ?? fallback
+      String(body.code),
+      body.message,
+      body.details ?? null
     )
   } catch {
-    return new HttpError(response.status, "http_error", fallback)
+    return new HttpError(response.status, "HTTP_ERROR", fallback)
   }
 }
 
@@ -181,7 +201,50 @@ async function request<T>(
     return undefined as T
   }
 
-  return (await response.json()) as T
+  const body: unknown = await response.json()
+  if (!isApiResponse<T>(body)) {
+    throw new HttpError(
+      response.status,
+      "INVALID_API_RESPONSE",
+      "Invalid API response"
+    )
+  }
+
+  if (body.code !== 0) {
+    throw new HttpError(
+      response.status,
+      String(body.code),
+      body.message || "Request failed",
+      getResponseDetails(body)
+    )
+  }
+
+  return body.data
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object"
+}
+
+function isApiResponse<T>(value: unknown): value is ApiResponse<T> {
+  return (
+    isRecord(value) &&
+    typeof value.code === "number" &&
+    typeof value.message === "string" &&
+    "data" in value
+  )
+}
+
+function isApiErrorResponse(value: unknown): value is ApiErrorResponse {
+  return (
+    isRecord(value) &&
+    (typeof value.code === "string" || typeof value.code === "number") &&
+    typeof value.message === "string"
+  )
+}
+
+function getResponseDetails(value: Record<string, unknown>) {
+  return "details" in value ? value.details : null
 }
 
 function encodeBody(body?: unknown) {
@@ -195,5 +258,7 @@ export const http = {
     request<T>(path, { method: "POST", body: encodeBody(body) }),
   put: <T>(path: string, body?: unknown) =>
     request<T>(path, { method: "PUT", body: encodeBody(body) }),
+  patch: <T>(path: string, body?: unknown) =>
+    request<T>(path, { method: "PATCH", body: encodeBody(body) }),
   del: <T>(path: string) => request<T>(path, { method: "DELETE" }),
 }

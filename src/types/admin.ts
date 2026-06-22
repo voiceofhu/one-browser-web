@@ -5,6 +5,9 @@ export type MenuTypeFlag = "M" | "C" | "F"
 export type VisibleFlag = "0" | "1"
 export type YesNoFlag = "Y" | "N"
 export type LogStatusFlag = "0" | "1"
+export type NoticeTypeFlag = "1" | "2"
+export type JobMisfirePolicyFlag = "1" | "2" | "3"
+export type JobConcurrentFlag = "0" | "1"
 
 export interface CurrentUser {
   user_id: number
@@ -129,12 +132,18 @@ export interface ListParams {
   dict_type?: string
 }
 
+export interface OnlineUserListParams extends ListParams {
+  ip_addr?: string
+  user_name?: string
+}
+
+export interface JobListParams extends ListParams {
+  job_group?: string
+}
+
 export interface PageResponse<T> {
-  items: T[]
-  page: number
-  page_size: number
+  list: T[]
   total: number
-  total_pages: number
 }
 
 export interface UserResource {
@@ -230,34 +239,109 @@ export interface DictDataResource {
   remark: string | null
 }
 
-export interface OperationLogResource {
+export interface NoticeSummaryResource {
+  notice_id: number
+  notice_title: string
+  notice_type: NoticeTypeFlag
+  status: StatusFlag
+  created_by: string
+  created_at: string
+  updated_by: string
+  updated_at: string | null
+}
+
+export interface NoticeResource extends NoticeSummaryResource {
+  notice_content: string | null
+  remark: string | null
+}
+
+export interface OnlineUserResource {
+  token_id: string
+  user_id: number
+  user_name: string
+  ip_addr: string
+  browser: string
+  os: string
+  login_at: string
+  expires_in: number
+}
+
+export interface JobResource {
+  job_id: number
+  job_name: string
+  job_group: string
+  invoke_target: string
+  cron_expression: string
+  misfire_policy: JobMisfirePolicyFlag
+  concurrent: JobConcurrentFlag
+  status: StatusFlag
+  created_at: string
+  updated_at: string | null
+  remark: string
+}
+
+export interface JobPayload {
+  job_name: string
+  job_group: string
+  invoke_target: string
+  cron_expression: string
+  misfire_policy: JobMisfirePolicyFlag
+  concurrent: JobConcurrentFlag
+  status: StatusFlag
+  remark: string
+}
+
+export interface JobLogResource {
+  job_log_id: number
+  job_name: string
+  job_group: string
+  invoke_target: string
+  job_message: string | null
+  status: LogStatusFlag
+  exception_info: string
+  started_at: string | null
+  ended_at: string | null
+  created_at: string
+}
+
+export interface ResourceMutationResult {
+  id: number
+}
+
+export interface OperationLogSummaryResource {
   oper_id: number
   title: string
   business_type: number
-  method: string
   request_method: string
-  operator_type: number
   oper_name: string
-  dept_name: string
   oper_url: string
   oper_ip: string
-  oper_location: string
-  oper_param: string
-  json_result: string
   status: LogStatusFlag
-  error_msg: string
   operated_at: string
   cost_time: number
 }
 
-export interface LoginLogResource {
+export interface OperationLogResource extends OperationLogSummaryResource {
+  method: string
+  operator_type: number
+  dept_name: string
+  oper_location: string
+  oper_param: string
+  json_result: string
+  error_msg: string
+}
+
+export interface LoginLogSummaryResource {
   info_id: number
   user_name: string
   ip_addr: string
-  login_location: string
-  browser: string
-  os: string
   status: LogStatusFlag
   msg: string
   login_at: string
+}
+
+export interface LoginLogResource extends LoginLogSummaryResource {
+  login_location: string
+  browser: string
+  os: string
 }

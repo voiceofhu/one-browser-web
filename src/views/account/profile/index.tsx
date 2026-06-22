@@ -4,15 +4,13 @@ import * as React from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import {
-  IdCardIcon,
-  ImageUpIcon,
+  CameraIcon,
+  CopyIcon,
   MailIcon,
   PhoneIcon,
   RotateCcwIcon,
   SaveIcon,
-  ShieldCheckIcon,
   UserRoundIcon,
-  XIcon,
 } from "lucide-react"
 import { useForm, useWatch } from "react-hook-form"
 import { toast } from "sonner"
@@ -24,7 +22,6 @@ import {
   type UpdateCurrentUserProfilePayload,
 } from "@/api/auth"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -40,22 +37,19 @@ import {
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field"
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Separator } from "@/components/ui/separator"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Spinner } from "@/components/ui/spinner"
+import { AnimatedSegmentedTabs } from "@/components/ui/animated-segmented-tabs"
+import { TabsContent } from "@/components/ui/tabs"
 import { useCurrentUser } from "@/hooks/use-auth"
 import { authQueryKeys } from "@/lib/query-keys"
 import { SEX_LABELS } from "@/router/routes"
 import type { CurrentUser, SexFlag } from "@/types/admin"
 
+import { ACCOUNT_TAB_OPTIONS, type AccountTab } from "./account-tabs"
 import { AvatarCropDialog } from "./avatar-crop-dialog"
+import { AvatarPreviewDialog } from "./avatar-preview-dialog"
+import { PasswordForm } from "./password-form"
 import { InfoRow, ProfileInput } from "./profile-fields"
 
 const MAX_AVATAR_SIZE = 5 * 1024 * 1024
@@ -84,6 +78,7 @@ export default function AccountProfilePage() {
   const queryClient = useQueryClient()
   const currentUser = useCurrentUser()
   const user = currentUser.data
+  const [activeTab, setActiveTab] = React.useState<AccountTab>("profile")
   const fileInputRef = React.useRef<HTMLInputElement>(null)
   const loadedUserIdRef = React.useRef<number | null>(null)
   const pendingAvatarUrlRef = React.useRef<string | null>(null)
@@ -92,6 +87,7 @@ export default function AccountProfilePage() {
   )
   const [pendingAvatarFileName, setPendingAvatarFileName] = React.useState("")
   const [isAvatarDialogOpen, setIsAvatarDialogOpen] = React.useState(false)
+  const [isAvatarPreviewOpen, setIsAvatarPreviewOpen] = React.useState(false)
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
     defaultValues: profileDefaults(user),
@@ -207,14 +203,26 @@ export default function AccountProfilePage() {
     uploadAvatar.mutate(file)
   }
 
-  function handleClearAvatar() {
-    clearPendingAvatar()
-    setIsAvatarDialogOpen(false)
-    form.setValue("avatar", "", {
-      shouldDirty: true,
-      shouldTouch: true,
-      shouldValidate: true,
-    })
+  function handlePreviewAvatar() {
+    if (avatarSrc) {
+      setIsAvatarPreviewOpen(true)
+    }
+  }
+
+  async function handleCopyUsername() {
+    const username = user?.user_name
+
+    if (!username) {
+      toast.error("暂无可复制的用户名")
+      return
+    }
+
+    try {
+      await navigator.clipboard.writeText(username)
+      toast.success("用户名已复制")
+    } catch {
+      toast.error("复制失败，请稍后重试")
+    }
   }
 
   function handleResetProfile() {
@@ -224,222 +232,235 @@ export default function AccountProfilePage() {
   }
 
   return (
-    <div className="flex min-h-0 flex-col gap-4 px-4 py-4 lg:px-5">
-      <header className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+    <div className="flex min-h-0 flex-col gap-4 bg-muted/25 px-4 py-4 lg:px-5">
+      <header className="flex flex-col gap-1">
         <div className="flex flex-col gap-1">
           <h1 className="text-xl font-semibold tracking-normal">个人账号</h1>
           <p className="text-sm text-muted-foreground">
             维护当前账号的头像、昵称和联系信息。
           </p>
         </div>
-        <Badge variant={hasProfileChanges ? "default" : "secondary"}>
-          {hasProfileChanges ? "有未保存修改" : "资料已同步"}
-        </Badge>
       </header>
 
-      <div className="grid min-h-0 gap-4 lg:grid-cols-[18.5rem_minmax(0,1fr)]">
-        <Card size="sm" className="h-fit bg-muted/35 shadow-none ring-0">
-          <CardHeader className="gap-3">
-            <div className="flex items-center gap-3">
-              <Avatar className="size-16 rounded-xl">
-                <AvatarImage src={avatarSrc || undefined} alt={displayName} />
-                <AvatarFallback className="rounded-xl">
-                  {fallback}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex min-w-0 flex-1 flex-col gap-1">
-                <CardTitle className="truncate text-base">
-                  {displayName}
-                </CardTitle>
-                <CardDescription className="truncate">
-                  {user?.user_name ?? "-"}
-                </CardDescription>
-                <div className="mt-1 flex flex-wrap gap-1">
-                  <Badge variant="secondary">已登录</Badge>
-                  <Badge variant="outline">{user?.user_type || "system"}</Badge>
+      <AnimatedSegmentedTabs
+        label="账号设置"
+        options={ACCOUNT_TAB_OPTIONS}
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="flex min-h-0 flex-col gap-4"
+        triggerClassName="min-w-20 px-4"
+      >
+        <TabsContent
+          value="profile"
+          className="grid min-h-0 gap-4 lg:grid-cols-[21rem_minmax(0,1fr)]"
+        >
+          <Card size="sm" className="h-fit bg-background shadow-none ring-0">
+            <CardHeader className="pb-0">
+              <div className="flex items-center gap-4">
+                <div className="relative shrink-0">
+                  <button
+                    type="button"
+                    className="rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-ring/50 enabled:cursor-zoom-in disabled:cursor-default"
+                    aria-label="查看头像大图"
+                    disabled={!avatarSrc}
+                    onClick={handlePreviewAvatar}
+                  >
+                    <Avatar className="size-20 rounded-xl">
+                      <AvatarImage
+                        src={avatarSrc || undefined}
+                        alt={displayName}
+                      />
+                      <AvatarFallback className="rounded-xl">
+                        {fallback}
+                      </AvatarFallback>
+                    </Avatar>
+                  </button>
+                  <Button
+                    type="button"
+                    size="icon-sm"
+                    className="absolute -right-1 -bottom-1 size-8 rounded-full"
+                    aria-label="上传头像"
+                    disabled={uploadAvatar.isPending || currentUser.isLoading}
+                    onClick={handleChooseAvatar}
+                  >
+                    {uploadAvatar.isPending ? <Spinner /> : <CameraIcon />}
+                  </Button>
+                </div>
+                <div className="flex min-w-0 flex-1 flex-col gap-1">
+                  <CardTitle className="truncate text-base">
+                    {displayName}
+                  </CardTitle>
+                  <CardDescription className="flex min-w-0 items-center gap-1">
+                    <span className="min-w-0 truncate">
+                      {user?.user_name ?? "-"}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-xs"
+                      className="size-6 text-muted-foreground"
+                      aria-label="复制用户名"
+                      disabled={currentUser.isLoading || !user?.user_name}
+                      onClick={handleCopyUsername}
+                    >
+                      <CopyIcon />
+                    </Button>
+                  </CardDescription>
                 </div>
               </div>
-            </div>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept={AVATAR_ACCEPT}
-              className="hidden"
-              onChange={handleAvatarSelected}
-            />
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={uploadAvatar.isPending || currentUser.isLoading}
-                onClick={handleChooseAvatar}
-              >
-                {uploadAvatar.isPending ? (
-                  <Spinner data-icon="inline-start" />
-                ) : (
-                  <ImageUpIcon data-icon="inline-start" />
-                )}
-                上传头像
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={!avatar || uploadAvatar.isPending}
-                onClick={handleClearAvatar}
-              >
-                <XIcon data-icon="inline-start" />
-                移除
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              支持 jpg、png、webp、gif，最大 5 MB。
-            </p>
-            <Separator />
-            <dl className="grid gap-2 text-sm">
-              <InfoRow
-                icon={IdCardIcon}
-                label="账号 ID"
-                value={user ? String(user.user_id) : "-"}
-              />
-              <InfoRow
-                icon={ShieldCheckIcon}
-                label="账号类型"
-                value={user?.user_type ?? "-"}
-              />
-              <InfoRow
-                icon={MailIcon}
-                label="邮箱"
-                value={user?.email || "-"}
-              />
-              <InfoRow
-                icon={PhoneIcon}
-                label="手机号"
-                value={user?.phone_number || "-"}
-              />
-              <InfoRow
-                icon={UserRoundIcon}
-                label="用户性别"
-                value={user ? SEX_LABELS[user.sex] : "-"}
-              />
-            </dl>
-          </CardContent>
-        </Card>
-
-        <Card size="sm" className="min-h-0 bg-muted/35 shadow-none ring-0">
-          <form
-            className="flex min-h-0 flex-1 flex-col"
-            onSubmit={form.handleSubmit((values) =>
-              updateProfile.mutate(values)
-            )}
-          >
-            <CardHeader className="gap-2 border-b pb-3">
-              <CardTitle>资料设置</CardTitle>
-              <CardDescription>
-                用户名不可修改，其他资料保存后立即生效。
-              </CardDescription>
             </CardHeader>
-            <CardContent className="min-h-0 flex-1 pt-3">
-              <FieldGroup className="grid gap-3 md:grid-cols-2">
-                <ProfileInput
-                  label="用户名"
-                  value={user?.user_name ?? ""}
-                  disabled
-                  readOnly
-                  description="登录用户名由管理员维护。"
-                />
-                <ProfileInput
-                  label="昵称"
-                  error={form.formState.errors.nick_name?.message}
-                  {...form.register("nick_name")}
-                />
-                <ProfileInput
-                  label="邮箱"
-                  type="email"
-                  error={form.formState.errors.email?.message}
-                  {...form.register("email")}
-                />
-                <ProfileInput
-                  label="手机号"
-                  error={form.formState.errors.phone_number?.message}
-                  {...form.register("phone_number")}
-                />
-                <Field data-invalid={Boolean(form.formState.errors.sex)}>
-                  <FieldLabel>性别</FieldLabel>
-                  <Select
-                    value={sex}
-                    onValueChange={(value) =>
-                      form.setValue("sex", value as SexFlag, {
-                        shouldDirty: true,
-                        shouldValidate: true,
-                      })
-                    }
-                  >
-                    <SelectTrigger
-                      aria-invalid={Boolean(form.formState.errors.sex)}
-                    >
-                      <SelectValue placeholder="请选择性别" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectGroup>
-                        {Object.entries(SEX_LABELS).map(([value, label]) => (
-                          <SelectItem key={value} value={value}>
-                            {label}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                  <FieldError errors={[form.formState.errors.sex]} />
-                </Field>
-                <ProfileInput
-                  label="头像地址"
-                  className="md:col-span-2"
-                  error={form.formState.errors.avatar?.message}
-                  description="也可以粘贴外部图片地址；上传头像会自动填充这里。"
-                  {...form.register("avatar")}
-                />
-              </FieldGroup>
+            <CardContent className="flex flex-col gap-3 pt-0">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept={AVATAR_ACCEPT}
+                className="hidden"
+                onChange={handleAvatarSelected}
+              />
+              <dl className="grid gap-2 text-sm">
+                <div className="rounded-lg bg-muted/35 px-3 py-2">
+                  <InfoRow
+                    icon={MailIcon}
+                    label="邮箱"
+                    value={user?.email || "-"}
+                  />
+                </div>
+                <div className="rounded-lg bg-muted/35 px-3 py-2">
+                  <InfoRow
+                    icon={PhoneIcon}
+                    label="手机号"
+                    value={user?.phone_number || "-"}
+                  />
+                </div>
+                <div className="rounded-lg bg-muted/35 px-3 py-2">
+                  <InfoRow
+                    icon={UserRoundIcon}
+                    label="用户性别"
+                    value={user ? SEX_LABELS[user.sex] : "-"}
+                  />
+                </div>
+              </dl>
             </CardContent>
-            <CardFooter className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <span className="text-xs text-muted-foreground">
-                {hasProfileChanges
-                  ? "当前资料有修改，保存后会同步到当前账号。"
-                  : "当前资料已和服务器保持同步。"}
-              </span>
-              <div className="grid grid-cols-5 gap-2 sm:min-w-64">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="col-span-2"
-                  disabled={!hasProfileChanges || isProfileBusy}
-                  onClick={handleResetProfile}
-                >
-                  <RotateCcwIcon data-icon="inline-start" />
-                  重置
-                </Button>
-                <Button
-                  type="submit"
-                  size="sm"
-                  className="col-span-3"
-                  disabled={isProfileBusy || !hasProfileChanges}
-                >
-                  {updateProfile.isPending ? (
-                    <Spinner data-icon="inline-start" />
-                  ) : (
-                    <SaveIcon data-icon="inline-start" />
-                  )}
-                  保存修改
-                </Button>
-              </div>
-            </CardFooter>
-          </form>
-        </Card>
-      </div>
+          </Card>
+
+          <Card size="sm" className="min-h-0 bg-background shadow-none ring-0">
+            <form
+              className="flex min-h-0 flex-1 flex-col"
+              onSubmit={form.handleSubmit((values) =>
+                updateProfile.mutate(values)
+              )}
+            >
+              <CardHeader className="pb-0">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex min-w-0 flex-col gap-1">
+                    <CardTitle>个人信息</CardTitle>
+                    <CardDescription>
+                      头像、昵称和联系方式保存后立即生效。
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="min-h-0 flex-1 pt-0">
+                <FieldGroup className="grid gap-4 md:grid-cols-2">
+                  <ProfileInput
+                    label="昵称"
+                    error={form.formState.errors.nick_name?.message}
+                    {...form.register("nick_name")}
+                  />
+                  <ProfileInput
+                    label="邮箱"
+                    type="email"
+                    error={form.formState.errors.email?.message}
+                    {...form.register("email")}
+                  />
+                  <ProfileInput
+                    label="手机号"
+                    error={form.formState.errors.phone_number?.message}
+                    {...form.register("phone_number")}
+                  />
+                  <Field
+                    data-invalid={Boolean(form.formState.errors.sex)}
+                    className="pb-1 md:col-span-2"
+                  >
+                    <FieldLabel>性别</FieldLabel>
+                    <RadioGroup
+                      className="grid grid-cols-3 gap-2"
+                      value={sex}
+                      onValueChange={(value) =>
+                        form.setValue("sex", value as SexFlag, {
+                          shouldDirty: true,
+                          shouldValidate: true,
+                        })
+                      }
+                    >
+                      {Object.entries(SEX_LABELS).map(([value, label]) => (
+                        <FieldLabel
+                          key={value}
+                          htmlFor={`profile-sex-${value}`}
+                          className="flex h-8 w-full cursor-pointer items-center gap-2 rounded-lg border px-3 font-normal has-data-checked:border-primary has-data-checked:bg-primary/5"
+                        >
+                          <RadioGroupItem
+                            id={`profile-sex-${value}`}
+                            value={value}
+                            aria-invalid={Boolean(form.formState.errors.sex)}
+                          />
+                          {label}
+                        </FieldLabel>
+                      ))}
+                    </RadioGroup>
+                    <FieldError errors={[form.formState.errors.sex]} />
+                  </Field>
+                </FieldGroup>
+              </CardContent>
+              <CardFooter className="mx-3 mt-2 flex flex-col items-stretch gap-2 rounded-lg border-t-0 bg-muted/40 p-3 sm:flex-row sm:items-center sm:justify-between">
+                <span className="text-xs text-muted-foreground">
+                  {hasProfileChanges
+                    ? "当前资料有修改，保存后会同步到当前账号。"
+                    : "当前资料已和服务器保持同步。"}
+                </span>
+                <div className="grid grid-cols-5 gap-2 sm:min-w-64">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="col-span-2"
+                    disabled={!hasProfileChanges || isProfileBusy}
+                    onClick={handleResetProfile}
+                  >
+                    <RotateCcwIcon data-icon="inline-start" />
+                    重置
+                  </Button>
+                  <Button
+                    type="submit"
+                    size="sm"
+                    className="col-span-3"
+                    disabled={isProfileBusy || !hasProfileChanges}
+                  >
+                    {updateProfile.isPending ? (
+                      <Spinner data-icon="inline-start" />
+                    ) : (
+                      <SaveIcon data-icon="inline-start" />
+                    )}
+                    保存修改
+                  </Button>
+                </div>
+              </CardFooter>
+            </form>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="password">
+          <PasswordForm />
+        </TabsContent>
+      </AnimatedSegmentedTabs>
+      {avatarSrc ? (
+        <AvatarPreviewDialog
+          open={isAvatarPreviewOpen}
+          imageUrl={avatarSrc}
+          title={displayName}
+          onOpenChange={setIsAvatarPreviewOpen}
+        />
+      ) : null}
       <AvatarCropDialog
         open={isAvatarDialogOpen}
         imageUrl={pendingAvatarUrl}

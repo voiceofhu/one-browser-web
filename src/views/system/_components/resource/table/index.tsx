@@ -111,6 +111,9 @@ type ResourceTableProps<TData> = {
   }) => void
   isRowReordering?: boolean
   selectionResetKey?: React.Key
+  density?: "default" | "compact"
+  showColumnControls?: boolean
+  showPaginationFooter?: boolean
   showPaginationControls?: boolean
 }
 
@@ -147,6 +150,9 @@ export function ResourceTable<TData>({
   onRowReorder,
   isRowReordering = false,
   selectionResetKey,
+  density = "default",
+  showColumnControls = true,
+  showPaginationFooter = true,
   showPaginationControls = true,
 }: ResourceTableProps<TData>) {
   const [columnVisibility, setColumnVisibility] =
@@ -155,6 +161,7 @@ export function ResourceTable<TData>({
   const [expanded, setExpanded] = React.useState<ExpandedState>(true)
   const enableBulkSelection = Boolean(onBulkDelete)
   const enableRowReorder = Boolean(onRowReorder)
+  const isCompact = density === "compact"
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 6 },
@@ -233,7 +240,16 @@ export function ResourceTable<TData>({
         ),
         meta: {
           label: "选择",
-          cellClassName: "w-10",
+          headerClassName: cn(
+            "sticky z-20 bg-muted",
+            isCompact ? "w-8" : "w-10",
+            enableRowReorder ? (isCompact ? "left-8" : "left-10") : "left-0"
+          ),
+          cellClassName: cn(
+            "sticky z-10 bg-background",
+            isCompact ? "w-8" : "w-10",
+            enableRowReorder ? (isCompact ? "left-8" : "left-10") : "left-0"
+          ),
         },
       })
     }
@@ -246,7 +262,14 @@ export function ResourceTable<TData>({
         cell: () => <ResourceTableDragHandle disabled={isRowReordering} />,
         meta: {
           label: "排序",
-          cellClassName: "w-10",
+          headerClassName: cn(
+            "sticky left-0 z-20 bg-muted",
+            isCompact ? "w-8" : "w-10"
+          ),
+          cellClassName: cn(
+            "sticky left-0 z-10 bg-background",
+            isCompact ? "w-8" : "w-10"
+          ),
         },
       })
     }
@@ -259,7 +282,14 @@ export function ResourceTable<TData>({
         cell: ({ row }) => renderRowActions(row.original),
         meta: {
           label: "操作",
-          cellClassName: "w-32 text-right",
+          headerClassName: cn(
+            "sticky right-0 z-20 border-l bg-muted text-right",
+            isCompact ? "w-20" : "w-24"
+          ),
+          cellClassName: cn(
+            "sticky right-0 z-10 border-l bg-background text-right",
+            isCompact ? "w-20" : "w-24"
+          ),
         },
       })
     }
@@ -269,6 +299,7 @@ export function ResourceTable<TData>({
     columns,
     enableBulkSelection,
     enableRowReorder,
+    isCompact,
     isRowReordering,
     renderRowActions,
   ])
@@ -317,6 +348,7 @@ export function ResourceTable<TData>({
   const hasNextPage = totalRows > 0 && pageIndex < totalPages - 1
   const firstRow = totalRows === 0 ? 0 : pageIndex * pageSize + 1
   const lastRow = Math.min((pageIndex + 1) * pageSize, totalRows)
+  const shouldShowPaginationFooter = showPaginationFooter && totalRows > 0
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event
@@ -339,15 +371,33 @@ export function ResourceTable<TData>({
   }
 
   return (
-    <section className="relative flex flex-1 flex-col overflow-hidden bg-background">
-      <div className="flex flex-col gap-2 border-b px-4 py-3 sm:flex-row sm:items-center sm:justify-between lg:px-6">
-        <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
+    <section className="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-background">
+      <div
+        className={cn(
+          "flex shrink-0 flex-col border-b bg-muted/40 sm:flex-row sm:items-center sm:justify-between",
+          isCompact ? "gap-1.5 px-3 py-2" : "gap-2 px-3 py-3 lg:px-4"
+        )}
+      >
+        <div
+          className={cn(
+            "flex min-w-0 flex-col sm:flex-row sm:items-center",
+            isCompact ? "gap-1.5" : "gap-2"
+          )}
+        >
           {toolbarLeading}
-          <InputGroup className="w-full max-w-sm sm:w-80">
-            <InputGroupAddon>
+          <InputGroup
+            className={cn(
+              "w-full",
+              isCompact ? "h-7 max-w-xs rounded-md sm:w-64" : "max-w-sm sm:w-80"
+            )}
+          >
+            <InputGroupAddon
+              className={cn(isCompact && "pl-2 [&>svg]:size-3.5")}
+            >
               <SearchIcon />
             </InputGroupAddon>
             <InputGroupInput
+              className={cn(isCompact && "h-7 text-sm")}
               value={searchValue}
               onChange={(event) => onSearchChange(event.target.value)}
               placeholder={searchPlaceholder}
@@ -355,40 +405,47 @@ export function ResourceTable<TData>({
             />
           </InputGroup>
         </div>
-        <div className="flex items-center justify-end gap-2">
+        <div
+          className={cn(
+            "flex items-center justify-end",
+            isCompact ? "gap-1.5" : "gap-2"
+          )}
+        >
           {toolbarActions}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button type="button" variant="outline" size="sm">
-                <SlidersHorizontalIcon data-icon="inline-start" />
-                列
-                <ChevronDownIcon data-icon="inline-end" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-44">
-              <DropdownMenuLabel>显示列</DropdownMenuLabel>
-              <DropdownMenuGroup>
-                {table
-                  .getAllLeafColumns()
-                  .filter((column) => column.getCanHide())
-                  .map((column) => (
-                    <DropdownMenuCheckboxItem
-                      key={column.id}
-                      checked={column.getIsVisible()}
-                      onSelect={(event) => event.preventDefault()}
-                      onCheckedChange={(value) =>
-                        column.toggleVisibility(Boolean(value))
-                      }
-                    >
-                      {getColumnMeta(column).label ?? column.id}
-                    </DropdownMenuCheckboxItem>
-                  ))}
-              </DropdownMenuGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {showColumnControls ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button type="button" variant="outline" size="sm">
+                  <SlidersHorizontalIcon data-icon="inline-start" />
+                  列
+                  <ChevronDownIcon data-icon="inline-end" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44">
+                <DropdownMenuLabel>显示列</DropdownMenuLabel>
+                <DropdownMenuGroup>
+                  {table
+                    .getAllLeafColumns()
+                    .filter((column) => column.getCanHide())
+                    .map((column) => (
+                      <DropdownMenuCheckboxItem
+                        key={column.id}
+                        checked={column.getIsVisible()}
+                        onSelect={(event) => event.preventDefault()}
+                        onCheckedChange={(value) =>
+                          column.toggleVisibility(Boolean(value))
+                        }
+                      >
+                        {getColumnMeta(column).label ?? column.id}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                </DropdownMenuGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : null}
         </div>
       </div>
-      <div className="flex min-h-80 flex-1 flex-col">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {errorMessage ? (
           <Alert variant="destructive" className="mx-4 mt-4 lg:mx-6">
             <AlertTitle>资源加载失败</AlertTitle>
@@ -412,30 +469,42 @@ export function ResourceTable<TData>({
             onAction={onEmptyAction}
           />
         ) : (
-          <div className="overflow-x-auto">
+          <div className="min-h-0 flex-1 overflow-hidden">
             <DndContext
               sensors={sensors}
               collisionDetection={closestCenter}
               modifiers={[restrictToVerticalAxis]}
               onDragEnd={handleDragEnd}
             >
-              <Table>
-                <TableHeader className="bg-muted/50">
+              <Table
+                containerClassName="h-full min-h-0 overflow-auto"
+                className="min-w-full"
+              >
+                <TableHeader className="bg-muted [&_th]:sticky [&_th]:top-0 [&_th]:z-20 [&_th]:bg-muted">
                   {table.getHeaderGroups().map((headerGroup) => (
                     <TableRow key={headerGroup.id}>
-                      {headerGroup.headers.map((header) => (
-                        <TableHead
-                          key={header.id}
-                          className="first:pl-4 last:pr-4 lg:first:pl-6 lg:last:pr-6"
-                        >
-                          {header.isPlaceholder
-                            ? null
-                            : flexRender(
-                                header.column.columnDef.header,
-                                header.getContext()
-                              )}
-                        </TableHead>
-                      ))}
+                      {headerGroup.headers.map((header) => {
+                        const columnMeta = getColumnMeta(header.column)
+
+                        return (
+                          <TableHead
+                            key={header.id}
+                            className={cn(
+                              isCompact
+                                ? "h-8 px-1.5 text-sm first:pl-3 last:pr-3"
+                                : "first:pl-3 last:pr-3 lg:first:pl-4 lg:last:pr-4",
+                              columnMeta.headerClassName
+                            )}
+                          >
+                            {header.isPlaceholder
+                              ? null
+                              : flexRender(
+                                  header.column.columnDef.header,
+                                  header.getContext()
+                                )}
+                          </TableHead>
+                        )
+                      })}
                     </TableRow>
                   ))}
                 </TableHeader>
@@ -455,13 +524,16 @@ export function ResourceTable<TData>({
                             cell.column.columnDef.cell,
                             cell.getContext()
                           )
+                          const columnMeta = getColumnMeta(cell.column)
 
                           return (
                             <TableCell
                               key={cell.id}
                               className={cn(
-                                "first:pl-4 last:pr-4 lg:first:pl-6 lg:last:pr-6",
-                                getColumnMeta(cell.column).cellClassName
+                                isCompact
+                                  ? "px-1.5 py-1 first:pl-3 last:pr-3"
+                                  : "first:pl-3 last:pr-3 lg:first:pl-4 lg:last:pr-4",
+                                columnMeta.cellClassName
                               )}
                             >
                               {cell.column.id === treeColumnId ? (
@@ -483,20 +555,22 @@ export function ResourceTable<TData>({
           </div>
         )}
       </div>
-      <ResourceTablePagination
-        firstRow={firstRow}
-        lastRow={lastRow}
-        totalRows={totalRows}
-        pageIndex={pageIndex}
-        pageSize={pageSize}
-        totalPages={totalPages}
-        hasPreviousPage={hasPreviousPage}
-        hasNextPage={hasNextPage}
-        isUpdating={isFetching && !isLoading}
-        showControls={showPaginationControls}
-        onPageIndexChange={onPageIndexChange}
-        onPageSizeChange={onPageSizeChange}
-      />
+      {shouldShowPaginationFooter ? (
+        <ResourceTablePagination
+          firstRow={firstRow}
+          lastRow={lastRow}
+          totalRows={totalRows}
+          pageIndex={pageIndex}
+          pageSize={pageSize}
+          totalPages={totalPages}
+          hasPreviousPage={hasPreviousPage}
+          hasNextPage={hasNextPage}
+          isUpdating={isFetching && !isLoading}
+          showControls={showPaginationControls}
+          onPageIndexChange={onPageIndexChange}
+          onPageSizeChange={onPageSizeChange}
+        />
+      ) : null}
       {enableBulkSelection ? (
         <ResourceTableBulkActions
           selectedCount={selectedCount}

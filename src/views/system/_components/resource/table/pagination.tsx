@@ -47,20 +47,20 @@ export function ResourceTablePagination({
   onPageSizeChange,
 }: ResourceTablePaginationProps) {
   return (
-    <div className="flex flex-col gap-3 border-t px-4 py-3 sm:flex-row sm:items-center sm:justify-between lg:px-6">
-      <div className="flex items-center gap-3 text-sm text-muted-foreground">
+    <div className="flex shrink-0 flex-col gap-2 border-t bg-muted px-3 py-2 sm:flex-row sm:items-center sm:justify-between lg:px-4">
+      <div className="flex items-center gap-2 text-sm leading-none text-muted-foreground">
         <span>
           当前显示 {firstRow}-{lastRow} 条，共 {totalRows} 条
         </span>
         {isUpdating ? <span>更新中...</span> : null}
       </div>
       {showControls ? (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <Select
             value={String(pageSize)}
             onValueChange={(value) => onPageSizeChange(Number(value))}
           >
-            <SelectTrigger size="sm" className="w-24">
+            <SelectTrigger size="sm" className="w-20">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -93,7 +93,7 @@ export function ResourceTablePagination({
             <ChevronLeftIcon />
             <span className="sr-only">上一页</span>
           </Button>
-          <div className="min-w-24 text-center text-sm text-muted-foreground">
+          <div className="min-w-20 text-center text-sm leading-none text-muted-foreground">
             第 {pageIndex + 1} / {totalPages} 页
           </div>
           <Button

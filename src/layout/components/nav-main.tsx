@@ -39,7 +39,7 @@ export function NavMain({
     <>
       {groups.map((group) => (
         <NavMainGroup
-          key={group.label}
+          key={`${group.label}:${group.items.some((item) => item.url === activeUrl) ? (activeUrl ?? "") : "inactive"}`}
           group={group}
           activeUrl={activeUrl}
         />
@@ -55,14 +55,7 @@ function NavMainGroup({
   group: NavMainGroup
   activeUrl?: string
 }) {
-  const isActiveGroup = group.items.some((item) => item.url === activeUrl)
   const [open, setOpen] = React.useState(true)
-
-  React.useEffect(() => {
-    if (isActiveGroup) {
-      setOpen(true)
-    }
-  }, [isActiveGroup])
 
   if (group.showLabel === false) {
     return (

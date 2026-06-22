@@ -549,7 +549,7 @@ fn should_audit(method: &Method, path: &str) -> bool {
         && (path.starts_with("/api/admin")
             || path.starts_with("/api/system")
             || path.starts_with("/api/notices")
-            || path.starts_with("/api/scheduler"))
+            || path.starts_with("/api/system/monitor/jobs"))
 }
 ```
 

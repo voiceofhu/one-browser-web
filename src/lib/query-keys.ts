@@ -7,6 +7,14 @@ export const authQueryKeys = {
 export const monitorQueryKeys = {
   all: ["monitor"] as const,
   health: ["monitor", "health"] as const,
+  onlineUsers: ["monitor", "online-users"] as const,
+  jobs: ["monitor", "jobs"] as const,
+  jobLogs: ["monitor", "job-logs"] as const,
+}
+
+export const indexQueryKeys = {
+  all: ["index"] as const,
+  overview: ["index", "overview"] as const,
 }
 
 export const systemQueryKeys = {
@@ -18,6 +26,7 @@ export const systemQueryKeys = {
   posts: ["system", "posts"] as const,
   dictTypes: ["system", "dict-types"] as const,
   dictData: ["system", "dict-data"] as const,
+  notices: ["system", "notices"] as const,
   operationLogs: ["system", "logs", "operation"] as const,
   loginLogs: ["system", "logs", "login"] as const,
 }

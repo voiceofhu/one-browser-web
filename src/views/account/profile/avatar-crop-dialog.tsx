@@ -61,13 +61,26 @@ type AvatarCropDialogProps = {
 
 export function AvatarCropDialog({
   open,
+  onOpenChange,
+  ...contentProps
+}: AvatarCropDialogProps) {
+  return (
+    <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
+      <AvatarCropDialogContent
+        key={contentProps.imageUrl ?? "empty"}
+        {...contentProps}
+      />
+    </ResponsiveDialog>
+  )
+}
+
+function AvatarCropDialogContent({
   imageUrl,
   fileName,
   isSubmitting = false,
-  onOpenChange,
   onSelectFile,
   onSubmit,
-}: AvatarCropDialogProps) {
+}: Omit<AvatarCropDialogProps, "open" | "onOpenChange">) {
   const imageRef = React.useRef<HTMLImageElement>(null)
   const dragRef = React.useRef<DragState | null>(null)
   const [imageSize, setImageSize] = React.useState<ImageSize | null>(null)
@@ -78,15 +91,6 @@ export function AvatarCropDialog({
   const cropRect = imageSize
     ? getDrawnRect(imageSize, scale, position, CROP_VIEW_SIZE)
     : null
-
-  React.useEffect(() => {
-    setImageSize(null)
-    setScale(MIN_SCALE)
-    setPosition({ x: 0, y: 0 })
-    setPreviewUrl(null)
-    dragRef.current = null
-    setIsDragging(false)
-  }, [imageUrl])
 
   React.useEffect(() => {
     if (!imageUrl || !imageSize || !imageRef.current) {
@@ -205,146 +209,144 @@ export function AvatarCropDialog({
   }
 
   return (
-    <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
-      <ResponsiveDialogContent className="gap-0 overflow-hidden p-0 sm:max-w-3xl">
-        <ResponsiveDialogHeader className="border-b px-4 py-2 pr-12 text-left">
-          <ResponsiveDialogTitle>修改头像</ResponsiveDialogTitle>
-          <ResponsiveDialogDescription>
-            选择图片后裁剪为方形头像，提交后才会上传。
-          </ResponsiveDialogDescription>
-        </ResponsiveDialogHeader>
-        <ResponsiveDialogBody className="p-4">
-          <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_13rem]">
-            <div className="flex min-w-0 flex-col gap-3">
-              <div
-                className={cn(
-                  "relative mx-auto touch-none overflow-hidden rounded-lg bg-muted ring-1 ring-border select-none",
-                  imageSize && !isSubmitting ? "cursor-grab" : "cursor-default",
-                  isDragging ? "cursor-grabbing" : null
-                )}
-                style={{ width: CROP_VIEW_SIZE, height: CROP_VIEW_SIZE }}
-                onPointerDown={handlePointerDown}
-                onPointerMove={handlePointerMove}
-                onPointerUp={handlePointerEnd}
-                onPointerCancel={handlePointerEnd}
-              >
-                {imageUrl ? (
-                  <img
-                    ref={imageRef}
-                    src={imageUrl}
-                    alt="待裁剪头像"
-                    draggable={false}
-                    className="absolute max-w-none select-none"
-                    style={
-                      cropRect
-                        ? {
-                            width: cropRect.width,
-                            height: cropRect.height,
-                            transform: `translate3d(${cropRect.left}px, ${cropRect.top}px, 0)`,
-                          }
-                        : undefined
-                    }
-                    onLoad={handleImageLoad}
-                  />
-                ) : (
-                  <div className="grid size-full place-items-center text-sm text-muted-foreground">
-                    请选择图片
-                  </div>
-                )}
-                <div className="pointer-events-none absolute inset-0 rounded-lg ring-2 ring-background/80 ring-inset" />
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon-sm"
-                  aria-label="缩小"
-                  disabled={!imageSize || isSubmitting || scale <= MIN_SCALE}
-                  onClick={() => updateScale(scale - SCALE_STEP)}
-                >
-                  <MinusIcon />
-                </Button>
-                <Slider
-                  value={[scale]}
-                  min={MIN_SCALE}
-                  max={MAX_SCALE}
-                  step={SCALE_STEP}
-                  disabled={!imageSize || isSubmitting}
-                  aria-label="头像缩放"
-                  onValueChange={([value]) => updateScale(value ?? MIN_SCALE)}
+    <ResponsiveDialogContent className="gap-0 overflow-hidden p-0 sm:max-w-3xl">
+      <ResponsiveDialogHeader className="border-b px-4 py-2 pr-12 text-left">
+        <ResponsiveDialogTitle>修改头像</ResponsiveDialogTitle>
+        <ResponsiveDialogDescription>
+          选择图片后裁剪为方形头像，提交后才会上传。
+        </ResponsiveDialogDescription>
+      </ResponsiveDialogHeader>
+      <ResponsiveDialogBody className="p-4">
+        <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_13rem]">
+          <div className="flex min-w-0 flex-col gap-3">
+            <div
+              className={cn(
+                "relative mx-auto touch-none overflow-hidden rounded-lg bg-muted ring-1 ring-border select-none",
+                imageSize && !isSubmitting ? "cursor-grab" : "cursor-default",
+                isDragging ? "cursor-grabbing" : null
+              )}
+              style={{ width: CROP_VIEW_SIZE, height: CROP_VIEW_SIZE }}
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerEnd}
+              onPointerCancel={handlePointerEnd}
+            >
+              {imageUrl ? (
+                <img
+                  ref={imageRef}
+                  src={imageUrl}
+                  alt="待裁剪头像"
+                  draggable={false}
+                  className="absolute max-w-none select-none"
+                  style={
+                    cropRect
+                      ? {
+                          width: cropRect.width,
+                          height: cropRect.height,
+                          transform: `translate3d(${cropRect.left}px, ${cropRect.top}px, 0)`,
+                        }
+                      : undefined
+                  }
+                  onLoad={handleImageLoad}
                 />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon-sm"
-                  aria-label="放大"
-                  disabled={!imageSize || isSubmitting || scale >= MAX_SCALE}
-                  onClick={() => updateScale(scale + SCALE_STEP)}
-                >
-                  <PlusIcon />
-                </Button>
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={isSubmitting}
-                  onClick={onSelectFile}
-                >
-                  <ImageUpIcon data-icon="inline-start" />
-                  选择图片
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  disabled={!imageSize || isSubmitting}
-                  onClick={handleReset}
-                >
-                  <RotateCcwIcon data-icon="inline-start" />
-                  重置
-                </Button>
-              </div>
+              ) : (
+                <div className="grid size-full place-items-center text-sm text-muted-foreground">
+                  请选择图片
+                </div>
+              )}
+              <div className="pointer-events-none absolute inset-0 rounded-lg ring-2 ring-background/80 ring-inset" />
             </div>
 
-            <div className="flex flex-col gap-3 rounded-lg bg-background p-3">
-              <div className="text-sm font-medium">头像预览</div>
-              <div className="flex flex-col items-center gap-3">
-                <Avatar className="size-24">
-                  <AvatarImage src={previewUrl ?? undefined} alt="头像预览" />
-                  <AvatarFallback>预览</AvatarFallback>
-                </Avatar>
-                <p className="text-center text-xs text-muted-foreground">
-                  拖动图片调整位置，使用缩放控制头像范围。
-                </p>
-              </div>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon-sm"
+                aria-label="缩小"
+                disabled={!imageSize || isSubmitting || scale <= MIN_SCALE}
+                onClick={() => updateScale(scale - SCALE_STEP)}
+              >
+                <MinusIcon />
+              </Button>
+              <Slider
+                value={[scale]}
+                min={MIN_SCALE}
+                max={MAX_SCALE}
+                step={SCALE_STEP}
+                disabled={!imageSize || isSubmitting}
+                aria-label="头像缩放"
+                onValueChange={([value]) => updateScale(value ?? MIN_SCALE)}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon-sm"
+                aria-label="放大"
+                disabled={!imageSize || isSubmitting || scale >= MAX_SCALE}
+                onClick={() => updateScale(scale + SCALE_STEP)}
+              >
+                <PlusIcon />
+              </Button>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={isSubmitting}
+                onClick={onSelectFile}
+              >
+                <ImageUpIcon data-icon="inline-start" />
+                选择图片
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={!imageSize || isSubmitting}
+                onClick={handleReset}
+              >
+                <RotateCcwIcon data-icon="inline-start" />
+                重置
+              </Button>
             </div>
           </div>
-        </ResponsiveDialogBody>
-        <ResponsiveDialogFooter>
-          <ResponsiveDialogClose asChild>
-            <Button type="button" variant="outline" disabled={isSubmitting}>
-              取消
-            </Button>
-          </ResponsiveDialogClose>
-          <Button
-            type="button"
-            disabled={!imageSize || isSubmitting}
-            onClick={handleSubmit}
-          >
-            {isSubmitting ? (
-              <Spinner data-icon="inline-start" />
-            ) : (
-              <SaveIcon data-icon="inline-start" />
-            )}
-            提交
+
+          <div className="flex flex-col gap-3 rounded-lg bg-background p-3">
+            <div className="text-sm font-medium">头像预览</div>
+            <div className="flex flex-col items-center gap-3">
+              <Avatar className="size-24">
+                <AvatarImage src={previewUrl ?? undefined} alt="头像预览" />
+                <AvatarFallback>预览</AvatarFallback>
+              </Avatar>
+              <p className="text-center text-xs text-muted-foreground">
+                拖动图片调整位置，使用缩放控制头像范围。
+              </p>
+            </div>
+          </div>
+        </div>
+      </ResponsiveDialogBody>
+      <ResponsiveDialogFooter>
+        <ResponsiveDialogClose asChild>
+          <Button type="button" variant="outline" disabled={isSubmitting}>
+            取消
           </Button>
-        </ResponsiveDialogFooter>
-      </ResponsiveDialogContent>
-    </ResponsiveDialog>
+        </ResponsiveDialogClose>
+        <Button
+          type="button"
+          disabled={!imageSize || isSubmitting}
+          onClick={handleSubmit}
+        >
+          {isSubmitting ? (
+            <Spinner data-icon="inline-start" />
+          ) : (
+            <SaveIcon data-icon="inline-start" />
+          )}
+          提交
+        </Button>
+      </ResponsiveDialogFooter>
+    </ResponsiveDialogContent>
   )
 }
 

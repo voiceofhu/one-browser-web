@@ -4,12 +4,13 @@ import type {
   DeptResource,
   ListParams,
   PageResponse,
+  ResourceMutationResult,
   StatusFlag,
 } from "@/types/admin"
 
 type DeptPayload = Record<string, unknown>
 
-const DEPT_PATH = "/system/dept"
+const DEPT_PATH = "/system/departments"
 
 export function listDepts(params?: ListParams) {
   return http.get<PageResponse<DeptResource>>(buildQueryPath(DEPT_PATH, params))
@@ -20,7 +21,7 @@ export function getDept(deptId: number) {
 }
 
 export function createDept(payload: DeptPayload) {
-  return http.post<DeptResource>(DEPT_PATH, payload)
+  return http.post<ResourceMutationResult>(DEPT_PATH, payload)
 }
 
 export function updateDept(deptId: number, payload: DeptPayload) {

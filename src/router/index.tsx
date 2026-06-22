@@ -11,12 +11,15 @@ const AccountProfilePage = lazy(() => import("@/views/account/profile"))
 const IndexPage = lazy(() => import("@/views/index"))
 const LoginPage = lazy(() => import("@/views/login"))
 const HealthPage = lazy(() => import("@/views/monitor/health"))
+const JobsPage = lazy(() => import("@/views/monitor/job"))
+const OnlineUsersPage = lazy(() => import("@/views/monitor/online"))
 const UserPage = lazy(() => import("@/views/system/user"))
 const RolePage = lazy(() => import("@/views/system/role"))
 const MenuPage = lazy(() => import("@/views/system/menu"))
 const DeptPage = lazy(() => import("@/views/system/dept"))
 const PostPage = lazy(() => import("@/views/system/post"))
 const DictTypePage = lazy(() => import("@/views/system/dict/type"))
+const NoticePage = lazy(() => import("@/views/system/notice"))
 const OperationLogPage = lazy(() => import("@/views/system/log/operation"))
 const LoginLogPage = lazy(() => import("@/views/system/log/login"))
 
@@ -44,6 +47,7 @@ export function AppRouter() {
             <Route path="system/dept" element={<DeptPage />} />
             <Route path="system/post" element={<PostPage />} />
             <Route path="system/dict" element={<DictTypePage />} />
+            <Route path="system/notice" element={<NoticePage />} />
             <Route
               path="system/dict/type"
               element={<Navigate to="/system/dict" replace />}
@@ -55,6 +59,8 @@ export function AppRouter() {
             <Route path="system/log/operation" element={<OperationLogPage />} />
             <Route path="system/log/login" element={<LoginLogPage />} />
             <Route path="monitor/health" element={<HealthPage />} />
+            <Route path="monitor/online" element={<OnlineUsersPage />} />
+            <Route path="monitor/job" element={<JobsPage />} />
           </Route>
           {Object.entries(LEGACY_ROUTE_REDIRECTS).map(([path, target]) => (
             <Route
