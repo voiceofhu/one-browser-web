@@ -6,8 +6,10 @@ import { CSS } from "@dnd-kit/utilities"
 import type { Row } from "@tanstack/react-table"
 import { GripVerticalIcon } from "lucide-react"
 
+import { useTranslation } from "@/components/providers/language-context"
 import { Button } from "@/components/ui/button"
 import { TableRow } from "@/components/ui/table"
+import { translateAdminText } from "@/lib/i18n-admin"
 import { cn } from "@/lib/utils"
 
 type SortableControls = Pick<
@@ -71,6 +73,7 @@ export function ResourceTableDragHandle({
 }: {
   disabled?: boolean
 }) {
+  const { locale } = useTranslation()
   const controls = React.useContext(SortableRowContext)
 
   if (!controls) {
@@ -91,7 +94,7 @@ export function ResourceTableDragHandle({
       size="icon-sm"
       disabled={disabled || rowDisabled}
       className="cursor-grab text-muted-foreground active:cursor-grabbing"
-      aria-label="拖拽调整排序"
+      aria-label={translateAdminText(locale, "拖拽调整排序")}
       {...attributes}
       {...listeners}
     >

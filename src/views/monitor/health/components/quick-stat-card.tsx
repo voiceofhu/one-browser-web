@@ -2,10 +2,12 @@ import { useLayoutEffect, useRef } from "react"
 import { gsap } from "gsap"
 import type { LucideIcon } from "lucide-react"
 
+import { useTranslation } from "@/components/providers/language-context"
 import { NumberTicker } from "@/components/number-ticker"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 
+import { monitorText } from "../../_lib/i18n"
 import { clampPercent } from "../lib/format"
 
 const monitorCardClass =
@@ -28,6 +30,7 @@ export function QuickStatCard({
   percent,
   formatValue,
 }: QuickStatCardProps) {
+  const { locale } = useTranslation()
   const barRef = useRef<HTMLDivElement>(null)
   const clampedPercent = clampPercent(percent ?? 0)
   const hasValue = typeof value === "number" && Number.isFinite(value)
@@ -69,7 +72,7 @@ export function QuickStatCard({
             {hasValue ? (
               <NumberTicker value={value} formatValue={formatValue} />
             ) : (
-              "暂无"
+              monitorText(locale, "common.empty")
             )}
           </div>
           <div className="mt-1.5 truncate text-sm text-muted-foreground">

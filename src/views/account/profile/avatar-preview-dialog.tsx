@@ -1,5 +1,6 @@
 "use client"
 
+import { useTranslation } from "@/components/providers/language-context"
 import {
   ResponsiveDialog,
   ResponsiveDialogBody,
@@ -8,6 +9,7 @@ import {
   ResponsiveDialogHeader,
   ResponsiveDialogTitle,
 } from "@/components/ui/responsive-dialog"
+import { translateAdminText } from "@/lib/i18n-admin"
 
 type AvatarPreviewDialogProps = {
   open: boolean
@@ -22,17 +24,20 @@ export function AvatarPreviewDialog({
   title,
   onOpenChange,
 }: AvatarPreviewDialogProps) {
+  const { locale } = useTranslation()
+  const tt = (text: string) => translateAdminText(locale, text)
+
   return (
     <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
       <ResponsiveDialogContent className="gap-0 overflow-hidden p-0 sm:max-w-2xl">
         <ResponsiveDialogHeader className="border-b px-4 py-2 pr-12 text-left">
-          <ResponsiveDialogTitle>头像预览</ResponsiveDialogTitle>
+          <ResponsiveDialogTitle>{tt("头像预览")}</ResponsiveDialogTitle>
           <ResponsiveDialogDescription>{title}</ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
         <ResponsiveDialogBody className="grid min-h-0 place-items-center bg-muted/35 p-4">
           <img
             src={imageUrl}
-            alt={`${title} 的头像`}
+            alt={tt("{title} 的头像").replace("{title}", title)}
             className="max-h-[70svh] max-w-full rounded-lg object-contain"
           />
         </ResponsiveDialogBody>

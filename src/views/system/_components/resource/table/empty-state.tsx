@@ -2,6 +2,7 @@
 
 import { PlusIcon, SearchIcon } from "lucide-react"
 
+import { useTranslation } from "@/components/providers/language-context"
 import { Button } from "@/components/ui/button"
 import {
   Empty,
@@ -29,6 +30,7 @@ export function ResourceTableEmptyState({
   isFiltered = false,
   onAction,
 }: ResourceTableEmptyStateProps) {
+  const { t } = useTranslation()
   const hasActiveFilters = isFiltered || searchValue.trim().length > 0
 
   return (
@@ -37,11 +39,11 @@ export function ResourceTableEmptyState({
         <EmptyMedia variant="icon">
           <SearchIcon />
         </EmptyMedia>
-        <EmptyTitle>{hasActiveFilters ? "没有匹配结果" : title}</EmptyTitle>
+        <EmptyTitle>
+          {hasActiveFilters ? t("common.noResults") : title}
+        </EmptyTitle>
         <EmptyDescription>
-          {hasActiveFilters
-            ? "换个关键词或筛选条件试试，搜索会直接请求后台分页接口。"
-            : description}
+          {hasActiveFilters ? t("common.retrySearch") : description}
         </EmptyDescription>
       </EmptyHeader>
       {!hasActiveFilters && onAction && actionLabel ? (

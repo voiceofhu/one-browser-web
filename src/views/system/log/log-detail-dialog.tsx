@@ -7,6 +7,7 @@ import { CopyIcon, EyeIcon } from "lucide-react"
 import { toast } from "sonner"
 
 import { getIpLocation, getLoginLog, getOperationLog } from "@/api/system/log"
+import { useTranslation } from "@/components/providers/language-context"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -21,6 +22,8 @@ import { Spinner } from "@/components/ui/spinner"
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { formatAbsoluteDateTime } from "@/lib/datetime"
+import { translateAdminText } from "@/lib/i18n-admin"
+import type { Locale } from "@/lib/i18n"
 import { systemQueryKeys } from "@/lib/query-keys"
 import type {
   LoginLogSummaryResource,
@@ -52,10 +55,12 @@ const EMPTY_IP_LOOKUP: IpLocationLookup = {
 }
 
 export function LogDetailButton({ onClick }: { onClick: () => void }) {
+  const { locale } = useTranslation()
+
   return (
     <Button type="button" variant="ghost" size="sm" onClick={onClick}>
       <EyeIcon data-icon="inline-start" />
-      详情
+      {translateAdminText(locale, "详情")}
     </Button>
   )
 }
@@ -65,6 +70,8 @@ export function OperationLogDetailDialog({
   record,
   onOpenChange,
 }: DetailDialogProps<OperationLogSummaryResource>) {
+  const { locale } = useTranslation()
+  const tt = (text: string) => translateAdminText(locale, text)
   const detailQuery = useQuery({
     queryKey: [...systemQueryKeys.operationLogs, "detail", record?.oper_id],
     queryFn: () => getOperationLog(record!.oper_id),
@@ -81,9 +88,9 @@ export function OperationLogDetailDialog({
     <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
       <ResponsiveDialogContent className="flex max-h-[90svh] flex-col gap-0 overflow-hidden p-0 data-[vaul-drawer-direction=bottom]:min-h-[32svh] sm:max-w-5xl">
         <LogDetailHeader
-          title="操作日志详情"
+          title={tt("操作日志详情")}
           status={record?.status}
-          description="查看本次后台操作的请求、参数和执行结果。"
+          description={tt("查看本次后台操作的请求、参数和执行结果。")}
         />
         <ResponsiveDialogBody className="max-h-[calc(90svh-3.75rem)] min-h-0 flex-none overflow-y-auto px-5 pt-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
           {detailQuery.isPending ? (
@@ -93,26 +100,32 @@ export function OperationLogDetailDialog({
           ) : detail ? (
             <div className="flex flex-col gap-3">
               <CompactDetailTable
-                title="概要"
+                title={tt("概要")}
                 fields={[
-                  { label: "操作模块", value: detail.title },
+                  { label: tt("操作模块"), value: detail.title },
                   {
-                    label: "业务类型",
+                    label: tt("业务类型"),
                     value: (
                       <Badge variant="outline">
-                        {businessTypeLabel(detail.business_type)}
+                        {tt(businessTypeLabel(detail.business_type))}
                       </Badge>
                     ),
                   },
                   {
-                    label: "操作时间",
+                    label: tt("操作时间"),
                     value: formatAbsoluteDateTime(detail.operated_at),
                   },
-                  { label: "消耗时间", value: `${detail.cost_time} 毫秒` },
-                  { label: "操作人员", value: detail.oper_name || "系统" },
-                  { label: "所属部门", value: detail.dept_name },
                   {
-                    label: "操作地址",
+                    label: tt("消耗时间"),
+                    value: `${detail.cost_time} ${tt("毫秒")}`,
+                  },
+                  {
+                    label: tt("操作人员"),
+                    value: detail.oper_name || tt("系统"),
+                  },
+                  { label: tt("所属部门"), value: detail.dept_name },
+                  {
+                    label: tt("操作地址"),
                     value: (
                       <AddressValue
                         ip={detail.oper_ip}
@@ -122,7 +135,7 @@ export function OperationLogDetailDialog({
                     ),
                   },
                   {
-                    label: "请求地址",
+                    label: tt("请求地址"),
                     value: (
                       <RequestAddress
                         method={detail.request_method}
@@ -130,13 +143,22 @@ export function OperationLogDetailDialog({
                       />
                     ),
                   },
-                  { label: "操作方法", value: detail.method },
+                  { label: tt("操作方法"), value: detail.method },
                 ]}
               />
-              <PayloadSection title="请求参数" value={detail.oper_param} />
-              <PayloadSection title="返回参数" value={detail.json_result} />
+              <PayloadSection
+                title={tt("请求参数")}
+                value={detail.oper_param}
+              />
+              <PayloadSection
+                title={tt("返回参数")}
+                value={detail.json_result}
+              />
               {detail.error_msg ? (
-                <PayloadSection title="异常信息" value={detail.error_msg} />
+                <PayloadSection
+                  title={tt("异常信息")}
+                  value={detail.error_msg}
+                />
               ) : null}
             </div>
           ) : null}
@@ -151,6 +173,8 @@ export function LoginLogDetailDialog({
   record,
   onOpenChange,
 }: DetailDialogProps<LoginLogSummaryResource>) {
+  const { locale } = useTranslation()
+  const tt = (text: string) => translateAdminText(locale, text)
   const detailQuery = useQuery({
     queryKey: [...systemQueryKeys.loginLogs, "detail", record?.info_id],
     queryFn: () => getLoginLog(record!.info_id),
@@ -167,9 +191,9 @@ export function LoginLogDetailDialog({
     <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
       <ResponsiveDialogContent className="flex max-h-[90svh] flex-col gap-0 overflow-hidden p-0 data-[vaul-drawer-direction=bottom]:min-h-[32svh] sm:max-w-3xl">
         <LogDetailHeader
-          title="登录日志详情"
+          title={tt("登录日志详情")}
           status={record?.status}
-          description="查看本次登录的账号、客户端和执行状态。"
+          description={tt("查看本次登录的账号、客户端和执行状态。")}
         />
         <ResponsiveDialogBody className="max-h-[calc(90svh-3.75rem)] min-h-0 flex-none overflow-y-auto px-5 pt-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
           {detailQuery.isPending ? (
@@ -179,16 +203,16 @@ export function LoginLogDetailDialog({
           ) : detail ? (
             <div className="flex flex-col gap-3">
               <CompactDetailTable
-                title="概要"
+                title={tt("概要")}
                 fields={[
-                  { label: "登录账号", value: detail.user_name },
+                  { label: tt("登录账号"), value: detail.user_name },
                   {
-                    label: "登录时间",
+                    label: tt("登录时间"),
                     value: formatAbsoluteDateTime(detail.login_at),
                   },
-                  { label: "提示消息", value: detail.msg },
+                  { label: tt("提示消息"), value: detail.msg },
                   {
-                    label: "登录地址",
+                    label: tt("登录地址"),
                     value: (
                       <AddressValue
                         ip={detail.ip_addr}
@@ -197,8 +221,8 @@ export function LoginLogDetailDialog({
                       />
                     ),
                   },
-                  { label: "浏览器", value: detail.browser },
-                  { label: "操作系统", value: detail.os },
+                  { label: tt("浏览器"), value: detail.browser },
+                  { label: tt("操作系统"), value: detail.os },
                 ]}
               />
             </div>
@@ -210,18 +234,22 @@ export function LoginLogDetailDialog({
 }
 
 function DetailLoading() {
+  const { locale } = useTranslation()
+
   return (
     <div className="flex min-h-32 items-center justify-center gap-2 text-sm text-muted-foreground">
       <Spinner />
-      加载详情中...
+      {translateAdminText(locale, "加载详情中...")}
     </div>
   )
 }
 
 function DetailError() {
+  const { locale } = useTranslation()
+
   return (
     <div className="flex min-h-32 items-center justify-center text-sm text-muted-foreground">
-      详情加载失败，请关闭后重试。
+      {translateAdminText(locale, "详情加载失败，请关闭后重试。")}
     </div>
   )
 }
@@ -277,7 +305,8 @@ function CompactDetailTable({
 }
 
 function PayloadSection({ title, value }: { title: string; value: string }) {
-  const formattedValue = formatPayload(value)
+  const { locale } = useTranslation()
+  const formattedValue = formatPayload(value, locale)
 
   return (
     <section className="overflow-hidden rounded-md border">
@@ -287,10 +316,10 @@ function PayloadSection({ title, value }: { title: string; value: string }) {
           type="button"
           variant="outline"
           size="sm"
-          onClick={() => copyText(formattedValue)}
+          onClick={() => copyText(formattedValue, locale)}
         >
           <CopyIcon data-icon="inline-start" />
-          复制
+          {translateAdminText(locale, "复制")}
         </Button>
       </div>
       <pre className="max-h-44 overflow-auto bg-muted/40 px-3 py-2 font-mono text-xs leading-relaxed whitespace-pre-wrap">
@@ -350,6 +379,7 @@ function AddressValue({
   storedLocation: string
   lookup: IpLocationLookup
 }) {
+  const { locale } = useTranslation()
   const normalizedIp = normalizeIp(ip)
   const location = storedLocation.trim() || lookup.address
   const hasValue = Boolean(
@@ -367,10 +397,14 @@ function AddressValue({
         <span className="text-muted-foreground">{location}</span>
       ) : null}
       {lookup.isLoading ? (
-        <span className="text-muted-foreground">归属地查询中...</span>
+        <span className="text-muted-foreground">
+          {translateAdminText(locale, "归属地查询中...")}
+        </span>
       ) : null}
       {!location && lookup.error ? (
-        <span className="text-muted-foreground">归属地查询失败</span>
+        <span className="text-muted-foreground">
+          {translateAdminText(locale, "归属地查询失败")}
+        </span>
       ) : null}
     </span>
   )
@@ -508,10 +542,10 @@ function isPublicIpCandidate(ip: string) {
   return true
 }
 
-function formatPayload(value: string) {
+function formatPayload(value: string, locale: Locale) {
   const text = value.trim()
   if (!text) {
-    return "(无数据)"
+    return translateAdminText(locale, "(无数据)")
   }
 
   try {
@@ -525,11 +559,11 @@ function displayValue(value: React.ReactNode) {
   return value == null || value === "" ? "-" : value
 }
 
-async function copyText(value: string) {
+async function copyText(value: string, locale: Locale) {
   try {
     await navigator.clipboard.writeText(value)
-    toast.success("已复制")
+    toast.success(translateAdminText(locale, "已复制"))
   } catch {
-    toast.error("复制失败，请手动选择文本复制。")
+    toast.error(translateAdminText(locale, "复制失败，请手动选择文本复制。"))
   }
 }

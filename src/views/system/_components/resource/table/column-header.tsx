@@ -1,7 +1,9 @@
 import type { Column } from "@tanstack/react-table"
 import { ArrowUpDownIcon } from "lucide-react"
 
+import { useTranslation } from "@/components/providers/language-context"
 import { Button } from "@/components/ui/button"
+import { translateText } from "@/lib/i18n-text"
 
 export function ResourceTableColumnHeader<TData, TValue>({
   column,
@@ -10,8 +12,11 @@ export function ResourceTableColumnHeader<TData, TValue>({
   column: Column<TData, TValue>
   title: string
 }) {
+  const { locale } = useTranslation()
+  const translatedTitle = translateText(locale, title)
+
   if (!column.getCanSort()) {
-    return <span>{title}</span>
+    return <span>{translatedTitle}</span>
   }
 
   return (
@@ -22,7 +27,7 @@ export function ResourceTableColumnHeader<TData, TValue>({
       className="-ml-2"
       onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
     >
-      {title}
+      {translatedTitle}
       <ArrowUpDownIcon data-icon="inline-end" />
     </Button>
   )

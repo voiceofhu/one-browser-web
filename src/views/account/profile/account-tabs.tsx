@@ -1,16 +1,20 @@
 import { LockKeyholeIcon, UserRoundIcon } from "lucide-react"
 
 import { type AnimatedSegmentedTabsOption } from "@/components/ui/animated-segmented-tabs"
+import { translateAdminText } from "@/lib/i18n-admin"
+import type { Locale } from "@/lib/i18n"
 
 export type AccountTab = "profile" | "password"
 
-export const ACCOUNT_TAB_OPTIONS: readonly AnimatedSegmentedTabsOption<AccountTab>[] =
-  [
+export function getAccountTabOptions(
+  locale: Locale
+): readonly AnimatedSegmentedTabsOption<AccountTab>[] {
+  return [
     {
       label: (
         <>
           <UserRoundIcon data-icon="inline-start" />
-          个人信息
+          {translateAdminText(locale, "个人信息")}
         </>
       ),
       value: "profile",
@@ -19,9 +23,10 @@ export const ACCOUNT_TAB_OPTIONS: readonly AnimatedSegmentedTabsOption<AccountTa
       label: (
         <>
           <LockKeyholeIcon data-icon="inline-start" />
-          修改密码
+          {translateAdminText(locale, "修改密码")}
         </>
       ),
       value: "password",
     },
   ]
+}

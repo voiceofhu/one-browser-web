@@ -2,6 +2,7 @@
 
 import { Trash2Icon, XIcon } from "lucide-react"
 
+import { useTranslation } from "@/components/providers/language-context"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 
@@ -20,6 +21,8 @@ export function ResourceTableBulkActions<TData>({
   onClearSelection,
   onBulkDelete,
 }: ResourceTableBulkActionsProps<TData>) {
+  const { t } = useTranslation()
+
   if (selectedCount === 0) {
     return null
   }
@@ -28,11 +31,7 @@ export function ResourceTableBulkActions<TData>({
     <div className="pointer-events-none absolute inset-x-0 bottom-16 z-20 flex justify-center px-4">
       <div className="pointer-events-auto flex items-center gap-2 rounded-xl bg-popover px-3 py-2 text-sm text-popover-foreground shadow-lg ring-1 ring-foreground/10">
         <span className="text-muted-foreground">
-          已选择{" "}
-          <strong className="font-medium text-foreground">
-            {selectedCount}
-          </strong>{" "}
-          项
+          {t("common.selectedCount", { count: selectedCount })}
         </span>
         <Button
           type="button"
@@ -41,7 +40,7 @@ export function ResourceTableBulkActions<TData>({
           onClick={onClearSelection}
         >
           <XIcon data-icon="inline-start" />
-          取消选择
+          {t("common.cancelSelection")}
         </Button>
         <Button
           type="button"
@@ -55,7 +54,7 @@ export function ResourceTableBulkActions<TData>({
           ) : (
             <Trash2Icon data-icon="inline-start" />
           )}
-          批量删除
+          {t("common.bulkDelete")}
         </Button>
       </div>
     </div>

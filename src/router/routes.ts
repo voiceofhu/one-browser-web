@@ -1,3 +1,5 @@
+import type { I18nKey } from "@/lib/i18n"
+
 export type AppRouteId =
   | "overview"
   | "users"
@@ -16,6 +18,7 @@ export type AppRouteId =
 
 export interface AppRouteMeta {
   id: AppRouteId
+  labelKey: I18nKey
   label: string
   title: string
   description: string
@@ -27,6 +30,7 @@ export const DEFAULT_APP_ROUTE: AppRouteId = "overview"
 export const APP_ROUTES: AppRouteMeta[] = [
   {
     id: "overview",
+    labelKey: "route.overview",
     label: "首页",
     title: "首页",
     description: "查看系统资源、运行状态和快捷入口。",
@@ -34,6 +38,7 @@ export const APP_ROUTES: AppRouteMeta[] = [
   },
   {
     id: "users",
+    labelKey: "route.users",
     label: "用户管理",
     title: "用户管理",
     description: "管理后台账号、资料和启用状态。",
@@ -41,6 +46,7 @@ export const APP_ROUTES: AppRouteMeta[] = [
   },
   {
     id: "roles",
+    labelKey: "route.roles",
     label: "角色管理",
     title: "角色管理",
     description: "管理角色标识、数据权限和启用状态。",
@@ -48,6 +54,7 @@ export const APP_ROUTES: AppRouteMeta[] = [
   },
   {
     id: "menus",
+    labelKey: "route.menus",
     label: "权限管理",
     title: "权限管理",
     description: "管理目录、菜单路由和按钮权限标识。",
@@ -55,6 +62,7 @@ export const APP_ROUTES: AppRouteMeta[] = [
   },
   {
     id: "depts",
+    labelKey: "route.depts",
     label: "部门管理",
     title: "部门管理",
     description: "管理当前数据范围内的组织部门。",
@@ -62,6 +70,7 @@ export const APP_ROUTES: AppRouteMeta[] = [
   },
   {
     id: "posts",
+    labelKey: "route.posts",
     label: "岗位管理",
     title: "岗位管理",
     description: "管理组织岗位编码、排序和状态。",
@@ -69,6 +78,7 @@ export const APP_ROUTES: AppRouteMeta[] = [
   },
   {
     id: "dict",
+    labelKey: "route.dict",
     label: "字典管理",
     title: "字典管理",
     description: "管理系统字典类型，并查看各类型下的字典数据。",
@@ -76,6 +86,7 @@ export const APP_ROUTES: AppRouteMeta[] = [
   },
   {
     id: "notices",
+    labelKey: "route.notices",
     label: "通知管理",
     title: "通知管理",
     description: "管理后台通知公告、发布状态和展示内容。",
@@ -83,6 +94,7 @@ export const APP_ROUTES: AppRouteMeta[] = [
   },
   {
     id: "operation-logs",
+    labelKey: "route.operationLogs",
     label: "操作日志",
     title: "操作日志",
     description: "查看后台写入、修改、删除等操作记录。",
@@ -90,6 +102,7 @@ export const APP_ROUTES: AppRouteMeta[] = [
   },
   {
     id: "login-logs",
+    labelKey: "route.loginLogs",
     label: "登录日志",
     title: "登录日志",
     description: "查看后台账号登录成功和失败记录。",
@@ -97,6 +110,7 @@ export const APP_ROUTES: AppRouteMeta[] = [
   },
   {
     id: "health",
+    labelKey: "route.health",
     label: "服务监控",
     title: "服务监控",
     description: "查看应用、数据库和缓存的运行状态。",
@@ -104,6 +118,7 @@ export const APP_ROUTES: AppRouteMeta[] = [
   },
   {
     id: "online-users",
+    labelKey: "route.onlineUsers",
     label: "在线用户",
     title: "在线用户",
     description: "查看当前登录会话，并可按需强制用户下线。",
@@ -111,6 +126,7 @@ export const APP_ROUTES: AppRouteMeta[] = [
   },
   {
     id: "jobs",
+    labelKey: "route.jobs",
     label: "定时任务",
     title: "定时任务",
     description: "管理后台白名单调度任务、状态和手动执行。",
@@ -118,6 +134,7 @@ export const APP_ROUTES: AppRouteMeta[] = [
   },
   {
     id: "account",
+    labelKey: "route.account",
     label: "个人账号",
     title: "个人账号",
     description: "管理当前登录账号的基础资料。",
@@ -127,22 +144,32 @@ export const APP_ROUTES: AppRouteMeta[] = [
 
 export const APP_ROUTE_GROUPS = [
   {
+    id: "overview",
+    labelKey: "routeGroup.overview",
     label: "首页",
     routes: ["overview"],
   },
   {
+    id: "system",
+    labelKey: "routeGroup.system",
     label: "系统管理",
     routes: ["users", "roles", "menus", "depts", "posts", "dict", "notices"],
   },
   {
+    id: "logs",
+    labelKey: "routeGroup.logs",
     label: "系统日志",
     routes: ["operation-logs", "login-logs"],
   },
   {
+    id: "monitor",
+    labelKey: "routeGroup.monitor",
     label: "系统监控",
     routes: ["health", "online-users", "jobs"],
   },
 ] satisfies {
+  id: string
+  labelKey: I18nKey
   label: string
   routes: AppRouteId[]
 }[]

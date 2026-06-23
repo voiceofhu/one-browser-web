@@ -24,6 +24,7 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@/components/ui/drawer"
+import { useTranslation } from "@/components/providers/language-context"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
 
@@ -86,6 +87,7 @@ function ResponsiveDialogContent({
   showCloseButton?: boolean
 }) {
   const mode = useResponsiveDialogMode()
+  const { t } = useTranslation()
 
   if (mode === "drawer") {
     return (
@@ -104,7 +106,7 @@ function ResponsiveDialogContent({
               variant="ghost"
               size="icon-sm"
               className="absolute top-2 right-2"
-              aria-label="关闭"
+              aria-label={t("common.close")}
             >
               <XIcon />
             </Button>

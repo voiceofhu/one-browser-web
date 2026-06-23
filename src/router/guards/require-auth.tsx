@@ -11,12 +11,15 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty"
 import { Spinner } from "@/components/ui/spinner"
+import { useLanguage } from "@/components/providers/language-context"
+import { localizedPublicPath } from "@/lib/i18n"
 import { isUnauthorizedError } from "@/lib/request"
 import { useAuthPermissions, useCurrentUser } from "@/hooks/use-auth"
 import { getFirstAuthorizedPath, isAuthorizedPath } from "@/router/access"
 
 export function RequireAuth({ children }: React.PropsWithChildren) {
   const location = useLocation()
+  const { locale, t } = useLanguage()
   const currentUser = useCurrentUser()
   const authPermissions = useAuthPermissions()
   const isAuthRefreshing = currentUser.isFetching || authPermissions.isFetching
@@ -42,7 +45,7 @@ export function RequireAuth({ children }: React.PropsWithChildren) {
 
     return (
       <Navigate
-        to={`/login?redirect=${encodeURIComponent(redirect)}`}
+        to={`${localizedPublicPath(locale, "login")}?redirect=${encodeURIComponent(redirect)}`}
         replace
       />
     )
@@ -53,10 +56,10 @@ export function RequireAuth({ children }: React.PropsWithChildren) {
 
     return (
       <AuthStateError
-        title="无法验证登录状态"
-        description="暂时无法连接后台服务，请确认服务已启动或网络连接正常。"
-        detail={getErrorMessage(error)}
-        actionLabel="重新验证"
+        title={t("auth.state.verifyTitle")}
+        description={t("auth.state.verifyDescription")}
+        detail={getErrorMessage(error, t("auth.state.backendUnavailable"))}
+        actionLabel={t("auth.state.retry")}
         pending={isAuthRefreshing}
         onAction={retryAuthState}
       />
@@ -68,8 +71,8 @@ export function RequireAuth({ children }: React.PropsWithChildren) {
     if (!target) {
       return (
         <AuthStateError
-          title="没有可访问菜单"
-          description="当前账号没有分配任何可访问的菜单，请联系管理员调整角色权限。"
+          title={t("auth.state.noMenuTitle")}
+          description={t("auth.state.noMenuDescription")}
         />
       )
     }
@@ -133,6 +136,6 @@ function AuthStateError({
   )
 }
 
-function getErrorMessage(error: unknown) {
-  return error instanceof Error ? error.message : "请确认后端服务可用后重试。"
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback
 }

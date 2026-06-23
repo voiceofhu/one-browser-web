@@ -1,71 +1,127 @@
 import { toast } from "sonner"
 
-export function showResourceCreateSuccess(noun: string) {
-  toast.success(`${noun}创建成功`, {
-    description: "数据已写入后台，列表已刷新。",
-  })
+import { isSupportedLocale, translate, type Locale } from "@/lib/i18n"
+import { translateText } from "@/lib/i18n-text"
+
+export function showResourceCreateSuccess(noun: string, locale?: Locale) {
+  toast.success(
+    translate(locale, "resource.createSuccess", {
+      noun: translateText(locale, noun),
+    }),
+    {
+      description: translate(locale, "resource.createSuccessDescription"),
+    }
+  )
 }
 
-export function showResourceUpdateSuccess(noun: string) {
-  toast.success(`${noun}保存成功`, {
-    description: "变更已同步到后台，列表已刷新。",
-  })
+export function showResourceUpdateSuccess(noun: string, locale?: Locale) {
+  toast.success(
+    translate(locale, "resource.updateSuccess", {
+      noun: translateText(locale, noun),
+    }),
+    {
+      description: translate(locale, "resource.updateSuccessDescription"),
+    }
+  )
 }
 
-export function showResourceDeleteSuccess(noun: string) {
-  toast.success(`${noun}删除成功`, {
-    description: "记录已从当前列表移除。",
-  })
+export function showResourceDeleteSuccess(noun: string, locale?: Locale) {
+  toast.success(
+    translate(locale, "resource.deleteSuccess", {
+      noun: translateText(locale, noun),
+    }),
+    {
+      description: translate(locale, "resource.deleteSuccessDescription"),
+    }
+  )
 }
 
-export function showResourceBulkDeleteSuccess(noun: string, count: number) {
-  toast.success(`${noun}批量删除成功`, {
-    description: `已删除 ${count} 条记录，列表已刷新。`,
-  })
+export function showResourceBulkDeleteSuccess(
+  noun: string,
+  count: number,
+  locale?: Locale
+) {
+  toast.success(
+    translate(locale, "resource.bulkDeleteSuccess", {
+      noun: translateText(locale, noun),
+    }),
+    {
+      description: translate(locale, "resource.bulkDeleteSuccessDescription", {
+        count,
+      }),
+    }
+  )
 }
 
-export function showResourceRefreshSuccess(noun: string) {
-  toast.success(`${noun}列表已刷新`, {
-    description: "已获取后台最新数据。",
-  })
+export function showResourceRefreshSuccess(noun: string, locale?: Locale) {
+  toast.success(
+    translate(locale, "resource.refreshSuccess", {
+      noun: translateText(locale, noun),
+    }),
+    {
+      description: translate(locale, "resource.refreshSuccessDescription"),
+    }
+  )
 }
 
 export function showResourceValidationError(
   noun: string,
   fieldLabel?: string,
-  message?: string
+  message?: string,
+  locale?: Locale
 ) {
-  toast.error(`${noun}信息未填写完整`, {
-    description:
-      fieldLabel && message
-        ? `${fieldLabel}：${message}`
-        : "请检查表单中的必填项或格式提示。",
+  toast.error(
+    translate(locale, "resource.validationTitle", {
+      noun: translateText(locale, noun),
+    }),
+    {
+      description:
+        fieldLabel && message
+          ? `${translateText(locale, fieldLabel)}: ${translateText(locale, message)}`
+          : translate(locale, "resource.validationDescription"),
+    }
+  )
+}
+
+export function showResourceReorderSuccess(
+  noun: string,
+  count: number,
+  locale?: Locale
+) {
+  toast.success(
+    translate(locale, "resource.reorderSuccess", {
+      noun: translateText(locale, noun),
+    }),
+    {
+      description:
+        count > 0
+          ? translate(locale, "resource.reorderChangedDescription", { count })
+          : translate(locale, "resource.reorderUnchangedDescription"),
+    }
+  )
+}
+
+export function showResourceError(error: unknown, localeCandidate?: unknown) {
+  const locale = resolveLocale(localeCandidate)
+  toast.error(getErrorMessage(error, locale), {
+    description: translate(locale, "resource.errorDescription"),
   })
 }
 
-export function showResourceReorderSuccess(noun: string, count: number) {
-  toast.success(`${noun}排序已保存`, {
-    description:
-      count > 0
-        ? `已更新 ${count} 条记录的显示顺序。`
-        : "顺序没有发生变化。",
-  })
-}
-
-export function showResourceError(error: unknown) {
-  toast.error(getErrorMessage(error), {
-    description: "请检查输入内容或稍后重试。",
-  })
-}
-
-function getErrorMessage(error: unknown) {
+function getErrorMessage(error: unknown, locale?: Locale) {
   if (error instanceof Error) {
-    return error.message
+    return translateText(locale, error.message)
   }
 
   if (typeof error === "string") {
-    return error
+    return translateText(locale, error)
   }
 
-  return "操作失败"
+  return translate(locale, "resource.errorFallback")
+}
+
+function resolveLocale(value: unknown): Locale | undefined {
+  return typeof value === "string" && isSupportedLocale(value)
+    ? value
+    : undefined
 }

@@ -48,6 +48,7 @@ import {
 import { ResourceTableTreeCell } from "./tree-cell"
 import { getColumnMeta, getErrorMessage } from "./utils"
 
+import { useTranslation } from "@/components/providers/language-context"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -73,6 +74,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
+import { translateText } from "@/lib/i18n-text"
 
 type ResourceTableProps<TData> = {
   data: TData[]
@@ -132,9 +134,9 @@ export function ResourceTable<TData>({
   isLoading = false,
   isFetching = false,
   error,
-  searchPlaceholder = "搜索资源...",
-  emptyTitle = "暂无数据",
-  emptyDescription = "当前资源还没有可显示的记录。",
+  searchPlaceholder,
+  emptyTitle,
+  emptyDescription,
   emptyActionLabel,
   onEmptyAction,
   isFiltered = false,
@@ -155,6 +157,7 @@ export function ResourceTable<TData>({
   showPaginationFooter = true,
   showPaginationControls = true,
 }: ResourceTableProps<TData>) {
+  const { locale, t } = useTranslation()
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>(() => defaultColumnVisibility ?? {})
   const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({})
@@ -223,7 +226,7 @@ export function ResourceTable<TData>({
                 (table.getIsSomePageRowsSelected() && "indeterminate")
               }
               disabled={!hasSelectableRows}
-              aria-label="选择当前页"
+              aria-label={t("common.selectCurrentPage")}
               onCheckedChange={(value) =>
                 table.toggleAllPageRowsSelected(value === true)
               }
@@ -234,12 +237,12 @@ export function ResourceTable<TData>({
           <Checkbox
             checked={row.getIsSelected()}
             disabled={!row.getCanSelect()}
-            aria-label="选择当前行"
+            aria-label={t("common.selectCurrentRow")}
             onCheckedChange={(value) => row.toggleSelected(value === true)}
           />
         ),
         meta: {
-          label: "选择",
+          label: t("common.select"),
           headerClassName: cn(
             "sticky z-20 bg-muted",
             isCompact ? "w-8" : "w-10",
@@ -261,7 +264,7 @@ export function ResourceTable<TData>({
         header: "",
         cell: () => <ResourceTableDragHandle disabled={isRowReordering} />,
         meta: {
-          label: "排序",
+          label: t("common.sort"),
           headerClassName: cn(
             "sticky left-0 z-20 bg-muted",
             isCompact ? "w-8" : "w-10"
@@ -278,10 +281,10 @@ export function ResourceTable<TData>({
       nextColumns.push({
         id: "actions",
         enableHiding: false,
-        header: "操作",
+        header: t("common.actions"),
         cell: ({ row }) => renderRowActions(row.original),
         meta: {
-          label: "操作",
+          label: t("common.actions"),
           headerClassName: cn(
             "sticky right-0 z-20 border-l bg-muted text-right",
             isCompact ? "w-20" : "w-24"
@@ -302,6 +305,7 @@ export function ResourceTable<TData>({
     isCompact,
     isRowReordering,
     renderRowActions,
+    t,
   ])
 
   // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Table v8 exposes stateful table helpers by design.
@@ -342,13 +346,18 @@ export function ResourceTable<TData>({
     .rows.filter((row) => row.getCanSelect())
   const selectedRecords = selectedRows.map((row) => row.original)
   const selectedCount = selectedRecords.length
-  const errorMessage = getErrorMessage(error)
+  const errorMessage = getErrorMessage(error, locale)
   const totalPages = Math.max(Math.ceil(totalRows / pageSize), 1)
   const hasPreviousPage = pageIndex > 0
   const hasNextPage = totalRows > 0 && pageIndex < totalPages - 1
   const firstRow = totalRows === 0 ? 0 : pageIndex * pageSize + 1
   const lastRow = Math.min((pageIndex + 1) * pageSize, totalRows)
   const shouldShowPaginationFooter = showPaginationFooter && totalRows > 0
+  const resolvedSearchPlaceholder =
+    searchPlaceholder ?? t("common.resourceSearchPlaceholder")
+  const resolvedEmptyTitle = emptyTitle ?? t("common.noData")
+  const resolvedEmptyDescription =
+    emptyDescription ?? t("common.resourceEmptyDescription")
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event
@@ -400,8 +409,8 @@ export function ResourceTable<TData>({
               className={cn(isCompact && "h-7 text-sm")}
               value={searchValue}
               onChange={(event) => onSearchChange(event.target.value)}
-              placeholder={searchPlaceholder}
-              aria-label={searchPlaceholder}
+              placeholder={resolvedSearchPlaceholder}
+              aria-label={resolvedSearchPlaceholder}
             />
           </InputGroup>
         </div>
@@ -417,13 +426,15 @@ export function ResourceTable<TData>({
               <DropdownMenuTrigger asChild>
                 <Button type="button" variant="outline" size="sm">
                   <SlidersHorizontalIcon data-icon="inline-start" />
-                  列
+                  {t("common.columns")}
                   <ChevronDownIcon data-icon="inline-end" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-44">
-                <DropdownMenuLabel>显示列</DropdownMenuLabel>
                 <DropdownMenuGroup>
+                  <DropdownMenuLabel>
+                    {t("common.showColumns")}
+                  </DropdownMenuLabel>
                   {table
                     .getAllLeafColumns()
                     .filter((column) => column.getCanHide())
@@ -436,7 +447,10 @@ export function ResourceTable<TData>({
                           column.toggleVisibility(Boolean(value))
                         }
                       >
-                        {getColumnMeta(column).label ?? column.id}
+                        {translateText(
+                          locale,
+                          getColumnMeta(column).label ?? column.id
+                        )}
                       </DropdownMenuCheckboxItem>
                     ))}
                 </DropdownMenuGroup>
@@ -448,7 +462,7 @@ export function ResourceTable<TData>({
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {errorMessage ? (
           <Alert variant="destructive" className="mx-4 mt-4 lg:mx-6">
-            <AlertTitle>资源加载失败</AlertTitle>
+            <AlertTitle>{t("common.loadFailed")}</AlertTitle>
             <AlertDescription>{errorMessage}</AlertDescription>
           </Alert>
         ) : null}
@@ -462,8 +476,8 @@ export function ResourceTable<TData>({
         ) : rows.length === 0 ? (
           <ResourceTableEmptyState
             searchValue={searchValue}
-            title={emptyTitle}
-            description={emptyDescription}
+            title={resolvedEmptyTitle}
+            description={resolvedEmptyDescription}
             actionLabel={emptyActionLabel}
             isFiltered={isFiltered}
             onAction={onEmptyAction}

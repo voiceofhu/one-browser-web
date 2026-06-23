@@ -12,6 +12,7 @@ import { toast } from "sonner"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
+import { useTranslation } from "@/components/providers/language-context"
 import {
   ResponsiveDialog,
   ResponsiveDialogBody,
@@ -24,6 +25,7 @@ import {
 } from "@/components/ui/responsive-dialog"
 import { Slider } from "@/components/ui/slider"
 import { Spinner } from "@/components/ui/spinner"
+import { translateAdminText } from "@/lib/i18n-admin"
 import { cn } from "@/lib/utils"
 
 const AVATAR_OUTPUT_SIZE = 240
@@ -81,6 +83,11 @@ function AvatarCropDialogContent({
   onSelectFile,
   onSubmit,
 }: Omit<AvatarCropDialogProps, "open" | "onOpenChange">) {
+  const { locale } = useTranslation()
+  const tt = React.useCallback(
+    (text: string) => translateAdminText(locale, text),
+    [locale]
+  )
   const imageRef = React.useRef<HTMLImageElement>(null)
   const dragRef = React.useRef<DragState | null>(null)
   const [imageSize, setImageSize] = React.useState<ImageSize | null>(null)
@@ -185,7 +192,7 @@ function AvatarCropDialogContent({
 
   async function handleSubmit() {
     if (!imageRef.current || !imageSize) {
-      toast.error("请选择头像图片")
+      toast.error(tt("请选择头像图片"))
       return
     }
 
@@ -204,16 +211,20 @@ function AvatarCropDialogContent({
 
       await onSubmit(avatarFile)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "头像裁剪失败")
+      toast.error(
+        error instanceof Error
+          ? translateAdminText(locale, error.message)
+          : tt("头像裁剪失败")
+      )
     }
   }
 
   return (
     <ResponsiveDialogContent className="gap-0 overflow-hidden p-0 sm:max-w-3xl">
       <ResponsiveDialogHeader className="border-b px-4 py-2 pr-12 text-left">
-        <ResponsiveDialogTitle>修改头像</ResponsiveDialogTitle>
+        <ResponsiveDialogTitle>{tt("修改头像")}</ResponsiveDialogTitle>
         <ResponsiveDialogDescription>
-          选择图片后裁剪为方形头像，提交后才会上传。
+          {tt("选择图片后裁剪为方形头像，提交后才会上传。")}
         </ResponsiveDialogDescription>
       </ResponsiveDialogHeader>
       <ResponsiveDialogBody className="p-4">
@@ -235,7 +246,7 @@ function AvatarCropDialogContent({
                 <img
                   ref={imageRef}
                   src={imageUrl}
-                  alt="待裁剪头像"
+                  alt={tt("待裁剪头像")}
                   draggable={false}
                   className="absolute max-w-none select-none"
                   style={
@@ -251,7 +262,7 @@ function AvatarCropDialogContent({
                 />
               ) : (
                 <div className="grid size-full place-items-center text-sm text-muted-foreground">
-                  请选择图片
+                  {tt("请选择图片")}
                 </div>
               )}
               <div className="pointer-events-none absolute inset-0 rounded-lg ring-2 ring-background/80 ring-inset" />
@@ -262,7 +273,7 @@ function AvatarCropDialogContent({
                 type="button"
                 variant="outline"
                 size="icon-sm"
-                aria-label="缩小"
+                aria-label={tt("缩小")}
                 disabled={!imageSize || isSubmitting || scale <= MIN_SCALE}
                 onClick={() => updateScale(scale - SCALE_STEP)}
               >
@@ -274,14 +285,14 @@ function AvatarCropDialogContent({
                 max={MAX_SCALE}
                 step={SCALE_STEP}
                 disabled={!imageSize || isSubmitting}
-                aria-label="头像缩放"
+                aria-label={tt("头像缩放")}
                 onValueChange={([value]) => updateScale(value ?? MIN_SCALE)}
               />
               <Button
                 type="button"
                 variant="outline"
                 size="icon-sm"
-                aria-label="放大"
+                aria-label={tt("放大")}
                 disabled={!imageSize || isSubmitting || scale >= MAX_SCALE}
                 onClick={() => updateScale(scale + SCALE_STEP)}
               >
@@ -298,7 +309,7 @@ function AvatarCropDialogContent({
                 onClick={onSelectFile}
               >
                 <ImageUpIcon data-icon="inline-start" />
-                选择图片
+                {tt("选择图片")}
               </Button>
               <Button
                 type="button"
@@ -308,20 +319,23 @@ function AvatarCropDialogContent({
                 onClick={handleReset}
               >
                 <RotateCcwIcon data-icon="inline-start" />
-                重置
+                {tt("重置")}
               </Button>
             </div>
           </div>
 
           <div className="flex flex-col gap-3 rounded-lg bg-background p-3">
-            <div className="text-sm font-medium">头像预览</div>
+            <div className="text-sm font-medium">{tt("头像预览")}</div>
             <div className="flex flex-col items-center gap-3">
               <Avatar className="size-24">
-                <AvatarImage src={previewUrl ?? undefined} alt="头像预览" />
-                <AvatarFallback>预览</AvatarFallback>
+                <AvatarImage
+                  src={previewUrl ?? undefined}
+                  alt={tt("头像预览")}
+                />
+                <AvatarFallback>{tt("预览")}</AvatarFallback>
               </Avatar>
               <p className="text-center text-xs text-muted-foreground">
-                拖动图片调整位置，使用缩放控制头像范围。
+                {tt("拖动图片调整位置，使用缩放控制头像范围。")}
               </p>
             </div>
           </div>
@@ -330,7 +344,7 @@ function AvatarCropDialogContent({
       <ResponsiveDialogFooter>
         <ResponsiveDialogClose asChild>
           <Button type="button" variant="outline" disabled={isSubmitting}>
-            取消
+            {tt("取消")}
           </Button>
         </ResponsiveDialogClose>
         <Button
@@ -343,7 +357,7 @@ function AvatarCropDialogContent({
           ) : (
             <SaveIcon data-icon="inline-start" />
           )}
-          提交
+          {tt("提交")}
         </Button>
       </ResponsiveDialogFooter>
     </ResponsiveDialogContent>

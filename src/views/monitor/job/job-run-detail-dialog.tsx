@@ -3,6 +3,7 @@
 import type * as React from "react"
 import { CheckCircle2Icon, CircleAlertIcon } from "lucide-react"
 
+import { useTranslation } from "@/components/providers/language-context"
 import { Badge } from "@/components/ui/badge"
 import {
   ResponsiveDialog,
@@ -15,12 +16,17 @@ import {
 import { formatAbsoluteDateTime } from "@/lib/datetime"
 import type { JobLogResource } from "@/types/admin"
 
-import { JOB_INVOKE_TARGET_LABELS } from "./constants"
 import {
   formatRunDuration,
   LogStatusBadge,
   parseJobRunMessage,
 } from "./columns"
+import {
+  formatJobRunMessage,
+  getJobInvokeTargetLabel,
+  getJobRunTriggerLabel,
+  translateMonitorJob,
+} from "./constants"
 
 type JobRunDetailDialogProps = {
   open: boolean
@@ -33,6 +39,7 @@ export function JobRunDetailDialog({
   record,
   onOpenChange,
 }: JobRunDetailDialogProps) {
+  const { locale } = useTranslation()
   const runMessage = record ? parseJobRunMessage(record) : null
   const success = record?.status === "0"
 
@@ -41,11 +48,11 @@ export function JobRunDetailDialog({
       <ResponsiveDialogContent className="p-0 sm:max-w-3xl">
         <ResponsiveDialogHeader className="border-b px-5 py-3 text-left">
           <ResponsiveDialogTitle className="flex items-center gap-2">
-            执行记录详情
+            {translateMonitorJob(locale, "job.runDetail.title")}
             {record ? <LogStatusBadge status={record.status} /> : null}
           </ResponsiveDialogTitle>
           <ResponsiveDialogDescription>
-            查看单次任务执行的输入、状态与输出结果。
+            {translateMonitorJob(locale, "job.runDetail.description")}
           </ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
         <ResponsiveDialogBody className="space-y-4 px-5 py-4">
@@ -58,39 +65,69 @@ export function JobRunDetailDialog({
                   ) : (
                     <CircleAlertIcon className="size-4 text-destructive" />
                   )}
-                  Run #{record.job_log_id}
+                  {translateMonitorJob(locale, "job.runDetail.runTitle", {
+                    id: record.job_log_id,
+                  })}
                 </div>
                 <div className="grid gap-3 text-sm md:grid-cols-2">
-                  <DetailItem label="任务名称">{record.job_name}</DetailItem>
-                  <DetailItem label="触发方式">{runMessage.trigger}</DetailItem>
-                  <DetailItem label="调用目标">
-                    {JOB_INVOKE_TARGET_LABELS[record.invoke_target] ??
-                      record.invoke_target}
+                  <DetailItem
+                    label={translateMonitorJob(locale, "job.runDetail.jobName")}
+                  >
+                    {record.job_name}
                   </DetailItem>
-                  <DetailItem label="耗时">
-                    {formatRunDuration(record)}
+                  <DetailItem
+                    label={translateMonitorJob(locale, "job.runDetail.trigger")}
+                  >
+                    {getJobRunTriggerLabel(locale, runMessage.trigger)}
                   </DetailItem>
-                  <DetailItem label="开始时间">
+                  <DetailItem
+                    label={translateMonitorJob(
+                      locale,
+                      "job.runDetail.invokeTarget"
+                    )}
+                  >
+                    {getJobInvokeTargetLabel(locale, record.invoke_target)}
+                  </DetailItem>
+                  <DetailItem
+                    label={translateMonitorJob(
+                      locale,
+                      "job.runDetail.duration"
+                    )}
+                  >
+                    {formatRunDuration(record, locale)}
+                  </DetailItem>
+                  <DetailItem
+                    label={translateMonitorJob(
+                      locale,
+                      "job.runDetail.startedAt"
+                    )}
+                  >
                     {formatAbsoluteDateTime(record.started_at, "-")}
                   </DetailItem>
-                  <DetailItem label="结束时间">
+                  <DetailItem
+                    label={translateMonitorJob(locale, "job.runDetail.endedAt")}
+                  >
                     {formatAbsoluteDateTime(record.ended_at, "-")}
                   </DetailItem>
                 </div>
               </section>
 
               <section className="rounded-lg bg-muted/40 p-4">
-                <div className="mb-2 font-medium">执行消息</div>
+                <div className="mb-2 font-medium">
+                  {translateMonitorJob(locale, "job.runDetail.message")}
+                </div>
                 <div className="rounded-md bg-background px-3 py-2 text-sm">
-                  {runMessage.message || "-"}
+                  {formatJobRunMessage(locale, runMessage.message)}
                 </div>
               </section>
 
               <section className="rounded-lg bg-muted/40 p-4">
                 <div className="mb-2 flex items-center gap-2 font-medium">
-                  异常信息
+                  {translateMonitorJob(locale, "job.runDetail.exception")}
                   {record.exception_info ? (
-                    <Badge variant="destructive">已记录</Badge>
+                    <Badge variant="destructive">
+                      {translateMonitorJob(locale, "job.runDetail.recorded")}
+                    </Badge>
                   ) : null}
                 </div>
                 <pre className="max-h-64 overflow-auto rounded-md bg-background px-3 py-2 text-sm whitespace-pre-wrap">

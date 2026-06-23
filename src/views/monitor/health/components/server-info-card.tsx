@@ -9,9 +9,11 @@ import {
 } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { formatAbsoluteDateTime } from "@/lib/datetime"
+import type { Locale } from "@/lib/i18n"
 
 import type { HealthResponse } from "@/types/admin"
 
+import { monitorText } from "../../_lib/i18n"
 import { InfoRow } from "./info-row"
 import { formatBootTime, formatDateTime, formatDuration } from "../lib/format"
 
@@ -20,15 +22,19 @@ const monitorCardClass = "bg-muted/35 py-0 shadow-none ring-0"
 export function ServerInfoCard({
   health,
   lastUpdated,
+  locale,
 }: {
   health?: HealthResponse
   lastUpdated?: string
+  locale: Locale
 }) {
+  const mt = (key: string) => monitorText(locale, key)
   const bootTime = health?.server?.boot_time
-    ? formatDateTime(health.server.boot_time)
+    ? formatDateTime(health.server.boot_time, locale)
     : formatBootTime(
         health?.server?.current_time,
-        health?.server?.uptime_seconds
+        health?.server?.uptime_seconds,
+        locale
       )
 
   return (
@@ -36,34 +42,37 @@ export function ServerInfoCard({
       <CardHeader className="gap-1.5 p-3.5 pb-2">
         <CardTitle className="flex items-center gap-2 text-lg font-semibold">
           <MonitorSmartphoneIcon className="size-5 text-muted-foreground" />
-          服务器与版本
+          {mt("health.server.title")}
         </CardTitle>
         <CardDescription className="text-sm">
-          服务器级别的信息（区别于进程运行时），最近更新：
-          {formatDateTime(lastUpdated)}
+          {mt("health.server.descriptionPrefix")}
+          {formatDateTime(lastUpdated, locale)}
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-3 p-3.5 pt-1 text-sm">
         <InfoRow
-          label="服务器名称"
-          value={health?.server?.hostname ?? "暂无"}
+          label={mt("health.server.hostname")}
+          value={health?.server?.hostname ?? mt("common.empty")}
         />
         <InfoRow
-          label="服务器系统"
+          label={mt("health.server.arch")}
           value={
             health?.server
               ? `${health.server.os} · ${health.server.arch}`
-              : "暂无"
+              : mt("common.empty")
           }
         />
         <InfoRow
-          label="服务器运行时长"
-          value={formatDuration(health?.server?.uptime_seconds)}
+          label={mt("health.server.uptime")}
+          value={formatDuration(health?.server?.uptime_seconds, locale)}
         />
-        <InfoRow label="服务器开机时间" value={bootTime} />
+        <InfoRow label={mt("health.server.bootTime")} value={bootTime} />
         <InfoRow
-          label="服务器时间"
-          value={formatAbsoluteDateTime(health?.server?.current_time)}
+          label={mt("health.server.currentTime")}
+          value={formatAbsoluteDateTime(
+            health?.server?.current_time,
+            mt("common.empty")
+          )}
         />
       </CardContent>
     </Card>

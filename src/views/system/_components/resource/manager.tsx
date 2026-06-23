@@ -15,9 +15,16 @@ import {
   AlertDialogMedia,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { useTranslation } from "@/components/providers/language-context"
 import { Spinner } from "@/components/ui/spinner"
 import { useAuthPermissions } from "@/hooks/use-auth"
 import { hasPermission } from "@/lib/auth-permissions"
+import {
+  formatResourceActionText,
+  formatResourceEmptyText,
+  formatResourceSearchPlaceholder,
+  translateText,
+} from "@/lib/i18n-text"
 
 import type { DashboardResourceConfig } from "./configs"
 import type { ResourceFormValues } from "./form"
@@ -64,6 +71,7 @@ export function ResourceManager<TData, TDetail extends TData = TData>({
   renderInlineRowActions,
 }: ResourceManagerProps<TData, TDetail>) {
   const queryClient = useQueryClient()
+  const { locale, t } = useTranslation()
   const authPermissions = useAuthPermissions()
   const [search, setSearch] = React.useState("")
   const debouncedSearch = useDebouncedValue(search, 300)
@@ -114,6 +122,8 @@ export function ResourceManager<TData, TDetail extends TData = TData>({
   )
   const tableTotalRows = treeConfig ? records.length : (query.data?.total ?? 0)
   const tablePageSize = treeConfig ? Math.max(records.length, 1) : pageSize
+  const translatedNoun = translateText(locale, config.noun)
+  const emptyContent = formatResourceEmptyText(locale, config.noun)
   const [editor, setEditor] = React.useState<EditorState<TDetail> | null>(null)
   const [deletingRecord, setDeletingRecord] = React.useState<TData | null>(null)
   const [bulkDeletingState, setBulkDeletingState] =
@@ -132,10 +142,10 @@ export function ResourceManager<TData, TDetail extends TData = TData>({
     onSuccess: async () => {
       setPageIndex(0)
       await queryClient.invalidateQueries({ queryKey: config.queryKey })
-      showResourceCreateSuccess(config.noun)
+      showResourceCreateSuccess(config.noun, locale)
       setEditor(null)
     },
-    onError: showResourceError,
+    onError: (error) => showResourceError(error, locale),
   })
   const updateMutation = useMutation({
     mutationFn: ({
@@ -147,20 +157,20 @@ export function ResourceManager<TData, TDetail extends TData = TData>({
     }) => config.update(record, values),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: config.queryKey })
-      showResourceUpdateSuccess(config.noun)
+      showResourceUpdateSuccess(config.noun, locale)
       setEditor(null)
     },
-    onError: showResourceError,
+    onError: (error) => showResourceError(error, locale),
   })
   const deleteMutation = useMutation({
     mutationFn: (record: TData) => config.remove(record),
     onSuccess: async () => {
       setPageIndex(0)
       await queryClient.invalidateQueries({ queryKey: config.queryKey })
-      showResourceDeleteSuccess(config.noun)
+      showResourceDeleteSuccess(config.noun, locale)
       setDeletingRecord(null)
     },
-    onError: showResourceError,
+    onError: (error) => showResourceError(error, locale),
   })
   const bulkDeleteMutation = useMutation({
     mutationFn: async (records: TData[]) => {
@@ -169,7 +179,7 @@ export function ResourceManager<TData, TDetail extends TData = TData>({
       )
 
       if (removableRecords.length === 0) {
-        throw new Error("没有可删除的记录")
+        throw new Error(t("resource.noDeletableRecords"))
       }
 
       await Promise.all(removableRecords.map((record) => config.remove(record)))
@@ -178,11 +188,11 @@ export function ResourceManager<TData, TDetail extends TData = TData>({
     onSuccess: async (count) => {
       setPageIndex(0)
       await queryClient.invalidateQueries({ queryKey: config.queryKey })
-      showResourceBulkDeleteSuccess(config.noun, count)
+      showResourceBulkDeleteSuccess(config.noun, count, locale)
       bulkDeletingState?.clearSelection()
       setBulkDeletingState(null)
     },
-    onError: showResourceError,
+    onError: (error) => showResourceError(error, locale),
   })
   const resetPasswordMutation = useMutation({
     mutationFn: async ({
@@ -193,15 +203,16 @@ export function ResourceManager<TData, TDetail extends TData = TData>({
       password: string
     }) => {
       if (!config.userActions) {
-        throw new Error("当前资源不支持重置密码")
+        throw new Error(t("resource.unsupportedResetPassword"))
       }
       await config.userActions.resetPassword(record, password)
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: config.queryKey })
-      showResourceUpdateSuccess("用户密码")
+      showResourceUpdateSuccess("用户密码", locale)
       setResettingRecord(null)
     },
+    onError: (error) => showResourceError(error, locale),
   })
   const assignRolesMutation = useMutation({
     mutationFn: async ({
@@ -212,15 +223,16 @@ export function ResourceManager<TData, TDetail extends TData = TData>({
       roleIds: number[]
     }) => {
       if (!config.userActions) {
-        throw new Error("当前资源不支持分配角色")
+        throw new Error(t("resource.unsupportedAssignRoles"))
       }
       await config.userActions.setRoleIds(record, roleIds)
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: config.queryKey })
-      showResourceUpdateSuccess("用户角色")
+      showResourceUpdateSuccess("用户角色", locale)
       setAssigningRoleRecord(null)
     },
+    onError: (error) => showResourceError(error, locale),
   })
   const reorderMutation = useResourceReorder(config)
 
@@ -292,7 +304,7 @@ export function ResourceManager<TData, TDetail extends TData = TData>({
       const detailRecord = await config.detail(record)
       setEditor({ mode: "edit", record: detailRecord })
     } catch (error) {
-      showResourceError(error)
+      showResourceError(error, locale)
     }
   }
 
@@ -301,12 +313,12 @@ export function ResourceManager<TData, TDetail extends TData = TData>({
     try {
       const [result] = await Promise.all([query.refetch(), delay(1_000)])
       if (result.isError) {
-        showResourceError(result.error)
+        showResourceError(result.error, locale)
         return
       }
-      showResourceRefreshSuccess(config.noun)
+      showResourceRefreshSuccess(config.noun, locale)
     } catch (error) {
-      showResourceError(error)
+      showResourceError(error, locale)
     } finally {
       setIsManualRefreshing(false)
     }
@@ -338,8 +350,14 @@ export function ResourceManager<TData, TDetail extends TData = TData>({
         toolbarLeading={
           config.statusFilters ? (
             <ResourceStatusFilterTabs
-              label={`${config.noun}状态筛选`}
-              options={config.statusFilters}
+              label={t("resource.statusFilter", { noun: translatedNoun })}
+              options={config.statusFilters.map((option) => ({
+                ...option,
+                label:
+                  typeof option.label === "string"
+                    ? translateText(locale, option.label)
+                    : option.label,
+              }))}
               value={statusFilter}
               onValueChange={(value) => {
                 setStatusFilter(value)
@@ -351,10 +369,14 @@ export function ResourceManager<TData, TDetail extends TData = TData>({
         isLoading={query.isLoading}
         isFetching={query.isFetching}
         error={query.error}
-        searchPlaceholder={`搜索${config.noun}...`}
-        emptyTitle={`暂无${config.noun}`}
-        emptyDescription={`还没有任何${config.noun}，快来新增一个${config.noun}吧。`}
-        emptyActionLabel={canCreate ? `新增${config.noun}` : undefined}
+        searchPlaceholder={formatResourceSearchPlaceholder(locale, config.noun)}
+        emptyTitle={emptyContent.title}
+        emptyDescription={emptyContent.description}
+        emptyActionLabel={
+          canCreate
+            ? formatResourceActionText(locale, "create", config.noun)
+            : undefined
+        }
         onEmptyAction={canCreate ? handleCreate : undefined}
         isFiltered={hasActiveFilters}
         getRowId={(row, index) => String(config.getId(row) || index)}
@@ -475,10 +497,13 @@ export function ResourceManager<TData, TDetail extends TData = TData>({
             <AlertDialogMedia>
               <TriangleAlertIcon />
             </AlertDialogMedia>
-            <AlertDialogTitle>删除{config.noun}</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t("resource.deleteConfirmTitle", { noun: translatedNoun })}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              确认删除“{deletingRecord ? config.getName(deletingRecord) : ""}
-              ”吗？ 该操作会提交到后台，删除后需要通过后端数据恢复。
+              {t("resource.deleteConfirmDescription", {
+                name: deletingRecord ? config.getName(deletingRecord) : "",
+              })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -488,7 +513,7 @@ export function ResourceManager<TData, TDetail extends TData = TData>({
                 allowDeleteDialogCloseRef.current = true
               }}
             >
-              取消
+              {t("common.cancel")}
             </AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
@@ -503,7 +528,7 @@ export function ResourceManager<TData, TDetail extends TData = TData>({
               {deleteMutation.isPending ? (
                 <Spinner data-icon="inline-start" />
               ) : null}
-              删除
+              {t("common.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -531,10 +556,14 @@ export function ResourceManager<TData, TDetail extends TData = TData>({
             <AlertDialogMedia>
               <Trash2Icon />
             </AlertDialogMedia>
-            <AlertDialogTitle>批量删除{config.noun}</AlertDialogTitle>
+            <AlertDialogTitle>
+              {t("resource.bulkDeleteConfirmTitle", { noun: translatedNoun })}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              确认删除已选中的 {bulkDeletingState?.records.length ?? 0} 条
-              {config.noun}吗？受保护的记录不会被提交删除。
+              {t("resource.bulkDeleteConfirmDescription", {
+                count: bulkDeletingState?.records.length ?? 0,
+                noun: translatedNoun,
+              })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -544,7 +573,7 @@ export function ResourceManager<TData, TDetail extends TData = TData>({
                 allowBulkDeleteDialogCloseRef.current = true
               }}
             >
-              取消
+              {t("common.cancel")}
             </AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
@@ -559,7 +588,7 @@ export function ResourceManager<TData, TDetail extends TData = TData>({
               {bulkDeleteMutation.isPending ? (
                 <Spinner data-icon="inline-start" />
               ) : null}
-              批量删除
+              {t("common.bulkDelete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

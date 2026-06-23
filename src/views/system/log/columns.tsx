@@ -3,9 +3,11 @@
 /* eslint-disable react-refresh/only-export-components */
 import type { ColumnDef } from "@tanstack/react-table"
 
+import { useTranslation } from "@/components/providers/language-context"
 import { OverflowTooltipText } from "@/components/overflow-tooltip-text"
 import { Badge } from "@/components/ui/badge"
 import { formatAbsoluteDateTime, formatRelativeTime } from "@/lib/datetime"
+import { translateAdminText } from "@/lib/i18n-admin"
 import type {
   LoginLogSummaryResource,
   OperationLogSummaryResource,
@@ -19,11 +21,7 @@ export const operationLogColumns: ColumnDef<OperationLogSummaryResource>[] = [
   {
     accessorKey: "business_type",
     header: ({ column }) => tableHeader(column, "业务类型"),
-    cell: ({ row }) => (
-      <Badge variant="outline">
-        {businessTypeLabel(row.original.business_type)}
-      </Badge>
-    ),
+    cell: ({ row }) => <BusinessTypeBadge value={row.original.business_type} />,
     meta: { label: "业务类型" },
   },
   textColumn("request_method", "请求方式", "w-28"),
@@ -110,14 +108,25 @@ function TextCell({
   value: unknown
   emptyText?: string
 }) {
+  const { locale } = useTranslation()
   const isEmpty = value == null || value === ""
-  const text = isEmpty ? emptyText : String(value)
+  const text = isEmpty ? translateAdminText(locale, emptyText) : String(value)
 
   if (isEmpty) {
     return <span className="block truncate">{text}</span>
   }
 
   return <OverflowTooltipText text={text} />
+}
+
+function BusinessTypeBadge({ value }: { value: number }) {
+  const { locale } = useTranslation()
+
+  return (
+    <Badge variant="outline">
+      {translateAdminText(locale, businessTypeLabel(value))}
+    </Badge>
+  )
 }
 
 function DateTimeCell({ value }: { value: string }) {

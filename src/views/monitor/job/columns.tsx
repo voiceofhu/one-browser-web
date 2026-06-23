@@ -3,10 +3,13 @@
 /* eslint-disable react-refresh/only-export-components */
 import type { ColumnDef } from "@tanstack/react-table"
 
+import { useTranslation } from "@/components/providers/language-context"
 import { OverflowTooltipText } from "@/components/overflow-tooltip-text"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { formatAbsoluteDateTime, formatRelativeTime } from "@/lib/datetime"
+import { translateText } from "@/lib/i18n-text"
+import type { Locale } from "@/lib/i18n"
 import type { JobLogResource, JobResource, LogStatusFlag } from "@/types/admin"
 import { ResourceTableColumnHeader } from "@/views/system/_components/resource/table"
 
@@ -33,7 +36,7 @@ export function createJobColumns({
       accessorKey: "invoke_target",
       header: ({ column }) => tableHeader(column, "调用目标"),
       cell: ({ row }) => (
-        <TextCell
+        <TranslatedTextCell
           value={
             JOB_INVOKE_TARGET_LABELS[row.original.invoke_target] ??
             row.original.invoke_target
@@ -68,7 +71,7 @@ export function createJobColumns({
       accessorKey: "misfire_policy",
       header: ({ column }) => tableHeader(column, "错过策略"),
       cell: ({ row }) => (
-        <TextCell
+        <TranslatedTextCell
           value={JOB_MISFIRE_POLICY_LABELS[row.original.misfire_policy]}
         />
       ),
@@ -78,7 +81,9 @@ export function createJobColumns({
       accessorKey: "concurrent",
       header: ({ column }) => tableHeader(column, "并发"),
       cell: ({ row }) => (
-        <TextCell value={JOB_CONCURRENT_LABELS[row.original.concurrent]} />
+        <TranslatedTextCell
+          value={JOB_CONCURRENT_LABELS[row.original.concurrent]}
+        />
       ),
       meta: { label: "并发", cellClassName: "w-32" },
     },
@@ -109,7 +114,7 @@ export const jobLogColumns: ColumnDef<JobLogResource>[] = [
     id: "trigger",
     header: ({ column }) => tableHeader(column, "触发方式"),
     cell: ({ row }) => (
-      <TextCell value={parseJobRunMessage(row.original).trigger} />
+      <JobRunMessageTriggerCell record={row.original} />
     ),
     meta: { label: "触发方式", cellClassName: "w-24" },
   },
@@ -117,7 +122,7 @@ export const jobLogColumns: ColumnDef<JobLogResource>[] = [
     accessorKey: "invoke_target",
     header: ({ column }) => tableHeader(column, "调用目标"),
     cell: ({ row }) => (
-      <TextCell
+      <TranslatedTextCell
         value={
           JOB_INVOKE_TARGET_LABELS[row.original.invoke_target] ??
           row.original.invoke_target
@@ -129,9 +134,7 @@ export const jobLogColumns: ColumnDef<JobLogResource>[] = [
   {
     id: "run_message",
     header: ({ column }) => tableHeader(column, "执行消息"),
-    cell: ({ row }) => (
-      <TextCell value={parseJobRunMessage(row.original).message} />
-    ),
+    cell: ({ row }) => <JobRunMessageCell record={row.original} />,
     meta: { label: "执行消息", cellClassName: "min-w-56 max-w-96" },
   },
   {
@@ -149,7 +152,7 @@ export const jobLogColumns: ColumnDef<JobLogResource>[] = [
   {
     id: "duration",
     header: ({ column }) => tableHeader(column, "耗时"),
-    cell: ({ row }) => <TextCell value={formatRunDuration(row.original)} />,
+    cell: ({ row }) => <JobRunDurationCell record={row.original} />,
     meta: { label: "耗时", cellClassName: "w-24" },
   },
 ]
@@ -186,6 +189,17 @@ function TextCell({ value }: { value: unknown }) {
   return <OverflowTooltipText text={text} />
 }
 
+function TranslatedTextCell({ value }: { value: unknown }) {
+  const { locale } = useTranslation()
+  const text = value == null || value === "" ? "-" : String(value)
+
+  if (text === "-") {
+    return <span className="block truncate text-muted-foreground">{text}</span>
+  }
+
+  return <OverflowTooltipText text={translateText(locale, text)} />
+}
+
 function DateTimeCell({ value }: { value?: string | null }) {
   return (
     <span title={formatAbsoluteDateTime(value, "-")}>
@@ -195,6 +209,7 @@ function DateTimeCell({ value }: { value?: string | null }) {
 }
 
 function LogStatusBadge({ status }: { status: LogStatusFlag }) {
+  const { locale } = useTranslation()
   const success = status === "0"
 
   return (
@@ -202,9 +217,28 @@ function LogStatusBadge({ status }: { status: LogStatusFlag }) {
       variant={success ? "default" : "destructive"}
       className={success ? "" : "bg-destructive/10"}
     >
-      {success ? "成功" : "失败"}
+      {translateText(locale, success ? "成功" : "失败")}
     </Badge>
   )
+}
+
+function JobRunMessageTriggerCell({ record }: { record: JobLogResource }) {
+  const { locale } = useTranslation()
+  return (
+    <TextCell value={translateText(locale, parseJobRunMessage(record).trigger)} />
+  )
+}
+
+function JobRunMessageCell({ record }: { record: JobLogResource }) {
+  const { locale } = useTranslation()
+  return (
+    <TextCell value={formatRunMessageText(record.job_message ?? "", locale)} />
+  )
+}
+
+function JobRunDurationCell({ record }: { record: JobLogResource }) {
+  const { locale } = useTranslation()
+  return <TextCell value={formatRunDuration(record, locale)} />
 }
 
 export function parseJobRunMessage(record: JobLogResource) {
@@ -213,17 +247,17 @@ export function parseJobRunMessage(record: JobLogResource) {
   const message = rest.join(":").trim()
 
   if (prefix === "manual") {
-    return { trigger: "手动", message: formatRunMessageText(message) }
+    return { trigger: "手动", message }
   }
 
   if (prefix === "schedule") {
-    return { trigger: "自动", message: formatRunMessageText(message) }
+    return { trigger: "自动", message }
   }
 
-  return { trigger: "-", message: formatRunMessageText(text) }
+  return { trigger: "-", message: text }
 }
 
-function formatRunMessageText(value: string) {
+function formatRunMessageText(value: string, locale: Locale) {
   if (!value) {
     return "-"
   }
@@ -232,7 +266,9 @@ function formatRunMessageText(value: string) {
     /^removed (\d+) job logs older than 30 days$/
   )
   if (cleanupMatch) {
-    return `已清理 ${cleanupMatch[1]} 条 30 天前的任务日志`
+    return locale === "en-US"
+      ? `Removed ${cleanupMatch[1]} job logs older than 30 days`
+      : `已清理 ${cleanupMatch[1]} 条 30 天前的任务日志`
   }
 
   const translations: Record<string, string> = {
@@ -245,10 +281,10 @@ function formatRunMessageText(value: string) {
     "job skipped": "上一轮仍在执行，已跳过本次任务",
   }
 
-  return translations[value] ?? value
+  return translateText(locale, translations[value] ?? value)
 }
 
-export function formatRunDuration(record: JobLogResource) {
+export function formatRunDuration(record: JobLogResource, locale?: Locale) {
   if (!record.started_at || !record.ended_at) {
     return "-"
   }
@@ -261,10 +297,12 @@ export function formatRunDuration(record: JobLogResource) {
   }
 
   if (duration < 1000) {
-    return `${duration} 毫秒`
+    return locale === "en-US" ? `${duration} ms` : `${duration} 毫秒`
   }
 
-  return `${(duration / 1000).toFixed(1)} 秒`
+  return locale === "en-US"
+    ? `${(duration / 1000).toFixed(1)} s`
+    : `${(duration / 1000).toFixed(1)} 秒`
 }
 
 export { LogStatusBadge }

@@ -9,6 +9,7 @@ import {
   forceLogoutOnlineUser,
   listOnlineUsers,
 } from "@/api/monitor/online-users"
+import { useTranslation } from "@/components/providers/language-context"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,15 +32,19 @@ import {
   useDebouncedValue,
 } from "@/views/system/_components/resource/manager-utils"
 import { ResourceTable } from "@/views/system/_components/resource/table"
-import {
-  showResourceError,
-  showResourceRefreshSuccess,
-} from "@/views/system/_components/resource/toast"
+import { showResourceError } from "@/views/system/_components/resource/toast"
 import { ResourceToolbarActions } from "@/views/system/_components/resource/toolbar-actions"
 
-import { onlineUserColumns } from "./columns"
+import { monitorText } from "../_lib/i18n"
+import { createOnlineUserColumns } from "./columns"
 
 export default function OnlineUsersPage() {
+  const { locale, t } = useTranslation()
+  const mt = React.useCallback(
+    (key: string, values?: Record<string, number | string>) =>
+      monitorText(locale, key, values),
+    [locale]
+  )
   const queryClient = useQueryClient()
   const authPermissions = useAuthPermissions()
   const [search, setSearch] = React.useState("")
@@ -70,6 +75,7 @@ export default function OnlineUsersPage() {
     () => query.data?.list ?? [],
     [query.data?.list]
   )
+  const columns = React.useMemo(() => createOnlineUserColumns(locale), [locale])
   const forceLogoutMutation = useMutation({
     mutationFn: (record: OnlineUserResource) =>
       forceLogoutOnlineUser(record.token_id),
@@ -77,12 +83,17 @@ export default function OnlineUsersPage() {
       await queryClient.invalidateQueries({
         queryKey: monitorQueryKeys.onlineUsers,
       })
-      toast.success(`${record.user_name} 已强制下线`, {
-        description: "该会话令牌已从 Redis 中删除。",
-      })
+      toast.success(
+        mt("online.forceLogout.success", {
+          name: record.user_name,
+        }),
+        {
+          description: mt("online.forceLogout.tokenDeleted"),
+        }
+      )
       setForceLogoutRecord(null)
     },
-    onError: showResourceError,
+    onError: (error) => showResourceError(error, locale),
   })
   const canForceLogout = hasPermission(
     authPermissions.data,
@@ -95,12 +106,14 @@ export default function OnlineUsersPage() {
     try {
       const [result] = await Promise.all([query.refetch(), delay(1_000)])
       if (result.isError) {
-        showResourceError(result.error)
+        showResourceError(result.error, locale)
         return
       }
-      showResourceRefreshSuccess("在线用户")
+      toast.success(mt("online.refresh.success"), {
+        description: mt("online.refresh.description"),
+      })
     } catch (error) {
-      showResourceError(error)
+      showResourceError(error, locale)
     } finally {
       setIsManualRefreshing(false)
     }
@@ -110,7 +123,7 @@ export default function OnlineUsersPage() {
     <div className="flex h-full min-h-0 flex-1 flex-col">
       <ResourceTable
         data={records}
-        columns={onlineUserColumns}
+        columns={columns}
         columnVisibilityResetKey="online-users"
         totalRows={query.data?.total ?? 0}
         pageIndex={pageIndex}
@@ -128,9 +141,9 @@ export default function OnlineUsersPage() {
         isLoading={query.isLoading}
         isFetching={query.isFetching}
         error={query.error}
-        searchPlaceholder="搜索账号、IP、浏览器、系统..."
-        emptyTitle="暂无在线用户"
-        emptyDescription="当前没有可显示的登录会话。"
+        searchPlaceholder={mt("online.search.placeholder")}
+        emptyTitle={mt("online.empty.title")}
+        emptyDescription={mt("online.empty.description")}
         isFiltered={hasActiveFilters}
         getRowId={(row, index) => row.token_id || String(index)}
         selectionResetKey={debouncedSearch}
@@ -147,7 +160,9 @@ export default function OnlineUsersPage() {
                   type="button"
                   variant="ghost"
                   size="icon-sm"
-                  aria-label={`强退 ${record.user_name}`}
+                  aria-label={mt("online.forceLogout.aria", {
+                    name: record.user_name,
+                  })}
                   onClick={() => setForceLogoutRecord(record)}
                 >
                   <LogOutIcon />
@@ -170,15 +185,18 @@ export default function OnlineUsersPage() {
             <AlertDialogMedia>
               <TriangleAlertIcon />
             </AlertDialogMedia>
-            <AlertDialogTitle>强制用户下线</AlertDialogTitle>
+            <AlertDialogTitle>
+              {mt("online.forceLogout.title")}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              确认强制“{forceLogoutRecord?.user_name ?? ""}
-              ”下线吗？该操作会立即删除当前会话令牌。
+              {mt("online.forceLogout.description", {
+                name: forceLogoutRecord?.user_name ?? "",
+              })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={forceLogoutMutation.isPending}>
-              取消
+              {t("common.cancel")}
             </AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
@@ -193,7 +211,7 @@ export default function OnlineUsersPage() {
               {forceLogoutMutation.isPending ? (
                 <Spinner data-icon="inline-start" />
               ) : null}
-              强制下线
+              {mt("online.forceLogout.action")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

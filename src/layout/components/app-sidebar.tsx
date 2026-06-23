@@ -1,6 +1,7 @@
 import * as React from "react"
 import { NavLink } from "react-router"
 
+import { useTranslation } from "@/components/providers/language-context"
 import { NavMain } from "@/layout/components/nav-main"
 import { NavUser } from "@/layout/components/nav-user"
 import { routeIcons } from "@/layout/components/route-icons"
@@ -31,13 +32,14 @@ export function AppSidebar({
   onLogout,
   ...props
 }: AppSidebarProps) {
+  const { t } = useTranslation()
   const navGroups = getAuthorizedRouteGroups(authPermissions).map((group) => ({
-    label: group.label,
+    label: t(group.labelKey),
     showLabel: group.routes[0] === "overview" ? false : undefined,
     items: group.routes.map((routeId) => {
       const route = APP_ROUTE_BY_ID[routeId]
       return {
-        title: route.label,
+        title: t(route.labelKey),
         url: route.path,
         icon: routeIcons[route.id],
       }
@@ -59,7 +61,9 @@ export function AppSidebar({
                   alt=""
                   className="size-6 rounded-md"
                 />
-                <span className="text-base font-semibold">One Browser</span>
+                <span className="text-base font-semibold">
+                  {t("brand.name")}
+                </span>
               </NavLink>
             </SidebarMenuButton>
           </SidebarMenuItem>

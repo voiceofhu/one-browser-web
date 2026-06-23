@@ -7,6 +7,7 @@ import {
   Loader2Icon,
 } from "lucide-react"
 
+import { useTranslation } from "@/components/providers/language-context"
 import { useTheme } from "@/components/theme/provider"
 import { cn } from "@/lib/utils"
 
@@ -15,6 +16,7 @@ const closeButtonClassName =
 
 const Toaster = ({ toastOptions, ...props }: ToasterProps) => {
   const { resolvedTheme } = useTheme()
+  const { t } = useTranslation()
   const toastClassNames = toastOptions?.classNames
 
   return (
@@ -38,14 +40,12 @@ const Toaster = ({ toastOptions, ...props }: ToasterProps) => {
       }
       toastOptions={{
         ...toastOptions,
-        closeButtonAriaLabel: toastOptions?.closeButtonAriaLabel ?? "关闭通知",
+        closeButtonAriaLabel:
+          toastOptions?.closeButtonAriaLabel ?? t("common.closeNotification"),
         classNames: {
           ...toastClassNames,
           toast: cn("cn-toast !pr-10", toastClassNames?.toast),
-          closeButton: cn(
-            closeButtonClassName,
-            toastClassNames?.closeButton,
-          ),
+          closeButton: cn(closeButtonClassName, toastClassNames?.closeButton),
         },
       }}
       {...props}

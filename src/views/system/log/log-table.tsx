@@ -4,6 +4,8 @@ import * as React from "react"
 import { useQuery } from "@tanstack/react-query"
 import type { ColumnDef } from "@tanstack/react-table"
 
+import { useTranslation } from "@/components/providers/language-context"
+import { translateAdminText } from "@/lib/i18n-admin"
 import type { ListParams, PageResponse } from "@/types/admin"
 import { ResourceTable } from "@/views/system/_components/resource/table"
 import { useDebouncedValue } from "@/views/system/_components/resource/manager-utils"
@@ -45,6 +47,7 @@ export function LogTable<TData>({
   defaultColumnVisibility,
   renderRowActions,
 }: LogTableProps<TData>) {
+  const { locale } = useTranslation()
   const [search, setSearch] = React.useState("")
   const debouncedSearch = useDebouncedValue(search, 300)
   const [statusFilter, setStatusFilter] =
@@ -80,6 +83,14 @@ export function LogTable<TData>({
     [query.data?.list]
   )
   const hasActiveFilters = search.trim().length > 0 || statusFilter !== "all"
+  const statusFilterOptions = React.useMemo(
+    () =>
+      LOG_STATUS_FILTERS.map((option) => ({
+        ...option,
+        label: translateAdminText(locale, option.label),
+      })),
+    [locale]
+  )
 
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col">
@@ -104,7 +115,7 @@ export function LogTable<TData>({
         toolbarLeading={
           <ResourceStatusFilterTabs
             label={statusFilterLabel}
-            options={LOG_STATUS_FILTERS}
+            options={statusFilterOptions}
             value={statusFilter}
             onValueChange={(value) => {
               setStatusFilter(value)

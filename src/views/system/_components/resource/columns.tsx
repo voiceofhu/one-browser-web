@@ -17,11 +17,14 @@ import { setPostStatus } from "@/api/system/post"
 import { setRoleStatus } from "@/api/system/role"
 import { setUserStatus } from "@/api/system/user"
 import { Badge } from "@/components/ui/badge"
+import { useTranslation } from "@/components/providers/language-context"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Switch } from "@/components/ui/switch"
 import { useAuthPermissions } from "@/hooks/use-auth"
 import { hasPermission } from "@/lib/auth-permissions"
 import { formatAbsoluteDateTime, formatRelativeTime } from "@/lib/datetime"
+import { translate, type Locale } from "@/lib/i18n"
+import { translateText } from "@/lib/i18n-text"
 import { systemQueryKeys } from "@/lib/query-keys"
 
 import {
@@ -56,7 +59,7 @@ export const userColumns: ColumnDef<UserResource>[] = [
     accessorKey: "sex",
     header: ({ column }) => tableHeader(column, "性别"),
     cell: ({ row }) => (
-      <Badge variant="outline">{getLabel(SEX_LABELS, row.original.sex)}</Badge>
+      <TranslatedBadge label={getLabel(SEX_LABELS, row.original.sex)} />
     ),
     meta: { label: "性别" },
   },
@@ -83,9 +86,9 @@ export const roleColumns: ColumnDef<RoleResource>[] = [
     accessorKey: "data_scope",
     header: ({ column }) => tableHeader(column, "数据范围"),
     cell: ({ row }) => (
-      <Badge variant="outline">
-        {getLabel(DATA_SCOPE_LABELS, row.original.data_scope)}
-      </Badge>
+      <TranslatedBadge
+        label={getLabel(DATA_SCOPE_LABELS, row.original.data_scope)}
+      />
     ),
     meta: { label: "数据范围" },
   },
@@ -182,9 +185,9 @@ export const noticeColumns: ColumnDef<NoticeSummaryResource>[] = [
     accessorKey: "notice_type",
     header: ({ column }) => tableHeader(column, "通知类型"),
     cell: ({ row }) => (
-      <Badge variant="outline">
-        {getLabel(NOTICE_TYPE_LABELS, row.original.notice_type)}
-      </Badge>
+      <TranslatedBadge
+        label={getLabel(NOTICE_TYPE_LABELS, row.original.notice_type)}
+      />
     ),
     meta: { label: "通知类型" },
   },
@@ -200,8 +203,10 @@ export const noticeColumns: ColumnDef<NoticeSummaryResource>[] = [
 ]
 
 export function DependencyHealthBody({ health }: { health?: HealthResponse }) {
+  const { locale } = useTranslation()
+
   if (!health) {
-    return "等待健康检查返回。"
+    return translateText(locale, "等待健康检查返回。")
   }
 
   return (
@@ -285,11 +290,44 @@ function ResourceStatusSwitch({
   )
 }
 
-function showStatusSuccess(name: string, noun: string, status: StatusFlag) {
-  toast.success(`${name}${noun}已${status === "0" ? "启用" : "禁用"}`)
+function showStatusSuccess(
+  name: string,
+  noun: string,
+  status: StatusFlag,
+  locale: Locale
+) {
+  toast.success(
+    translate(locale, "resource.statusChanged", {
+      name,
+      noun: translateText(locale, noun),
+      status: translateText(locale, status === "0" ? "已启用" : "已禁用"),
+    })
+  )
+}
+
+function getStatusSwitchLabel(
+  locale: Locale,
+  enabled: boolean,
+  noun: string,
+  name: string
+) {
+  if (locale === "en-US") {
+    return `${enabled ? "Disable" : "Enable"} ${translateText(locale, noun)} ${name}`
+  }
+
+  const action = enabled ? "禁用" : "启用"
+  return `${translateText(locale, action)} ${translateText(locale, noun)} ${name}`
+}
+
+function TranslatedBadge({ label }: { label: string }) {
+  const { locale } = useTranslation()
+
+  return <Badge variant="outline">{translateText(locale, label)}</Badge>
 }
 
 function MenuNameCell({ menu }: { menu: MenuResource }) {
+  const { locale } = useTranslation()
+
   return (
     <div className="flex min-w-0 items-center gap-2">
       <span className="truncate">{menu.menu_name}</span>
@@ -297,7 +335,7 @@ function MenuNameCell({ menu }: { menu: MenuResource }) {
         variant={menu.visible === "0" ? "secondary" : "destructive"}
         className="shrink-0"
       >
-        {getLabel(VISIBLE_LABELS, menu.visible)}
+        {translateText(locale, getLabel(VISIBLE_LABELS, menu.visible))}
       </Badge>
     </div>
   )
@@ -306,6 +344,7 @@ function MenuNameCell({ menu }: { menu: MenuResource }) {
 function UserStatusSwitch({ user }: { user: UserResource }) {
   const queryClient = useQueryClient()
   const authPermissions = useAuthPermissions()
+  const { locale } = useTranslation()
   const mutation = useMutation({
     mutationFn: (status: StatusFlag) => setUserStatus(user.user_id, status),
     onSuccess: async (updatedUser) => {
@@ -313,10 +352,11 @@ function UserStatusSwitch({ user }: { user: UserResource }) {
       showStatusSuccess(
         updatedUser.nick_name || updatedUser.user_name,
         "账号",
-        updatedUser.status
+        updatedUser.status,
+        locale
       )
     },
-    onError: showResourceError,
+    onError: (error) => showResourceError(error, locale),
   })
   const enabled = mutation.isPending
     ? mutation.variables === "0"
@@ -330,9 +370,12 @@ function UserStatusSwitch({ user }: { user: UserResource }) {
     <ResourceStatusSwitch
       checked={enabled}
       disabled={!canChangeStatus || user.is_super_admin || mutation.isPending}
-      label={`${enabled ? "禁用" : "启用"}账号 ${
+      label={getStatusSwitchLabel(
+        locale,
+        enabled,
+        "账号",
         user.nick_name || user.user_name
-      }`}
+      )}
       onCheckedChange={(checked) => mutation.mutate(checked ? "0" : "1")}
     />
   )
@@ -341,13 +384,19 @@ function UserStatusSwitch({ user }: { user: UserResource }) {
 function RoleStatusSwitch({ role }: { role: RoleResource }) {
   const queryClient = useQueryClient()
   const authPermissions = useAuthPermissions()
+  const { locale } = useTranslation()
   const mutation = useMutation({
     mutationFn: (status: StatusFlag) => setRoleStatus(role, status),
     onSuccess: async (updatedRole) => {
       await queryClient.invalidateQueries({ queryKey: systemQueryKeys.roles })
-      showStatusSuccess(updatedRole.role_name, "角色", updatedRole.status)
+      showStatusSuccess(
+        updatedRole.role_name,
+        "角色",
+        updatedRole.status,
+        locale
+      )
     },
-    onError: showResourceError,
+    onError: (error) => showResourceError(error, locale),
   })
   const enabled = mutation.isPending
     ? mutation.variables === "0"
@@ -361,7 +410,7 @@ function RoleStatusSwitch({ role }: { role: RoleResource }) {
     <ResourceStatusSwitch
       checked={enabled}
       disabled={!canChangeStatus || mutation.isPending}
-      label={`${enabled ? "禁用" : "启用"}角色 ${role.role_name}`}
+      label={getStatusSwitchLabel(locale, enabled, "角色", role.role_name)}
       onCheckedChange={(checked) => mutation.mutate(checked ? "0" : "1")}
     />
   )
@@ -370,13 +419,19 @@ function RoleStatusSwitch({ role }: { role: RoleResource }) {
 function MenuStatusSwitch({ menu }: { menu: MenuResource }) {
   const queryClient = useQueryClient()
   const authPermissions = useAuthPermissions()
+  const { locale } = useTranslation()
   const mutation = useMutation({
     mutationFn: (status: StatusFlag) => setMenuStatus(menu, status),
     onSuccess: async (updatedMenu) => {
       await queryClient.invalidateQueries({ queryKey: systemQueryKeys.menus })
-      showStatusSuccess(updatedMenu.menu_name, "权限", updatedMenu.status)
+      showStatusSuccess(
+        updatedMenu.menu_name,
+        "权限",
+        updatedMenu.status,
+        locale
+      )
     },
-    onError: showResourceError,
+    onError: (error) => showResourceError(error, locale),
   })
   const enabled = mutation.isPending
     ? mutation.variables === "0"
@@ -390,7 +445,7 @@ function MenuStatusSwitch({ menu }: { menu: MenuResource }) {
     <ResourceStatusSwitch
       checked={enabled}
       disabled={!canChangeStatus || mutation.isPending}
-      label={`${enabled ? "禁用" : "启用"}权限 ${menu.menu_name}`}
+      label={getStatusSwitchLabel(locale, enabled, "权限", menu.menu_name)}
       onCheckedChange={(checked) => mutation.mutate(checked ? "0" : "1")}
     />
   )
@@ -399,13 +454,19 @@ function MenuStatusSwitch({ menu }: { menu: MenuResource }) {
 function DeptStatusSwitch({ dept }: { dept: DeptResource }) {
   const queryClient = useQueryClient()
   const authPermissions = useAuthPermissions()
+  const { locale } = useTranslation()
   const mutation = useMutation({
     mutationFn: (status: StatusFlag) => setDeptStatus(dept, status),
     onSuccess: async (updatedDept) => {
       await queryClient.invalidateQueries({ queryKey: systemQueryKeys.depts })
-      showStatusSuccess(updatedDept.dept_name, "部门", updatedDept.status)
+      showStatusSuccess(
+        updatedDept.dept_name,
+        "部门",
+        updatedDept.status,
+        locale
+      )
     },
-    onError: showResourceError,
+    onError: (error) => showResourceError(error, locale),
   })
   const enabled = mutation.isPending
     ? mutation.variables === "0"
@@ -419,7 +480,7 @@ function DeptStatusSwitch({ dept }: { dept: DeptResource }) {
     <ResourceStatusSwitch
       checked={enabled}
       disabled={!canChangeStatus || mutation.isPending}
-      label={`${enabled ? "禁用" : "启用"}部门 ${dept.dept_name}`}
+      label={getStatusSwitchLabel(locale, enabled, "部门", dept.dept_name)}
       onCheckedChange={(checked) => mutation.mutate(checked ? "0" : "1")}
     />
   )
@@ -428,13 +489,19 @@ function DeptStatusSwitch({ dept }: { dept: DeptResource }) {
 function PostStatusSwitch({ post }: { post: PostResource }) {
   const queryClient = useQueryClient()
   const authPermissions = useAuthPermissions()
+  const { locale } = useTranslation()
   const mutation = useMutation({
     mutationFn: (status: StatusFlag) => setPostStatus(post, status),
     onSuccess: async (updatedPost) => {
       await queryClient.invalidateQueries({ queryKey: systemQueryKeys.posts })
-      showStatusSuccess(updatedPost.post_name, "岗位", updatedPost.status)
+      showStatusSuccess(
+        updatedPost.post_name,
+        "岗位",
+        updatedPost.status,
+        locale
+      )
     },
-    onError: showResourceError,
+    onError: (error) => showResourceError(error, locale),
   })
   const enabled = mutation.isPending
     ? mutation.variables === "0"
@@ -448,7 +515,7 @@ function PostStatusSwitch({ post }: { post: PostResource }) {
     <ResourceStatusSwitch
       checked={enabled}
       disabled={!canChangeStatus || mutation.isPending}
-      label={`${enabled ? "禁用" : "启用"}岗位 ${post.post_name}`}
+      label={getStatusSwitchLabel(locale, enabled, "岗位", post.post_name)}
       onCheckedChange={(checked) => mutation.mutate(checked ? "0" : "1")}
     />
   )
@@ -457,6 +524,7 @@ function PostStatusSwitch({ post }: { post: PostResource }) {
 function DictTypeStatusSwitch({ dictType }: { dictType: DictTypeResource }) {
   const queryClient = useQueryClient()
   const authPermissions = useAuthPermissions()
+  const { locale } = useTranslation()
   const mutation = useMutation({
     mutationFn: (status: StatusFlag) => setDictTypeStatus(dictType, status),
     onSuccess: async (updatedDictType) => {
@@ -466,10 +534,11 @@ function DictTypeStatusSwitch({ dictType }: { dictType: DictTypeResource }) {
       showStatusSuccess(
         updatedDictType.dict_name,
         "字典类型",
-        updatedDictType.status
+        updatedDictType.status,
+        locale
       )
     },
-    onError: showResourceError,
+    onError: (error) => showResourceError(error, locale),
   })
   const enabled = mutation.isPending
     ? mutation.variables === "0"
@@ -483,7 +552,12 @@ function DictTypeStatusSwitch({ dictType }: { dictType: DictTypeResource }) {
     <ResourceStatusSwitch
       checked={enabled}
       disabled={!canChangeStatus || mutation.isPending}
-      label={`${enabled ? "禁用" : "启用"}字典类型 ${dictType.dict_name}`}
+      label={getStatusSwitchLabel(
+        locale,
+        enabled,
+        "字典类型",
+        dictType.dict_name
+      )}
       onCheckedChange={(checked) => mutation.mutate(checked ? "0" : "1")}
     />
   )
@@ -492,6 +566,7 @@ function DictTypeStatusSwitch({ dictType }: { dictType: DictTypeResource }) {
 function DictDataDefaultRadio({ dictData }: { dictData: DictDataResource }) {
   const queryClient = useQueryClient()
   const authPermissions = useAuthPermissions()
+  const { locale, t } = useTranslation()
   const mutation = useMutation({
     mutationFn: () => setDictDataDefault(dictData, "Y"),
     onMutate: async () => {
@@ -526,13 +601,15 @@ function DictDataDefaultRadio({ dictData }: { dictData: DictDataResource }) {
       await queryClient.invalidateQueries({
         queryKey: systemQueryKeys.dictData,
       })
-      toast.success(`${updatedDictData.dict_label}已设为默认`)
+      toast.success(
+        t("resource.defaultSet", { name: updatedDictData.dict_label })
+      )
     },
     onError: (error, _variables, context) => {
       for (const [queryKey, data] of context?.snapshots ?? []) {
         queryClient.setQueryData(queryKey, data)
       }
-      showResourceError(error)
+      showResourceError(error, locale)
     },
   })
   const checked = mutation.isPending ? true : dictData.is_default === "Y"
@@ -547,7 +624,7 @@ function DictDataDefaultRadio({ dictData }: { dictData: DictDataResource }) {
       <RadioGroup
         value={checked ? value : ""}
         className="inline-flex w-auto gap-0"
-        aria-label={`设置 ${dictData.dict_label} 为默认`}
+        aria-label={t("resource.setDefault", { name: dictData.dict_label })}
         onValueChange={() => {
           if (!checked) {
             mutation.mutate()
@@ -557,7 +634,7 @@ function DictDataDefaultRadio({ dictData }: { dictData: DictDataResource }) {
         <RadioGroupItem
           value={value}
           disabled={!canUpdate || mutation.isPending}
-          aria-label={`设置 ${dictData.dict_label} 为默认`}
+          aria-label={t("resource.setDefault", { name: dictData.dict_label })}
         />
       </RadioGroup>
     </div>
@@ -567,6 +644,7 @@ function DictDataDefaultRadio({ dictData }: { dictData: DictDataResource }) {
 function DictDataStatusSwitch({ dictData }: { dictData: DictDataResource }) {
   const queryClient = useQueryClient()
   const authPermissions = useAuthPermissions()
+  const { locale } = useTranslation()
   const mutation = useMutation({
     mutationFn: (status: StatusFlag) => setDictDataStatus(dictData, status),
     onSuccess: async (updatedDictData) => {
@@ -576,10 +654,11 @@ function DictDataStatusSwitch({ dictData }: { dictData: DictDataResource }) {
       showStatusSuccess(
         updatedDictData.dict_label,
         "字典数据",
-        updatedDictData.status
+        updatedDictData.status,
+        locale
       )
     },
-    onError: showResourceError,
+    onError: (error) => showResourceError(error, locale),
   })
   const enabled = mutation.isPending
     ? mutation.variables === "0"
@@ -593,7 +672,12 @@ function DictDataStatusSwitch({ dictData }: { dictData: DictDataResource }) {
     <ResourceStatusSwitch
       checked={enabled}
       disabled={!canUpdate || mutation.isPending}
-      label={`${enabled ? "禁用" : "启用"}字典数据 ${dictData.dict_label}`}
+      label={getStatusSwitchLabel(
+        locale,
+        enabled,
+        "字典数据",
+        dictData.dict_label
+      )}
       onCheckedChange={(checked) => mutation.mutate(checked ? "0" : "1")}
     />
   )
@@ -602,6 +686,7 @@ function DictDataStatusSwitch({ dictData }: { dictData: DictDataResource }) {
 function NoticeStatusSwitch({ notice }: { notice: NoticeSummaryResource }) {
   const queryClient = useQueryClient()
   const authPermissions = useAuthPermissions()
+  const { locale } = useTranslation()
   const mutation = useMutation({
     mutationFn: (status: StatusFlag) => setNoticeStatus(notice, status),
     onSuccess: async (updatedNotice) => {
@@ -611,10 +696,11 @@ function NoticeStatusSwitch({ notice }: { notice: NoticeSummaryResource }) {
       showStatusSuccess(
         updatedNotice.notice_title,
         "通知",
-        updatedNotice.status
+        updatedNotice.status,
+        locale
       )
     },
-    onError: showResourceError,
+    onError: (error) => showResourceError(error, locale),
   })
   const enabled = mutation.isPending
     ? mutation.variables === "0"
@@ -628,7 +714,7 @@ function NoticeStatusSwitch({ notice }: { notice: NoticeSummaryResource }) {
     <ResourceStatusSwitch
       checked={enabled}
       disabled={!canChangeStatus || mutation.isPending}
-      label={`${enabled ? "禁用" : "启用"}通知 ${notice.notice_title}`}
+      label={getStatusSwitchLabel(locale, enabled, "通知", notice.notice_title)}
       onCheckedChange={(checked) => mutation.mutate(checked ? "0" : "1")}
     />
   )
@@ -647,13 +733,16 @@ function TextCell({
 }
 
 function DateCell({ value }: { value: string | null }) {
+  const { locale } = useTranslation()
+  const never = translateText(locale, "从未")
+
   if (!value) {
-    return <span className="text-muted-foreground">从未</span>
+    return <span className="text-muted-foreground">{never}</span>
   }
 
   return (
     <span title={formatAbsoluteDateTime(value)}>
-      {formatRelativeTime(value, "从未")}
+      {formatRelativeTime(value, never)}
     </span>
   )
 }

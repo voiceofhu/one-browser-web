@@ -12,6 +12,7 @@ import {
 } from "react-hook-form"
 import type { ZodType } from "zod"
 
+import { useTranslation } from "@/components/providers/language-context"
 import { Button } from "@/components/ui/button"
 import {
   ResponsiveDialog,
@@ -27,6 +28,7 @@ import { FieldGroup } from "@/components/ui/field"
 import { Spinner } from "@/components/ui/spinner"
 
 import { getUserPostIds, getUserRoleIds } from "@/api/system/user"
+import { formatResourceActionText, translateText } from "@/lib/i18n-text"
 import { systemQueryKeys } from "@/lib/query-keys"
 import { cn } from "@/lib/utils"
 import type {
@@ -62,6 +64,7 @@ export function ResourceEditorDialog({
   onOpenChange,
   onSubmit,
 }: ResourceEditorDialogProps) {
+  const { locale, t } = useTranslation()
   const form = useForm<ResourceFormValues>({
     resolver: zodResolver(schema as never) as Resolver<ResourceFormValues>,
     defaultValues: values,
@@ -105,10 +108,19 @@ export function ResourceEditorDialog({
   function handleInvalidSubmit(errors: FieldErrors<ResourceFormValues>) {
     const [fieldName, error] = Object.entries(errors)[0] ?? []
     const fieldLabel = fields.find((field) => field.name === fieldName)?.label
-    showResourceValidationError(noun, fieldLabel, getFieldErrorMessage(error))
+    showResourceValidationError(
+      noun,
+      fieldLabel,
+      getFieldErrorMessage(error),
+      locale
+    )
   }
 
-  const title = mode === "create" ? `新增${noun}` : `编辑${noun}`
+  const title =
+    mode === "create"
+      ? formatResourceActionText(locale, "create", noun)
+      : formatResourceActionText(locale, "edit", noun)
+  const translatedNoun = translateText(locale, noun)
   const isLoadingRoleBinding =
     mode === "edit" && hasRoleField && roleIdsQuery.isLoading
   const isLoadingPostBinding =
@@ -139,8 +151,12 @@ export function ResourceEditorDialog({
             <ResponsiveDialogTitle>{title}</ResponsiveDialogTitle>
             <ResponsiveDialogDescription>
               {mode === "create"
-                ? `填写信息后创建新的${noun}。`
-                : `修改${noun}信息并保存到后台。`}
+                ? t("resource.createDialogDescription", {
+                    noun: translatedNoun,
+                  })
+                : t("resource.editDialogDescription", {
+                    noun: translatedNoun,
+                  })}
             </ResponsiveDialogDescription>
           </ResponsiveDialogHeader>
 
@@ -165,6 +181,7 @@ export function ResourceEditorDialog({
                   setValue={form.setValue}
                   disabled={isSubmitting || isLoadingBinding}
                   useMultiColumn={!isCompactForm}
+                  locale={locale}
                 />
               ))}
             </FieldGroup>
@@ -177,12 +194,12 @@ export function ResourceEditorDialog({
                 variant="outline"
                 disabled={isSubmitting || isLoadingBinding}
               >
-                取消
+                {t("common.cancel")}
               </Button>
             </ResponsiveDialogClose>
             <Button type="submit" disabled={isSubmitting || isLoadingBinding}>
               {isSubmitting ? <Spinner data-icon="inline-start" /> : null}
-              {mode === "create" ? "创建" : "保存"}
+              {mode === "create" ? t("common.create") : t("common.save")}
             </Button>
           </ResponsiveDialogFooter>
         </form>

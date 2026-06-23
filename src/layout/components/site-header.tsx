@@ -2,6 +2,7 @@ import type * as React from "react"
 
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { ThemeToggleButton } from "@/components/theme/theme-toggle-button"
+import { LanguageSwitcher } from "@/layout/components/language-switcher"
 import { NotificationDrawer } from "@/layout/components/notification-drawer"
 
 type SiteHeaderProps = {
@@ -17,6 +18,7 @@ export function SiteHeader({ children }: SiteHeaderProps) {
         <div className="h-full min-w-0 flex-1">{children}</div>
         <div className="ml-2 flex h-full shrink-0 items-center gap-1.5 overflow-visible">
           <NotificationDrawer />
+          <LanguageSwitcher />
           <ThemeToggleButton />
         </div>
       </div>

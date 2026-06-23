@@ -7,6 +7,7 @@ import {
   UserRoundCheckIcon,
 } from "lucide-react"
 
+import { useTranslation } from "@/components/providers/language-context"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -15,6 +16,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { translateText } from "@/lib/i18n-text"
 
 type RowActionsProps = {
   noun: string
@@ -33,6 +35,7 @@ export function RowActions({
   onResetPassword,
   onAssignRoles,
 }: RowActionsProps) {
+  const { locale, t } = useTranslation()
   const hasActions = Boolean(
     onEdit || onDelete || onCreateChild || onResetPassword || onAssignRoles
   )
@@ -46,7 +49,10 @@ export function RowActions({
       <DropdownMenuTrigger asChild>
         <Button type="button" variant="ghost" size="icon-sm" className="size-7">
           <MoreHorizontalIcon />
-          <span className="sr-only">{noun}操作</span>
+          <span className="sr-only">
+            {translateText(locale, noun)}
+            {t("common.actions")}
+          </span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-40">
@@ -54,31 +60,31 @@ export function RowActions({
           {onCreateChild ? (
             <DropdownMenuItem onSelect={onCreateChild}>
               <PlusIcon />
-              新增
+              {t("common.create")}
             </DropdownMenuItem>
           ) : null}
           {onEdit ? (
             <DropdownMenuItem onSelect={onEdit}>
               <EditIcon />
-              编辑
+              {translateText(locale, "编辑")}
             </DropdownMenuItem>
           ) : null}
           {onDelete ? (
             <DropdownMenuItem variant="destructive" onSelect={onDelete}>
               <Trash2Icon />
-              删除
+              {t("common.delete")}
             </DropdownMenuItem>
           ) : null}
           {onResetPassword ? (
             <DropdownMenuItem onSelect={onResetPassword}>
               <KeyRoundIcon />
-              重置密码
+              {translateText(locale, "重置密码")}
             </DropdownMenuItem>
           ) : null}
           {onAssignRoles ? (
             <DropdownMenuItem onSelect={onAssignRoles}>
               <UserRoundCheckIcon />
-              重新分配角色
+              {translateText(locale, "重新分配角色")}
             </DropdownMenuItem>
           ) : null}
         </DropdownMenuGroup>

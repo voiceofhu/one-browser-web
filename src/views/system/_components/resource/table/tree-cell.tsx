@@ -4,7 +4,9 @@ import type * as React from "react"
 import type { Row } from "@tanstack/react-table"
 import { ChevronDownIcon, ChevronRightIcon } from "lucide-react"
 
+import { useTranslation } from "@/components/providers/language-context"
 import { Button } from "@/components/ui/button"
+import { translateAdminText } from "@/lib/i18n-admin"
 
 type ResourceTableTreeCellProps<TData> = {
   row: Row<TData>
@@ -15,6 +17,7 @@ export function ResourceTableTreeCell<TData>({
   row,
   children,
 }: ResourceTableTreeCellProps<TData>) {
+  const { locale } = useTranslation()
   const canExpand = row.getCanExpand()
   const expanded = row.getIsExpanded()
 
@@ -29,7 +32,11 @@ export function ResourceTableTreeCell<TData>({
           variant="ghost"
           size="icon-xs"
           className="text-muted-foreground"
-          aria-label={expanded ? "收起节点" : "展开节点"}
+          aria-label={
+            expanded
+              ? translateAdminText(locale, "收起节点")
+              : translateAdminText(locale, "展开节点")
+          }
           aria-expanded={expanded}
           onClick={row.getToggleExpandedHandler()}
         >

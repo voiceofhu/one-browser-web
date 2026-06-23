@@ -21,6 +21,7 @@ import {
   updateJob,
   updateJobStatus,
 } from "@/api/monitor/jobs"
+import { useTranslation } from "@/components/providers/language-context"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,6 +44,8 @@ import {
 import { Spinner } from "@/components/ui/spinner"
 import { useAuthPermissions } from "@/hooks/use-auth"
 import { hasPermission } from "@/lib/auth-permissions"
+import { translate, type Locale } from "@/lib/i18n"
+import { translateText } from "@/lib/i18n-text"
 import { monitorQueryKeys } from "@/lib/query-keys"
 import type { JobListParams, JobPayload, JobResource } from "@/types/admin"
 import {
@@ -72,6 +75,8 @@ const JOB_STATUS_FILTERS = [
 ] as const
 
 export default function JobsPage() {
+  const { locale, t } = useTranslation()
+  const tt = (text: string) => translateText(locale, text)
   const queryClient = useQueryClient()
   const authPermissions = useAuthPermissions()
   const [search, setSearch] = React.useState("")
@@ -127,38 +132,42 @@ export default function JobsPage() {
     mutationFn: createJob,
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: monitorQueryKeys.jobs })
-      toast.success("定时任务已创建")
+      toast.success(tt("定时任务已创建"))
       setIsCreateOpen(false)
     },
-    onError: showResourceError,
+    onError: (error) => showResourceError(error, locale),
   })
   const updateMutation = useMutation({
     mutationFn: ({ jobId, payload }: { jobId: number; payload: JobPayload }) =>
       updateJob(jobId, payload),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: monitorQueryKeys.jobs })
-      toast.success("定时任务已更新")
+      toast.success(tt("定时任务已更新"))
       setEditRecord(null)
     },
-    onError: showResourceError,
+    onError: (error) => showResourceError(error, locale),
   })
   const statusMutation = useMutation({
     mutationFn: ({ jobId, status }: { jobId: number; status: "0" | "1" }) =>
       updateJobStatus(jobId, status),
     onSuccess: async (_, variables) => {
       await queryClient.invalidateQueries({ queryKey: monitorQueryKeys.jobs })
-      toast.success(variables.status === "0" ? "任务已启用" : "任务已停用")
+      toast.success(variables.status === "0" ? tt("任务已启用") : tt("任务已停用"))
     },
-    onError: showResourceError,
+    onError: (error) => showResourceError(error, locale),
   })
   const deleteMutation = useMutation({
     mutationFn: (record: JobResource) => deleteJob(record.job_id),
     onSuccess: async (_, record) => {
       await queryClient.invalidateQueries({ queryKey: monitorQueryKeys.jobs })
-      toast.success(`${record.job_name} 已删除`)
+      toast.success(
+        translate(locale, "monitor.job.deleteSuccess", {
+          name: record.job_name,
+        })
+      )
       setDeleteRecord(null)
     },
-    onError: showResourceError,
+    onError: (error) => showResourceError(error, locale),
   })
   const runMutation = useMutation({
     mutationFn: (record: JobResource) => runJobOnce(record.job_id),
@@ -167,11 +176,23 @@ export default function JobsPage() {
         queryClient.invalidateQueries({ queryKey: monitorQueryKeys.jobs }),
         queryClient.invalidateQueries({ queryKey: monitorQueryKeys.jobLogs }),
       ])
-      toast.success(`${record.job_name} 已提交执行`)
+      toast.success(
+        translate(locale, "monitor.job.runSuccess", {
+          name: record.job_name,
+        })
+      )
       setRunRecord(null)
     },
-    onError: showResourceError,
+    onError: (error) => showResourceError(error, locale),
   })
+  const statusFilterOptions = React.useMemo(
+    () =>
+      JOB_STATUS_FILTERS.map((option) => ({
+        ...option,
+        label: translateText(locale, option.label),
+      })),
+    [locale]
+  )
   const columns = React.useMemo(
     () =>
       createJobColumns({
@@ -194,12 +215,12 @@ export default function JobsPage() {
     try {
       const [result] = await Promise.all([query.refetch(), delay(1_000)])
       if (result.isError) {
-        showResourceError(result.error)
+        showResourceError(result.error, locale)
         return
       }
-      showResourceRefreshSuccess("定时任务")
+      showResourceRefreshSuccess("定时任务", locale)
     } catch (error) {
-      showResourceError(error)
+      showResourceError(error, locale)
     } finally {
       setIsManualRefreshing(false)
     }
@@ -226,8 +247,8 @@ export default function JobsPage() {
         }}
         toolbarLeading={
           <ResourceStatusFilterTabs
-            label="定时任务状态筛选"
-            options={JOB_STATUS_FILTERS}
+            label={tt("定时任务状态筛选")}
+            options={statusFilterOptions}
             value={statusFilter}
             onValueChange={(value) => {
               setStatusFilter(value)
@@ -245,16 +266,17 @@ export default function JobsPage() {
         isLoading={query.isLoading}
         isFetching={query.isFetching}
         error={query.error}
-        searchPlaceholder="搜索任务名称、调用目标、表达式..."
-        emptyTitle="暂无定时任务"
-        emptyDescription="当前还没有配置任何后台定时任务。"
-        emptyActionLabel={canCreate ? "新增任务" : undefined}
+        searchPlaceholder={tt("搜索任务名称、调用目标、表达式...")}
+        emptyTitle={tt("暂无定时任务")}
+        emptyDescription={tt("当前还没有配置任何后台定时任务。")}
+        emptyActionLabel={canCreate ? tt("新增任务") : undefined}
         onEmptyAction={canCreate ? () => setIsCreateOpen(true) : undefined}
         isFiltered={hasActiveFilters}
         getRowId={(row, index) => String(row.job_id || index)}
         selectionResetKey={`${statusFilter}:${debouncedSearch}`}
         renderRowActions={(record) => (
           <JobRowActions
+            locale={locale}
             canRun={canRun}
             canViewLogs={canViewLogs}
             canUpdate={canUpdate}
@@ -314,9 +336,11 @@ export default function JobsPage() {
       />
       <ConfirmDialog
         open={Boolean(deleteRecord)}
-        title="删除定时任务"
-        description={`确认删除“${deleteRecord?.job_name ?? ""}”吗？删除后不会再被调度执行。`}
-        actionLabel="删除"
+        title={tt("删除定时任务")}
+        description={translate(locale, "monitor.job.deleteDescription", {
+          name: deleteRecord?.job_name ?? "",
+        })}
+        actionLabel={t("common.delete")}
         actionVariant="destructive"
         isPending={deleteMutation.isPending}
         onOpenChange={(open) => {
@@ -332,9 +356,11 @@ export default function JobsPage() {
       />
       <ConfirmDialog
         open={Boolean(runRecord)}
-        title="执行定时任务"
-        description={`确认立即执行“${runRecord?.job_name ?? ""}”吗？执行结果会写入调度日志。`}
-        actionLabel="立即执行"
+        title={tt("执行定时任务")}
+        description={translate(locale, "monitor.job.runDescription", {
+          name: runRecord?.job_name ?? "",
+        })}
+        actionLabel={tt("立即执行")}
         isPending={runMutation.isPending}
         onOpenChange={(open) => {
           if (!open && !runMutation.isPending) {
@@ -352,6 +378,7 @@ export default function JobsPage() {
 }
 
 function JobRowActions({
+  locale,
   canRun,
   canViewLogs,
   canUpdate,
@@ -362,6 +389,7 @@ function JobRowActions({
   onEdit,
   onDelete,
 }: {
+  locale: Locale
   canRun: boolean
   canViewLogs: boolean
   canUpdate: boolean
@@ -377,37 +405,37 @@ function JobRowActions({
       <DropdownMenuTrigger asChild>
         <Button type="button" variant="ghost" size="icon-sm" className="size-7">
           <MoreHorizontalIcon />
-          <span className="sr-only">定时任务操作</span>
+          <span className="sr-only">{translateText(locale, "定时任务操作")}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-36">
         <DropdownMenuGroup>
           <DropdownMenuItem onSelect={onViewDetail}>
             <InfoIcon />
-            详情
+            {translateText(locale, "详情")}
           </DropdownMenuItem>
           {canRun ? (
             <DropdownMenuItem onSelect={onRun}>
               <PlayIcon />
-              执行
+              {translateText(locale, "执行")}
             </DropdownMenuItem>
           ) : null}
           {canViewLogs ? (
             <DropdownMenuItem onSelect={onViewLogs}>
               <ClipboardListIcon />
-              日志
+              {translateText(locale, "日志")}
             </DropdownMenuItem>
           ) : null}
           {canUpdate ? (
             <DropdownMenuItem onSelect={onEdit}>
               <EditIcon />
-              编辑
+              {translateText(locale, "编辑")}
             </DropdownMenuItem>
           ) : null}
           {canDelete ? (
             <DropdownMenuItem variant="destructive" onSelect={onDelete}>
               <Trash2Icon />
-              删除
+              {translateText(locale, "删除")}
             </DropdownMenuItem>
           ) : null}
         </DropdownMenuGroup>
@@ -435,6 +463,8 @@ function ConfirmDialog({
   onOpenChange: (open: boolean) => void
   onConfirm: () => void
 }) {
+  const { t } = useTranslation()
+
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
@@ -446,7 +476,9 @@ function ConfirmDialog({
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isPending}>取消</AlertDialogCancel>
+          <AlertDialogCancel disabled={isPending}>
+            {t("common.cancel")}
+          </AlertDialogCancel>
           <AlertDialogAction
             variant={actionVariant}
             disabled={isPending}

@@ -3,6 +3,8 @@
 import * as React from "react"
 
 import { listLoginLogs } from "@/api/system/log"
+import { useTranslation } from "@/components/providers/language-context"
+import { translateAdminText } from "@/lib/i18n-admin"
 import { systemQueryKeys } from "@/lib/query-keys"
 import { loginLogColumns } from "@/views/system/log/columns"
 import {
@@ -13,6 +15,8 @@ import { LogTable } from "@/views/system/log/log-table"
 import type { LoginLogSummaryResource } from "@/types/admin"
 
 export default function LoginLogPage() {
+  const { locale } = useTranslation()
+  const tt = (text: string) => translateAdminText(locale, text)
   const [detailRecord, setDetailRecord] =
     React.useState<LoginLogSummaryResource | null>(null)
 
@@ -24,10 +28,10 @@ export default function LoginLogPage() {
         columns={loginLogColumns}
         columnVisibilityResetKey="login-log"
         getRowId={(row, index) => String(row.info_id || index)}
-        searchPlaceholder="搜索账号、IP、浏览器、消息..."
-        emptyTitle="暂无登录日志"
-        emptyDescription="系统还没有记录到任何登录访问。"
-        statusFilterLabel="登录日志状态筛选"
+        searchPlaceholder={tt("搜索账号、IP、浏览器、消息...")}
+        emptyTitle={tt("暂无登录日志")}
+        emptyDescription={tt("系统还没有记录到任何登录访问。")}
+        statusFilterLabel={tt("登录日志状态筛选")}
         renderRowActions={(record) => (
           <LogDetailButton onClick={() => setDetailRecord(record)} />
         )}

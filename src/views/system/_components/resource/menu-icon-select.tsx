@@ -9,6 +9,7 @@ import {
   SearchIcon,
 } from "lucide-react"
 
+import { useTranslation } from "@/components/providers/language-context"
 import { Button } from "@/components/ui/button"
 import {
   ResponsiveDialog,
@@ -27,6 +28,7 @@ import {
 } from "@/components/ui/empty"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { translateAdminText } from "@/lib/i18n-admin"
 import { cn } from "@/lib/utils"
 import {
   filterMenuIconOptions,
@@ -52,6 +54,11 @@ export function MenuIconSelect({
   disabled,
   onChange,
 }: MenuIconSelectProps) {
+  const { locale } = useTranslation()
+  const tt = React.useCallback(
+    (text: string) => translateAdminText(locale, text),
+    [locale]
+  )
   const [open, setOpen] = React.useState(false)
   const [keyword, setKeyword] = React.useState("")
   const [category, setCategory] = React.useState<MenuIconCategoryValue>("all")
@@ -113,7 +120,7 @@ export function MenuIconSelect({
         >
           <span className="flex min-w-0 items-center gap-2">
             <MenuIconPreview value={selectedOption.value} />
-            <span className="truncate">{selectedOption.label}</span>
+            <span className="truncate">{tt(selectedOption.label)}</span>
           </span>
           <ChevronsUpDownIcon data-icon="inline-end" />
         </Button>
@@ -121,10 +128,10 @@ export function MenuIconSelect({
       <ResponsiveDialogContent className="gap-3 p-3 sm:max-w-4xl">
         <ResponsiveDialogHeader className="gap-0 pr-12">
           <ResponsiveDialogTitle className="text-base">
-            选择菜单图标
+            {tt("选择菜单图标")}
           </ResponsiveDialogTitle>
           <ResponsiveDialogDescription className="text-xs">
-            当前：{selectedOption.label}（{selectedOption.value}）
+            {tt("当前")}：{tt(selectedOption.label)}（{selectedOption.value}）
           </ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
 
@@ -133,7 +140,7 @@ export function MenuIconSelect({
             <SearchIcon className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={keyword}
-              placeholder="搜索图标名称或标识"
+              placeholder={tt("搜索图标名称或标识")}
               className="h-8 pl-8"
               onChange={(event) => handleKeywordChange(event.target.value)}
             />
@@ -148,7 +155,7 @@ export function MenuIconSelect({
                     value={item.value}
                     className="px-2 text-xs"
                   >
-                    {item.label}
+                    {tt(item.label)}
                   </TabsTrigger>
                 ))}
               </TabsList>
@@ -171,7 +178,7 @@ export function MenuIconSelect({
                   <option.Icon />
                   <span className="flex min-w-0 flex-1 flex-col items-start">
                     <span className="max-w-full truncate text-sm leading-tight">
-                      {option.label}
+                      {tt(option.label)}
                     </span>
                     <span className="max-w-full truncate text-xs leading-tight text-muted-foreground">
                       {option.value}
@@ -189,16 +196,18 @@ export function MenuIconSelect({
                 <EmptyMedia variant="icon">
                   <SearchIcon />
                 </EmptyMedia>
-                <EmptyTitle>没有匹配的图标</EmptyTitle>
-                <EmptyDescription>换一个关键词或分类试试。</EmptyDescription>
+                <EmptyTitle>{tt("没有匹配的图标")}</EmptyTitle>
+                <EmptyDescription>
+                  {tt("换一个关键词或分类试试。")}
+                </EmptyDescription>
               </EmptyHeader>
             </Empty>
           )}
 
           <div className="flex flex-col gap-2 border-t pt-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="text-xs text-muted-foreground">
-              当前显示 {visibleStart}-{visibleEnd} 个，共{" "}
-              {filteredOptions.length} 个
+              {tt("当前显示")} {visibleStart}-{visibleEnd} {tt("个")}，
+              {tt("共")} {filteredOptions.length} {tt("个")}
             </div>
             <div className="flex items-center gap-2">
               <Button
@@ -209,7 +218,7 @@ export function MenuIconSelect({
                 onClick={() => goToPage(safePage - 1)}
               >
                 <ChevronLeftIcon data-icon="inline-start" />
-                上一页
+                {tt("上一页")}
               </Button>
               <span className="min-w-12 text-center text-xs text-muted-foreground">
                 {safePage} / {totalPages}
@@ -221,7 +230,7 @@ export function MenuIconSelect({
                 disabled={safePage >= totalPages}
                 onClick={() => goToPage(safePage + 1)}
               >
-                下一页
+                {tt("下一页")}
                 <ChevronRightIcon data-icon="inline-end" />
               </Button>
             </div>

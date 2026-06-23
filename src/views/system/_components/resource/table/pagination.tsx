@@ -7,6 +7,7 @@ import {
   ChevronsRightIcon,
 } from "lucide-react"
 
+import { useTranslation } from "@/components/providers/language-context"
 import { Button } from "@/components/ui/button"
 import {
   Select,
@@ -46,13 +47,19 @@ export function ResourceTablePagination({
   onPageIndexChange,
   onPageSizeChange,
 }: ResourceTablePaginationProps) {
+  const { t } = useTranslation()
+
   return (
     <div className="flex shrink-0 flex-col gap-2 border-t bg-muted px-3 py-2 sm:flex-row sm:items-center sm:justify-between lg:px-4">
       <div className="flex items-center gap-2 text-sm leading-none text-muted-foreground">
         <span>
-          当前显示 {firstRow}-{lastRow} 条，共 {totalRows} 条
+          {t("common.pageSummary", {
+            first: firstRow,
+            last: lastRow,
+            total: totalRows,
+          })}
         </span>
-        {isUpdating ? <span>更新中...</span> : null}
+        {isUpdating ? <span>{t("common.updating")}</span> : null}
       </div>
       {showControls ? (
         <div className="flex items-center gap-1.5">
@@ -67,7 +74,7 @@ export function ResourceTablePagination({
               <SelectGroup>
                 {[10, 20, 50, 100].map((value) => (
                   <SelectItem key={value} value={String(value)}>
-                    {value} 条
+                    {t("common.pageSize", { count: value })}
                   </SelectItem>
                 ))}
               </SelectGroup>
@@ -81,7 +88,7 @@ export function ResourceTablePagination({
             disabled={!hasPreviousPage}
           >
             <ChevronsLeftIcon />
-            <span className="sr-only">第一页</span>
+            <span className="sr-only">{t("common.firstPage")}</span>
           </Button>
           <Button
             type="button"
@@ -91,10 +98,13 @@ export function ResourceTablePagination({
             disabled={!hasPreviousPage}
           >
             <ChevronLeftIcon />
-            <span className="sr-only">上一页</span>
+            <span className="sr-only">{t("common.previousPage")}</span>
           </Button>
           <div className="min-w-20 text-center text-sm leading-none text-muted-foreground">
-            第 {pageIndex + 1} / {totalPages} 页
+            {t("common.pageCount", {
+              page: pageIndex + 1,
+              total: totalPages,
+            })}
           </div>
           <Button
             type="button"
@@ -106,7 +116,7 @@ export function ResourceTablePagination({
             disabled={!hasNextPage}
           >
             <ChevronRightIcon />
-            <span className="sr-only">下一页</span>
+            <span className="sr-only">{t("common.nextPage")}</span>
           </Button>
           <Button
             type="button"
@@ -116,7 +126,7 @@ export function ResourceTablePagination({
             disabled={!hasNextPage}
           >
             <ChevronsRightIcon />
-            <span className="sr-only">最后一页</span>
+            <span className="sr-only">{t("common.lastPage")}</span>
           </Button>
         </div>
       ) : null}

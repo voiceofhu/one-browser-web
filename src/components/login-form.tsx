@@ -1,19 +1,13 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { EyeIcon, EyeOffIcon, LogInIcon } from "lucide-react"
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { useForm } from "react-hook-form"
+import { Link } from "react-router"
 import { z } from "zod"
 
-import { cn } from "@/lib/utils"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { useTranslation } from "@/components/providers/language-context"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import {
   Field,
   FieldDescription,
@@ -22,23 +16,16 @@ import {
   FieldLabel,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupButton,
-  InputGroupInput,
-} from "@/components/ui/input-group"
 import { Spinner } from "@/components/ui/spinner"
+import { localizedPublicPath } from "@/lib/i18n"
+import { cn } from "@/lib/utils"
 
-const loginSchema = z.object({
-  username: z.string().trim().min(1, "请输入用户名"),
-  password: z.string().min(1, "请输入密码"),
-})
+type LoginFormValues = {
+  username: string
+  password: string
+}
 
-type LoginFormValues = z.infer<typeof loginSchema>
-
-type LoginFormProps = {
-  className?: string
+type LoginFormProps = Omit<React.ComponentProps<"div">, "onSubmit"> & {
   isSubmitting?: boolean
   error?: unknown
   onSubmit: (values: LoginFormValues) => Promise<void> | void
@@ -49,8 +36,19 @@ export function LoginForm({
   isSubmitting = false,
   error,
   onSubmit,
+  ...props
 }: LoginFormProps) {
+  const { locale, t } = useTranslation()
   const [showPassword, setShowPassword] = useState(false)
+  const [loginImageSeed] = useState(() => Math.random().toString(36).slice(2))
+  const loginSchema = useMemo(
+    () =>
+      z.object({
+        username: z.string().trim().min(1, t("login.usernameRequired")),
+        password: z.string().min(1, t("login.passwordRequired")),
+      }),
+    [t]
+  )
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -59,39 +57,39 @@ export function LoginForm({
     },
   })
 
-  const errorMessage = getErrorMessage(error)
+  const termsPath = localizedPublicPath(locale, "terms")
+  const privacyPath = localizedPublicPath(locale, "privacy")
   const disabled = isSubmitting || form.formState.isSubmitting
+  const loginImageSrc = `https://picsum.photos/960/1280?random=${loginImageSeed}`
 
   return (
-    <div className={cn("flex flex-col gap-6", className)}>
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl">后台登录</CardTitle>
-          <CardDescription>
-            使用管理员账号登录 One Browser 管理后台。
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={form.handleSubmit((values) => onSubmit(values))}>
+    <div className={cn("flex flex-col gap-5", className)} {...props}>
+      <Card className="overflow-hidden p-0 shadow-none">
+        <CardContent className="grid p-0 md:grid-cols-[1fr_0.84fr]">
+          <form
+            className="p-6 md:p-8"
+            onSubmit={form.handleSubmit((values) => onSubmit(values))}
+          >
             <FieldGroup>
-              {errorMessage ? (
-                <Alert variant="destructive">
-                  <AlertTitle>登录失败</AlertTitle>
-                  <AlertDescription>{errorMessage}</AlertDescription>
-                </Alert>
-              ) : null}
+              <div className="flex flex-col gap-2">
+                <h1 className="text-2xl font-semibold tracking-tight">
+                  {t("login.title")}
+                </h1>
+              </div>
 
               <Field
                 data-invalid={Boolean(form.formState.errors.username)}
                 data-disabled={disabled}
               >
-                <FieldLabel htmlFor="login-form-username">用户名</FieldLabel>
+                <FieldLabel htmlFor="username">
+                  {t("login.username")}
+                </FieldLabel>
                 <Input
-                  id="login-form-username"
+                  id="username"
                   autoComplete="username"
                   disabled={disabled}
+                  placeholder={t("login.usernamePlaceholder")}
                   aria-invalid={Boolean(form.formState.errors.username)}
-                  placeholder="请输入用户名"
                   {...form.register("username")}
                 />
                 <FieldError errors={[form.formState.errors.username]} />
@@ -101,31 +99,44 @@ export function LoginForm({
                 data-invalid={Boolean(form.formState.errors.password)}
                 data-disabled={disabled}
               >
-                <FieldLabel htmlFor="login-form-password">密码</FieldLabel>
-                <InputGroup>
-                  <InputGroupInput
-                    id="login-form-password"
+                <FieldLabel htmlFor="password">
+                  {t("login.password")}
+                </FieldLabel>
+                <div className="relative">
+                  <Input
+                    id="password"
                     type={showPassword ? "text" : "password"}
                     autoComplete="current-password"
                     disabled={disabled}
+                    placeholder={t("login.passwordPlaceholder")}
                     aria-invalid={Boolean(form.formState.errors.password)}
-                    placeholder="请输入密码"
+                    className="pr-10"
                     {...form.register("password")}
                   />
-                  <InputGroupAddon align="inline-end">
-                    <InputGroupButton
-                      aria-label={showPassword ? "隐藏密码" : "显示密码"}
-                      aria-pressed={showPassword}
-                      disabled={disabled}
-                      size="icon-xs"
-                      onClick={() => setShowPassword((visible) => !visible)}
-                    >
-                      {showPassword ? <EyeOffIcon /> : <EyeIcon />}
-                    </InputGroupButton>
-                  </InputGroupAddon>
-                </InputGroup>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-1/2 right-1 size-8 -translate-y-1/2 text-muted-foreground hover:bg-transparent"
+                    disabled={disabled}
+                    aria-label={
+                      showPassword
+                        ? t("login.hidePassword")
+                        : t("login.showPassword")
+                    }
+                    onClick={() => setShowPassword((value) => !value)}
+                  >
+                    {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+                  </Button>
+                </div>
                 <FieldError errors={[form.formState.errors.password]} />
               </Field>
+
+              {error ? (
+                <p className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                  {getErrorMessage(error, t("login.fallbackError"))}
+                </p>
+              ) : null}
 
               <Field>
                 <Button type="submit" disabled={disabled}>
@@ -134,35 +145,37 @@ export function LoginForm({
                   ) : (
                     <LogInIcon data-icon="inline-start" />
                   )}
-                  登录
+                  {t("login.submit")}
                 </Button>
-                <FieldDescription>
-                  请使用后端已创建的管理员账号登录。
-                </FieldDescription>
               </Field>
             </FieldGroup>
           </form>
+
+          <div className="relative hidden bg-muted md:block">
+            <img
+              src={loginImageSrc}
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          </div>
         </CardContent>
       </Card>
-      <FieldDescription className="px-6 text-center">
-        如无法登录，请联系系统管理员重置账号或密码。
+
+      <FieldDescription className="px-2 text-center text-sm">
+        {t("login.legalPrefix")}{" "}
+        <Link className="underline underline-offset-4" to={termsPath}>
+          {t("login.terms")}
+        </Link>{" "}
+        {t("login.legalConnector")}{" "}
+        <Link className="underline underline-offset-4" to={privacyPath}>
+          {t("login.privacy")}
+        </Link>
+        {t("login.legalSuffix")}
       </FieldDescription>
     </div>
   )
 }
 
-function getErrorMessage(error: unknown) {
-  if (!error) {
-    return null
-  }
-
-  if (error instanceof Error) {
-    return error.message
-  }
-
-  if (typeof error === "string") {
-    return error
-  }
-
-  return "登录失败，请检查用户名和密码。"
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback
 }

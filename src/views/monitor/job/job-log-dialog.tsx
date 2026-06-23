@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query"
 import { FileTextIcon } from "lucide-react"
 
 import { listJobLogs } from "@/api/monitor/jobs"
+import { useTranslation } from "@/components/providers/language-context"
 import { Button } from "@/components/ui/button"
 import {
   ResponsiveDialog,
@@ -22,6 +23,7 @@ import type { ResourceStatusFilterValue } from "@/views/system/_components/resou
 import { ResourceTable } from "@/views/system/_components/resource/table"
 
 import { jobLogColumns } from "./columns"
+import { translateMonitorJob } from "./constants"
 import { JobRunDetailDialog } from "./job-run-detail-dialog"
 
 type JobLogDialogProps = {
@@ -31,9 +33,9 @@ type JobLogDialogProps = {
 }
 
 const LOG_STATUS_FILTERS = [
-  { label: "全部", value: "all" },
-  { label: "成功", value: "0" },
-  { label: "失败", value: "1" },
+  { labelKey: "job.log.all", value: "all" },
+  { labelKey: "job.log.success", value: "0" },
+  { labelKey: "job.log.failed", value: "1" },
 ] as const
 
 export function JobLogDialog({
@@ -41,6 +43,7 @@ export function JobLogDialog({
   record,
   onOpenChange,
 }: JobLogDialogProps) {
+  const { locale } = useTranslation()
   const [search, setSearch] = React.useState("")
   const debouncedSearch = useDebouncedValue(search, 300)
   const [statusFilter, setStatusFilter] =
@@ -76,6 +79,14 @@ export function JobLogDialog({
     [query.data?.list]
   )
   const hasActiveFilters = search.trim().length > 0 || statusFilter !== "all"
+  const statusFilterOptions = React.useMemo(
+    () =>
+      LOG_STATUS_FILTERS.map((option) => ({
+        label: translateMonitorJob(locale, option.labelKey),
+        value: option.value,
+      })),
+    [locale]
+  )
 
   function handleOpenChange(nextOpen: boolean) {
     if (!nextOpen) {
@@ -92,10 +103,14 @@ export function JobLogDialog({
       <ResponsiveDialogContent className="max-h-[88svh] p-0 sm:max-w-5xl">
         <ResponsiveDialogHeader className="border-b px-5 py-3 text-left">
           <ResponsiveDialogTitle>
-            {record ? `${record.job_name} 执行记录` : "执行记录"}
+            {record
+              ? translateMonitorJob(locale, "job.log.title", {
+                  name: record.job_name,
+                })
+              : translateMonitorJob(locale, "job.log.fallbackTitle")}
           </ResponsiveDialogTitle>
           <ResponsiveDialogDescription>
-            查看定时任务最近执行结果，每一条记录对应一次 run。
+            {translateMonitorJob(locale, "job.log.description")}
           </ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
         <ResponsiveDialogBody className="max-h-[72svh] min-h-[360px] overflow-hidden p-0">
@@ -118,8 +133,8 @@ export function JobLogDialog({
             }}
             toolbarLeading={
               <ResourceStatusFilterTabs
-                label="调度日志状态筛选"
-                options={LOG_STATUS_FILTERS}
+                label={translateMonitorJob(locale, "job.log.statusFilter")}
+                options={statusFilterOptions}
                 value={statusFilter}
                 onValueChange={(value) => {
                   setStatusFilter(value)
@@ -130,9 +145,15 @@ export function JobLogDialog({
             isLoading={query.isLoading}
             isFetching={query.isFetching}
             error={query.error}
-            searchPlaceholder="搜索任务、调用目标、执行消息..."
-            emptyTitle="暂无执行记录"
-            emptyDescription="当前任务还没有执行记录。"
+            searchPlaceholder={translateMonitorJob(
+              locale,
+              "job.log.searchPlaceholder"
+            )}
+            emptyTitle={translateMonitorJob(locale, "job.log.emptyTitle")}
+            emptyDescription={translateMonitorJob(
+              locale,
+              "job.log.emptyDescription"
+            )}
             isFiltered={hasActiveFilters}
             getRowId={(row, index) => String(row.job_log_id || index)}
             selectionResetKey={`${record?.job_id ?? "all"}:${statusFilter}:${debouncedSearch}`}
@@ -145,7 +166,9 @@ export function JobLogDialog({
                 onClick={() => setDetailRecord(row)}
               >
                 <FileTextIcon />
-                <span className="sr-only">查看执行记录详情</span>
+                <span className="sr-only">
+                  {translateMonitorJob(locale, "job.log.viewDetail")}
+                </span>
               </Button>
             )}
           />

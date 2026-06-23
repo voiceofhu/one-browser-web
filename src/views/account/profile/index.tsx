@@ -41,12 +41,15 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Spinner } from "@/components/ui/spinner"
 import { AnimatedSegmentedTabs } from "@/components/ui/animated-segmented-tabs"
 import { TabsContent } from "@/components/ui/tabs"
+import { useTranslation } from "@/components/providers/language-context"
 import { useCurrentUser } from "@/hooks/use-auth"
+import { translateAdminText } from "@/lib/i18n-admin"
+import type { Locale } from "@/lib/i18n"
 import { authQueryKeys } from "@/lib/query-keys"
 import { SEX_LABELS } from "@/router/routes"
 import type { CurrentUser, SexFlag } from "@/types/admin"
 
-import { ACCOUNT_TAB_OPTIONS, type AccountTab } from "./account-tabs"
+import { getAccountTabOptions, type AccountTab } from "./account-tabs"
 import { AvatarCropDialog } from "./avatar-crop-dialog"
 import { AvatarPreviewDialog } from "./avatar-preview-dialog"
 import { PasswordForm } from "./password-form"
@@ -55,26 +58,31 @@ import { InfoRow, ProfileInput } from "./profile-fields"
 const MAX_AVATAR_SIZE = 5 * 1024 * 1024
 const AVATAR_ACCEPT = "image/png,image/jpeg,image/webp,image/gif"
 
-const profileSchema = z.object({
-  nick_name: z
-    .string()
-    .trim()
-    .min(1, "昵称不能为空")
-    .max(64, "昵称不能超过 64 个字符"),
-  email: z
-    .string()
-    .trim()
-    .refine((value) => !value || z.email().safeParse(value).success, {
-      message: "邮箱格式不正确",
-    }),
-  phone_number: z.string().trim().max(32, "手机号不能超过 32 个字符"),
-  sex: z.enum(["0", "1", "2"]),
-  avatar: z.string().trim().max(255, "头像地址不能超过 255 个字符"),
-})
+function createProfileSchema(locale: Locale) {
+  const tt = (text: string) => translateAdminText(locale, text)
 
-type ProfileFormValues = z.infer<typeof profileSchema>
+  return z.object({
+    nick_name: z
+      .string()
+      .trim()
+      .min(1, tt("昵称不能为空"))
+      .max(64, tt("昵称不能超过 64 个字符")),
+    email: z
+      .string()
+      .trim()
+      .refine((value) => !value || z.email().safeParse(value).success, {
+        message: tt("邮箱格式不正确"),
+      }),
+    phone_number: z.string().trim().max(32, tt("手机号不能超过 32 个字符")),
+    sex: z.enum(["0", "1", "2"]),
+    avatar: z.string().trim().max(255, tt("头像地址不能超过 255 个字符")),
+  })
+}
+
+type ProfileFormValues = z.infer<ReturnType<typeof createProfileSchema>>
 
 export default function AccountProfilePage() {
+  const { locale } = useTranslation()
   const queryClient = useQueryClient()
   const currentUser = useCurrentUser()
   const user = currentUser.data
@@ -88,6 +96,18 @@ export default function AccountProfilePage() {
   const [pendingAvatarFileName, setPendingAvatarFileName] = React.useState("")
   const [isAvatarDialogOpen, setIsAvatarDialogOpen] = React.useState(false)
   const [isAvatarPreviewOpen, setIsAvatarPreviewOpen] = React.useState(false)
+  const profileSchema = React.useMemo(
+    () => createProfileSchema(locale),
+    [locale]
+  )
+  const accountTabOptions = React.useMemo(
+    () => getAccountTabOptions(locale),
+    [locale]
+  )
+  const tt = React.useCallback(
+    (text: string) => translateAdminText(locale, text),
+    [locale]
+  )
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
     defaultValues: profileDefaults(user),
@@ -96,7 +116,7 @@ export default function AccountProfilePage() {
   const nickName = useWatch({ control: form.control, name: "nick_name" })
   const sex = useWatch({ control: form.control, name: "sex" })
   const avatarSrc = avatar
-  const displayName = nickName || user?.user_name || "账号"
+  const displayName = nickName || user?.user_name || tt("账号")
   const fallback = displayName.slice(0, 2).toUpperCase()
   const hasProfileChanges = form.formState.isDirty
   const updateProfile = useMutation({
@@ -106,10 +126,12 @@ export default function AccountProfilePage() {
       loadedUserIdRef.current = updatedUser.user_id
       queryClient.setQueryData(authQueryKeys.currentUser, updatedUser)
       form.reset(profileDefaults(updatedUser))
-      toast.success("账号信息已保存")
+      toast.success(tt("账号信息已保存"))
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "账号信息保存失败")
+      toast.error(
+        error instanceof Error ? error.message : tt("账号信息保存失败")
+      )
     },
   })
   const uploadAvatar = useMutation({
@@ -123,10 +145,10 @@ export default function AccountProfilePage() {
         shouldTouch: false,
         shouldValidate: true,
       })
-      toast.success("头像已更新")
+      toast.success(tt("头像已更新"))
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "头像上传失败")
+      toast.error(error instanceof Error ? error.message : tt("头像上传失败"))
     },
   })
   const isProfileBusy =
@@ -170,12 +192,12 @@ export default function AccountProfilePage() {
     }
 
     if (!AVATAR_ACCEPT.split(",").includes(file.type)) {
-      toast.error("请选择 jpg、png、webp 或 gif 图片")
+      toast.error(tt("请选择 jpg、png、webp 或 gif 图片"))
       return
     }
 
     if (file.size > MAX_AVATAR_SIZE) {
-      toast.error("头像不能超过 5 MB")
+      toast.error(tt("头像不能超过 5 MB"))
       return
     }
 
@@ -213,15 +235,15 @@ export default function AccountProfilePage() {
     const username = user?.user_name
 
     if (!username) {
-      toast.error("暂无可复制的用户名")
+      toast.error(tt("暂无可复制的用户名"))
       return
     }
 
     try {
       await navigator.clipboard.writeText(username)
-      toast.success("用户名已复制")
+      toast.success(tt("用户名已复制"))
     } catch {
-      toast.error("复制失败，请稍后重试")
+      toast.error(tt("复制失败，请稍后重试"))
     }
   }
 
@@ -235,16 +257,18 @@ export default function AccountProfilePage() {
     <div className="flex min-h-0 flex-col gap-4 bg-muted/25 px-4 py-4 lg:px-5">
       <header className="flex flex-col gap-1">
         <div className="flex flex-col gap-1">
-          <h1 className="text-xl font-semibold tracking-normal">个人账号</h1>
+          <h1 className="text-xl font-semibold tracking-normal">
+            {tt("个人账号")}
+          </h1>
           <p className="text-sm text-muted-foreground">
-            维护当前账号的头像、昵称和联系信息。
+            {tt("维护当前账号的头像、昵称和联系信息。")}
           </p>
         </div>
       </header>
 
       <AnimatedSegmentedTabs
-        label="账号设置"
-        options={ACCOUNT_TAB_OPTIONS}
+        label={tt("账号设置")}
+        options={accountTabOptions}
         value={activeTab}
         onValueChange={setActiveTab}
         className="flex min-h-0 flex-col gap-4"
@@ -261,7 +285,7 @@ export default function AccountProfilePage() {
                   <button
                     type="button"
                     className="rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-ring/50 enabled:cursor-zoom-in disabled:cursor-default"
-                    aria-label="查看头像大图"
+                    aria-label={tt("查看头像大图")}
                     disabled={!avatarSrc}
                     onClick={handlePreviewAvatar}
                   >
@@ -279,7 +303,7 @@ export default function AccountProfilePage() {
                     type="button"
                     size="icon-sm"
                     className="absolute -right-1 -bottom-1 size-8 rounded-full"
-                    aria-label="上传头像"
+                    aria-label={tt("上传头像")}
                     disabled={uploadAvatar.isPending || currentUser.isLoading}
                     onClick={handleChooseAvatar}
                   >
@@ -299,7 +323,7 @@ export default function AccountProfilePage() {
                       variant="ghost"
                       size="icon-xs"
                       className="size-6 text-muted-foreground"
-                      aria-label="复制用户名"
+                      aria-label={tt("复制用户名")}
                       disabled={currentUser.isLoading || !user?.user_name}
                       onClick={handleCopyUsername}
                     >
@@ -321,22 +345,22 @@ export default function AccountProfilePage() {
                 <div className="rounded-lg bg-muted/35 px-3 py-2">
                   <InfoRow
                     icon={MailIcon}
-                    label="邮箱"
+                    label={tt("邮箱")}
                     value={user?.email || "-"}
                   />
                 </div>
                 <div className="rounded-lg bg-muted/35 px-3 py-2">
                   <InfoRow
                     icon={PhoneIcon}
-                    label="手机号"
+                    label={tt("手机号")}
                     value={user?.phone_number || "-"}
                   />
                 </div>
                 <div className="rounded-lg bg-muted/35 px-3 py-2">
                   <InfoRow
                     icon={UserRoundIcon}
-                    label="用户性别"
-                    value={user ? SEX_LABELS[user.sex] : "-"}
+                    label={tt("用户性别")}
+                    value={user ? tt(SEX_LABELS[user.sex]) : "-"}
                   />
                 </div>
               </dl>
@@ -353,9 +377,9 @@ export default function AccountProfilePage() {
               <CardHeader className="pb-0">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex min-w-0 flex-col gap-1">
-                    <CardTitle>个人信息</CardTitle>
+                    <CardTitle>{tt("个人信息")}</CardTitle>
                     <CardDescription>
-                      头像、昵称和联系方式保存后立即生效。
+                      {tt("头像、昵称和联系方式保存后立即生效。")}
                     </CardDescription>
                   </div>
                 </div>
@@ -363,18 +387,18 @@ export default function AccountProfilePage() {
               <CardContent className="min-h-0 flex-1 pt-0">
                 <FieldGroup className="grid gap-4 md:grid-cols-2">
                   <ProfileInput
-                    label="昵称"
+                    label={tt("昵称")}
                     error={form.formState.errors.nick_name?.message}
                     {...form.register("nick_name")}
                   />
                   <ProfileInput
-                    label="邮箱"
+                    label={tt("邮箱")}
                     type="email"
                     error={form.formState.errors.email?.message}
                     {...form.register("email")}
                   />
                   <ProfileInput
-                    label="手机号"
+                    label={tt("手机号")}
                     error={form.formState.errors.phone_number?.message}
                     {...form.register("phone_number")}
                   />
@@ -382,7 +406,7 @@ export default function AccountProfilePage() {
                     data-invalid={Boolean(form.formState.errors.sex)}
                     className="pb-1 md:col-span-2"
                   >
-                    <FieldLabel>性别</FieldLabel>
+                    <FieldLabel>{tt("性别")}</FieldLabel>
                     <RadioGroup
                       className="grid grid-cols-3 gap-2"
                       value={sex}
@@ -404,7 +428,7 @@ export default function AccountProfilePage() {
                             value={value}
                             aria-invalid={Boolean(form.formState.errors.sex)}
                           />
-                          {label}
+                          {tt(label)}
                         </FieldLabel>
                       ))}
                     </RadioGroup>
@@ -415,8 +439,8 @@ export default function AccountProfilePage() {
               <CardFooter className="mx-3 mt-2 flex flex-col items-stretch gap-2 rounded-lg border-t-0 bg-muted/40 p-3 sm:flex-row sm:items-center sm:justify-between">
                 <span className="text-xs text-muted-foreground">
                   {hasProfileChanges
-                    ? "当前资料有修改，保存后会同步到当前账号。"
-                    : "当前资料已和服务器保持同步。"}
+                    ? tt("当前资料有修改，保存后会同步到当前账号。")
+                    : tt("当前资料已和服务器保持同步。")}
                 </span>
                 <div className="grid grid-cols-5 gap-2 sm:min-w-64">
                   <Button
@@ -428,7 +452,7 @@ export default function AccountProfilePage() {
                     onClick={handleResetProfile}
                   >
                     <RotateCcwIcon data-icon="inline-start" />
-                    重置
+                    {tt("重置")}
                   </Button>
                   <Button
                     type="submit"
@@ -441,7 +465,7 @@ export default function AccountProfilePage() {
                     ) : (
                       <SaveIcon data-icon="inline-start" />
                     )}
-                    保存修改
+                    {tt("保存修改")}
                   </Button>
                 </div>
               </CardFooter>

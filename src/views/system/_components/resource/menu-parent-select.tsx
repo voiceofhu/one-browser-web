@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query"
 import { CheckIcon, ChevronsUpDownIcon, SearchIcon, XIcon } from "lucide-react"
 
 import { listMenus } from "@/api/system/menu"
+import { useTranslation } from "@/components/providers/language-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -13,6 +14,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { Spinner } from "@/components/ui/spinner"
+import { translateAdminText } from "@/lib/i18n-admin"
 import { systemQueryKeys } from "@/lib/query-keys"
 import { cn } from "@/lib/utils"
 import type { MenuResource, MenuTypeFlag } from "@/types/admin"
@@ -47,6 +49,7 @@ export function MenuParentSelect({
   emptyLabel = "顶级菜单",
   onChange,
 }: MenuParentSelectProps) {
+  const { locale } = useTranslation()
   const [open, setOpen] = React.useState(false)
   const [keyword, setKeyword] = React.useState("")
   const selectedId = typeof value === "number" ? value : null
@@ -93,7 +96,9 @@ export function MenuParentSelect({
         >
           <span className="truncate">
             {selectedMenu?.menu_name ??
-              (selectedId == null && allowEmpty ? emptyLabel : placeholder)}
+              (selectedId == null && allowEmpty
+                ? translateAdminText(locale, emptyLabel)
+                : placeholder)}
           </span>
           <ChevronsUpDownIcon data-icon="inline-end" />
         </Button>
@@ -107,7 +112,7 @@ export function MenuParentSelect({
             <SearchIcon className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={keyword}
-              placeholder="搜索权限..."
+              placeholder={translateAdminText(locale, "搜索权限...")}
               className="pl-8"
               onChange={(event) => setKeyword(event.target.value)}
             />
@@ -116,7 +121,7 @@ export function MenuParentSelect({
         <div className="max-h-72 overflow-y-auto p-1">
           {allowEmpty ? (
             <MenuParentOption
-              label={emptyLabel}
+              label={translateAdminText(locale, emptyLabel)}
               selected={selectedId == null}
               onSelect={() => selectMenu(null)}
             >
@@ -126,7 +131,7 @@ export function MenuParentSelect({
           {query.isLoading ? (
             <div className="flex items-center justify-center gap-2 px-2 py-6 text-sm text-muted-foreground">
               <Spinner />
-              正在加载权限...
+              {translateAdminText(locale, "正在加载权限...")}
             </div>
           ) : filteredMenus.length > 0 ? (
             filteredMenus.map((item) => (
@@ -135,13 +140,13 @@ export function MenuParentSelect({
                 label={item.menu.menu_name}
                 selected={selectedId === item.menu.menu_id}
                 depth={keyword.trim() ? 0 : item.depth}
-                description={menuDescription(item.menu)}
+                description={menuDescription(item.menu, locale)}
                 onSelect={() => selectMenu(item.menu)}
               />
             ))
           ) : (
             <div className="px-2 py-6 text-center text-sm text-muted-foreground">
-              没有匹配的权限
+              {translateAdminText(locale, "没有匹配的权限")}
             </div>
           )}
         </div>
@@ -284,8 +289,8 @@ function filterFlatMenus(items: FlatMenu[], keyword: string) {
   )
 }
 
-function menuDescription(menu: MenuResource) {
-  const typeLabel = menuTypeLabel(menu.menu_type)
+function menuDescription(menu: MenuResource, locale: string) {
+  const typeLabel = translateAdminText(locale, menuTypeLabel(menu.menu_type))
   const target = menu.perms || menu.path
 
   return target ? `${typeLabel} · ${target}` : typeLabel

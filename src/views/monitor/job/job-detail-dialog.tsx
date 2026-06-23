@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query"
 import { CalendarClockIcon, InfoIcon } from "lucide-react"
 
 import { getJob } from "@/api/monitor/jobs"
+import { useTranslation } from "@/components/providers/language-context"
 import { Badge } from "@/components/ui/badge"
 import {
   ResponsiveDialog,
@@ -19,10 +20,12 @@ import { monitorQueryKeys } from "@/lib/query-keys"
 import type { JobResource } from "@/types/admin"
 
 import {
-  JOB_CONCURRENT_LABELS,
-  JOB_INVOKE_TARGET_LABELS,
-  JOB_MISFIRE_POLICY_LABELS,
-  JOB_STATUS_LABELS,
+  getJobConcurrentLabel,
+  getJobInvokeTargetLabel,
+  getJobMisfirePolicyLabel,
+  getJobStatusLabel,
+  translateJobScheduleError,
+  translateMonitorJob,
 } from "./constants"
 import { getNextScheduleTimes } from "./schedule-preview"
 
@@ -37,6 +40,7 @@ export function JobDetailDialog({
   record,
   onOpenChange,
 }: JobDetailDialogProps) {
+  const { locale } = useTranslation()
   const query = useQuery({
     queryKey: [...monitorQueryKeys.jobs, "detail", record?.job_id],
     queryFn: () => getJob(record!.job_id),
@@ -54,10 +58,11 @@ export function JobDetailDialog({
       <ResponsiveDialogContent className="p-0 sm:max-w-2xl">
         <ResponsiveDialogHeader className="border-b px-5 py-3 text-left">
           <ResponsiveDialogTitle>
-            {detail?.job_name ?? "任务详情"}
+            {detail?.job_name ??
+              translateMonitorJob(locale, "job.detail.fallbackTitle")}
           </ResponsiveDialogTitle>
           <ResponsiveDialogDescription>
-            查看定时任务配置与后续执行时间。
+            {translateMonitorJob(locale, "job.detail.description")}
           </ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
         <ResponsiveDialogBody className="space-y-4 px-5 py-4">
@@ -66,36 +71,57 @@ export function JobDetailDialog({
               <section className="rounded-lg bg-muted/40 p-4">
                 <div className="mb-3 flex items-center gap-2 font-medium">
                   <InfoIcon className="size-4 text-muted-foreground" />
-                  基本信息
+                  {translateMonitorJob(locale, "job.detail.basicInfo")}
                 </div>
                 <div className="grid gap-3 text-sm md:grid-cols-2">
-                  <DetailItem label="调用目标">
-                    {JOB_INVOKE_TARGET_LABELS[detail.invoke_target] ??
-                      detail.invoke_target}
+                  <DetailItem
+                    label={translateMonitorJob(
+                      locale,
+                      "job.detail.invokeTarget"
+                    )}
+                  >
+                    {getJobInvokeTargetLabel(locale, detail.invoke_target)}
                   </DetailItem>
-                  <DetailItem label="执行表达式">
+                  <DetailItem
+                    label={translateMonitorJob(
+                      locale,
+                      "job.detail.cronExpression"
+                    )}
+                  >
                     {detail.cron_expression || "-"}
                   </DetailItem>
-                  <DetailItem label="状态">
+                  <DetailItem
+                    label={translateMonitorJob(locale, "job.detail.status")}
+                  >
                     <Badge
                       variant={detail.status === "0" ? "default" : "secondary"}
                     >
-                      {JOB_STATUS_LABELS[detail.status]}
+                      {getJobStatusLabel(locale, detail.status)}
                     </Badge>
                   </DetailItem>
-                  <DetailItem label="错过策略">
-                    {JOB_MISFIRE_POLICY_LABELS[detail.misfire_policy]}
-                  </DetailItem>
-                  <DetailItem label="并发执行">
-                    {JOB_CONCURRENT_LABELS[detail.concurrent]}
+                  <DetailItem
+                    label={translateMonitorJob(
+                      locale,
+                      "job.detail.misfirePolicy"
+                    )}
+                  >
+                    {getJobMisfirePolicyLabel(locale, detail.misfire_policy)}
                   </DetailItem>
                   <DetailItem
-                    label="创建时间"
+                    label={translateMonitorJob(locale, "job.detail.concurrent")}
+                  >
+                    {getJobConcurrentLabel(locale, detail.concurrent)}
+                  </DetailItem>
+                  <DetailItem
+                    label={translateMonitorJob(locale, "job.detail.createdAt")}
                     title={formatAbsoluteDateTime(detail.created_at, "-")}
                   >
                     {formatRelativeTime(detail.created_at, "-")}
                   </DetailItem>
-                  <DetailItem label="备注" className="md:col-span-2">
+                  <DetailItem
+                    label={translateMonitorJob(locale, "job.detail.remark")}
+                    className="md:col-span-2"
+                  >
                     {detail.remark || "-"}
                   </DetailItem>
                 </div>
@@ -104,7 +130,7 @@ export function JobDetailDialog({
               <section className="rounded-lg bg-muted/40 p-4">
                 <div className="mb-3 flex items-center gap-2 font-medium">
                   <CalendarClockIcon className="size-4 text-muted-foreground" />
-                  后续执行
+                  {translateMonitorJob(locale, "job.detail.nextRuns")}
                 </div>
                 {preview.ok ? (
                   <div className="flex flex-wrap gap-2">
@@ -116,7 +142,7 @@ export function JobDetailDialog({
                   </div>
                 ) : (
                   <div className="text-sm text-destructive">
-                    {preview.message}
+                    {translateJobScheduleError(locale, preview.message)}
                   </div>
                 )}
               </section>

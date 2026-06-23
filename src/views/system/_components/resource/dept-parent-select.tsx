@@ -10,6 +10,7 @@ import {
 } from "lucide-react"
 
 import { listDepts } from "@/api/system/dept"
+import { useTranslation } from "@/components/providers/language-context"
 import { Button } from "@/components/ui/button"
 import {
   Popover,
@@ -17,6 +18,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { Spinner } from "@/components/ui/spinner"
+import { translateAdminText } from "@/lib/i18n-admin"
 import { systemQueryKeys } from "@/lib/query-keys"
 import { cn } from "@/lib/utils"
 import type { DeptResource } from "@/types/admin"
@@ -49,6 +51,7 @@ export function DeptParentSelect({
   hideWhenEmpty = false,
   onChange,
 }: DeptParentSelectProps) {
+  const { locale } = useTranslation()
   const [open, setOpen] = React.useState(false)
   const [collapsedIds, setCollapsedIds] = React.useState<Set<number>>(new Set())
   const selectedId = typeof value === "number" ? value : null
@@ -68,7 +71,10 @@ export function DeptParentSelect({
   )
   const selectedDept = depts.find((dept) => dept.dept_id === selectedId) ?? null
   const shouldHide =
-    hideWhenEmpty && !query.isLoading && !selectedDept && selectableDepts.length === 0
+    hideWhenEmpty &&
+    !query.isLoading &&
+    !selectedDept &&
+    selectableDepts.length === 0
 
   function toggleExpanded(deptId: number) {
     setCollapsedIds((current) => {
@@ -117,13 +123,13 @@ export function DeptParentSelect({
         className="z-[60] w-(--radix-popover-trigger-width) gap-0 overflow-hidden p-0"
       >
         <div className="border-b px-2.5 py-2 text-sm text-muted-foreground">
-          {title}
+          {translateAdminText(locale, title)}
         </div>
         <div className="max-h-72 overflow-y-auto p-1">
           {query.isLoading ? (
             <div className="flex items-center justify-center gap-2 px-2 py-6 text-sm text-muted-foreground">
               <Spinner />
-              正在加载部门...
+              {translateAdminText(locale, "正在加载部门...")}
             </div>
           ) : tree.length > 0 ? (
             tree.map((node) => (
@@ -139,7 +145,7 @@ export function DeptParentSelect({
             ))
           ) : (
             <div className="px-2 py-6 text-center text-sm text-muted-foreground">
-              暂无可选部门
+              {translateAdminText(locale, "暂无可选部门")}
             </div>
           )}
         </div>
@@ -166,6 +172,7 @@ function DeptTreeItem({
   const hasChildren = node.children.length > 0
   const expanded = !collapsedIds.has(node.dept.dept_id)
   const selected = selectedId === node.dept.dept_id
+  const { locale } = useTranslation()
 
   return (
     <div>
@@ -179,7 +186,11 @@ function DeptTreeItem({
         <button
           type="button"
           className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground outline-none hover:text-foreground focus-visible:bg-muted [&_svg:not([class*='size-'])]:size-4"
-          aria-label={expanded ? "收起部门" : "展开部门"}
+          aria-label={
+            expanded
+              ? translateAdminText(locale, "收起部门")
+              : translateAdminText(locale, "展开部门")
+          }
           disabled={!hasChildren}
           onClick={() => onToggle(node.dept.dept_id)}
         >

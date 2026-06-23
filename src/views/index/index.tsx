@@ -13,6 +13,7 @@ import {
 } from "lucide-react"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { useTranslation } from "@/components/providers/language-context"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -34,6 +35,7 @@ import {
 } from "@/api/index"
 import { indexQueryKeys } from "@/lib/query-keys"
 import { formatAbsoluteDateTime, formatRelativeTime } from "@/lib/datetime"
+import { translateText } from "@/lib/i18n-text"
 import { cn } from "@/lib/utils"
 import { APP_ROUTE_BY_ID } from "@/router/routes"
 import type { CurrentUser, HealthResponse } from "@/types/admin"
@@ -48,11 +50,12 @@ const quickActions = [
 ] as const
 
 export default function IndexPage() {
+  const { locale, t } = useTranslation()
   const overview = useOverviewData()
   const overviewData = overview.data
   const resources = overviewData?.resources
   const overviewErrorMessage = overview.error
-    ? getErrorMessage(overview.error)
+    ? getErrorMessage(overview.error, t("common.unknownServerError"))
     : null
   const resourceCards = [
     resourceSummary(
@@ -126,8 +129,10 @@ export default function IndexPage() {
     <div className="flex flex-col gap-3 px-4 pt-4 lg:px-6">
       {overview.error ? (
         <Alert variant="destructive">
-          <AlertTitle>首页数据加载失败</AlertTitle>
-          <AlertDescription>{getErrorMessage(overview.error)}</AlertDescription>
+          <AlertTitle>{translateText(locale, "首页数据加载失败")}</AlertTitle>
+          <AlertDescription>
+            {getErrorMessage(overview.error, t("common.unknownServerError"))}
+          </AlertDescription>
         </Alert>
       ) : null}
 
@@ -174,17 +179,27 @@ function StatusStrip({
 }) {
   const environment = health?.data?.environment ?? "unknown"
   const serviceStatus = health?.data?.status ?? "unknown"
+  const { locale, t } = useTranslation()
 
   return (
     <Card size="sm" className="bg-muted/40 shadow-none ring-0">
       <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatusItem
-          label="当前用户"
-          value={user?.nick_name || user?.user_name || "未登录"}
+          label={translateText(locale, "当前用户")}
+          value={user?.nick_name || user?.user_name || t("nav.guestName")}
         />
-        <StatusItem label="运行环境" value={environment} />
-        <StatusItem label="服务状态" value={serviceStatus} />
-        <StatusItem label="依赖状态" value={serviceStatus} />
+        <StatusItem
+          label={translateText(locale, "运行环境")}
+          value={environment}
+        />
+        <StatusItem
+          label={translateText(locale, "服务状态")}
+          value={serviceStatus}
+        />
+        <StatusItem
+          label={translateText(locale, "依赖状态")}
+          value={serviceStatus}
+        />
       </CardContent>
     </Card>
   )
@@ -207,6 +222,7 @@ function ResourceSummaryCard({
   index: number
 }) {
   const Icon = card.icon
+  const { locale } = useTranslation()
 
   return (
     <Card
@@ -217,13 +233,17 @@ function ResourceSummaryCard({
       )}
     >
       <CardHeader className="gap-1">
-        <CardDescription>{card.description}</CardDescription>
+        <CardDescription>
+          {translateText(locale, card.description)}
+        </CardDescription>
         <CardTitle className="flex items-center gap-2 text-xl font-semibold tabular-nums">
           <Icon className="text-muted-foreground" />
           {card.isLoading ? <Skeleton className="h-8 w-16" /> : card.value}
         </CardTitle>
         <CardAction>
-          <Badge variant={card.variant}>{card.badge}</Badge>
+          <Badge variant={card.variant}>
+            {translateText(locale, card.badge)}
+          </Badge>
         </CardAction>
       </CardHeader>
     </Card>
@@ -231,11 +251,13 @@ function ResourceSummaryCard({
 }
 
 function ResourceOverview({ cards }: { cards: ResourceSummary[] }) {
+  const { locale } = useTranslation()
+
   return (
     <Card size="sm" className="bg-muted/35 shadow-none ring-0">
       <CardHeader>
-        <CardDescription>核心资源</CardDescription>
-        <CardTitle>系统管理总览</CardTitle>
+        <CardDescription>{translateText(locale, "核心资源")}</CardDescription>
+        <CardTitle>{translateText(locale, "系统管理总览")}</CardTitle>
       </CardHeader>
       <CardContent className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
         {cards.map((card, index) => (
@@ -247,9 +269,11 @@ function ResourceOverview({ cards }: { cards: ResourceSummary[] }) {
             )}
           >
             <div className="min-w-0">
-              <div className="truncate text-sm font-medium">{card.title}</div>
+              <div className="truncate text-sm font-medium">
+                {translateText(locale, card.title)}
+              </div>
               <div className="truncate text-xs text-muted-foreground">
-                {card.errorMessage ?? card.description}
+                {card.errorMessage ?? translateText(locale, card.description)}
               </div>
             </div>
             <Badge variant={card.variant}>
@@ -263,11 +287,13 @@ function ResourceOverview({ cards }: { cards: ResourceSummary[] }) {
 }
 
 function QuickActions() {
+  const { locale } = useTranslation()
+
   return (
     <Card size="sm" className="bg-muted/35 shadow-none ring-0">
       <CardHeader>
-        <CardDescription>常用入口</CardDescription>
-        <CardTitle>快捷操作</CardTitle>
+        <CardDescription>{translateText(locale, "常用入口")}</CardDescription>
+        <CardTitle>{translateText(locale, "快捷操作")}</CardTitle>
       </CardHeader>
       <CardContent className="grid gap-2">
         {quickActions.map((action, index) => {
@@ -283,7 +309,7 @@ function QuickActions() {
               <NavLink to={APP_ROUTE_BY_ID[action.routeId].path}>
                 <span className="flex items-center gap-2">
                   <Icon data-icon="inline-start" />
-                  {action.label}
+                  {translateText(locale, action.label)}
                 </span>
                 <ArrowRightIcon data-icon="inline-end" />
               </NavLink>
@@ -320,16 +346,18 @@ function panelToneClass(index: number, isError: boolean) {
 }
 
 function RecentResources({ items }: { items: RecentItem[] }) {
+  const { locale } = useTranslation()
+
   return (
     <Card size="sm" className="bg-muted/35 shadow-none ring-0">
       <CardHeader>
-        <CardDescription>近期数据</CardDescription>
-        <CardTitle>最近创建的资源</CardTitle>
+        <CardDescription>{translateText(locale, "近期数据")}</CardDescription>
+        <CardTitle>{translateText(locale, "最近创建的资源")}</CardTitle>
       </CardHeader>
       <CardContent className="grid gap-2 sm:grid-cols-2 2xl:grid-cols-3">
         {items.length === 0 ? (
           <div className="text-sm text-muted-foreground">
-            暂无可展示的近期资源。
+            {translateText(locale, "暂无可展示的近期资源。")}
           </div>
         ) : (
           items.map((item, index) => (
@@ -341,7 +369,7 @@ function RecentResources({ items }: { items: RecentItem[] }) {
               )}
             >
               <Badge variant="outline" className="h-fit">
-                {item.kind}
+                {translateText(locale, item.kind)}
               </Badge>
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-medium">{item.name}</div>
@@ -371,16 +399,28 @@ function HealthCard({
 }) {
   const status = health?.data?.status ?? "unknown"
   const isOk = status === "ok"
-  const errorMessage = getSectionError(health, error)
+  const { locale, t } = useTranslation()
+  const errorMessage = getSectionError(
+    health,
+    error,
+    t("common.unknownServerError")
+  )
 
   return (
     <Card size="sm" className="bg-muted/35 shadow-none ring-0">
       <CardHeader>
-        <CardDescription>服务健康</CardDescription>
-        <CardTitle>{isLoading ? "检查中" : status}</CardTitle>
+        <CardDescription>{translateText(locale, "服务健康")}</CardDescription>
+        <CardTitle>
+          {isLoading
+            ? translateText(locale, "检查中")
+            : translateText(locale, status)}
+        </CardTitle>
         <CardAction>
           <Badge variant={errorMessage || !isOk ? "destructive" : "secondary"}>
-            {errorMessage ? "错误" : isOk ? "健康" : "注意"}
+            {translateText(
+              locale,
+              errorMessage ? "错误" : isOk ? "健康" : "注意"
+            )}
           </Badge>
         </CardAction>
       </CardHeader>
@@ -389,7 +429,7 @@ function HealthCard({
           ? errorMessage
           : health?.data
             ? `${health.data.service} / ${health.data.environment}`
-            : "等待健康检查返回。"}
+            : translateText(locale, "等待健康检查返回。")}
       </CardContent>
     </Card>
   )
@@ -406,16 +446,28 @@ function DependencyHealthCard({
 }) {
   const status = health?.data?.status ?? "unknown"
   const isOk = status === "ok"
-  const errorMessage = getSectionError(health, error)
+  const { locale, t } = useTranslation()
+  const errorMessage = getSectionError(
+    health,
+    error,
+    t("common.unknownServerError")
+  )
 
   return (
     <Card size="sm" className="bg-muted/35 shadow-none ring-0">
       <CardHeader>
-        <CardDescription>依赖健康</CardDescription>
-        <CardTitle>{isLoading ? "检查中" : status}</CardTitle>
+        <CardDescription>{translateText(locale, "依赖健康")}</CardDescription>
+        <CardTitle>
+          {isLoading
+            ? translateText(locale, "检查中")
+            : translateText(locale, status)}
+        </CardTitle>
         <CardAction>
           <Badge variant={errorMessage || !isOk ? "destructive" : "secondary"}>
-            {errorMessage ? "错误" : isOk ? "健康" : "降级"}
+            {translateText(
+              locale,
+              errorMessage ? "错误" : isOk ? "健康" : "降级"
+            )}
           </Badge>
         </CardAction>
       </CardHeader>
@@ -431,7 +483,7 @@ function DependencyHealthCard({
             <div>Redis：{health.data.redis}</div>
           </>
         ) : (
-          "等待健康检查返回。"
+          translateText(locale, "等待健康检查返回。")
         )}
       </CardContent>
     </Card>
@@ -490,16 +542,17 @@ function buildRecentItems(items?: IndexOverviewRecentResource[]): RecentItem[] {
 
 function getSectionError<T>(
   section: OverviewSection<T> | undefined,
-  rootError?: unknown
+  rootError: unknown | undefined,
+  fallback: string
 ) {
   if (rootError) {
-    return getErrorMessage(rootError)
+    return getErrorMessage(rootError, fallback)
   }
 
   return section?.error ?? null
 }
 
-function getErrorMessage(error: unknown) {
+function getErrorMessage(error: unknown, fallback: string) {
   if (error instanceof Error) {
     return error.message
   }
@@ -508,5 +561,5 @@ function getErrorMessage(error: unknown) {
     return error
   }
 
-  return "服务器返回了未知错误。"
+  return fallback
 }

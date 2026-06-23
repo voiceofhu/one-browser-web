@@ -1,10 +1,13 @@
 import { CheckCircle2Icon, XCircleIcon } from "lucide-react"
 
+import { useTranslation } from "@/components/providers/language-context"
 import { Badge } from "@/components/ui/badge"
+import { translateAdminText } from "@/lib/i18n-admin"
 import type { LogStatusFlag } from "@/types/admin"
 import { LOG_STATUS_LABELS } from "@/views/system/log/constants"
 
 export function LogStatusBadge({ status }: { status: LogStatusFlag }) {
+  const { locale } = useTranslation()
   const isSuccess = status === "0"
 
   return (
@@ -21,7 +24,7 @@ export function LogStatusBadge({ status }: { status: LogStatusFlag }) {
       ) : (
         <XCircleIcon data-icon="inline-start" />
       )}
-      {LOG_STATUS_LABELS[status]}
+      {translateAdminText(locale, LOG_STATUS_LABELS[status])}
     </Badge>
   )
 }

@@ -34,28 +34,44 @@ import {
 } from "@/components/ui/input-group"
 import { Progress } from "@/components/ui/progress"
 import { Spinner } from "@/components/ui/spinner"
+import { useTranslation } from "@/components/providers/language-context"
+import { translateAdminText } from "@/lib/i18n-admin"
+import type { Locale } from "@/lib/i18n"
 
-const passwordSchema = z
-  .object({
-    old_password: z.string().min(1, "请输入当前密码"),
-    new_password: z
-      .string()
-      .min(10, "新密码至少需要 10 位")
-      .max(128, "新密码不能超过 128 位"),
-    confirm_password: z.string().min(1, "请再次输入新密码"),
-  })
-  .refine((values) => values.new_password === values.confirm_password, {
-    path: ["confirm_password"],
-    message: "两次输入的新密码不一致",
-  })
-  .refine((values) => values.old_password !== values.new_password, {
-    path: ["new_password"],
-    message: "新密码不能和当前密码相同",
-  })
+function createPasswordSchema(locale: Locale) {
+  const tt = (text: string) => translateAdminText(locale, text)
 
-type PasswordFormValues = z.infer<typeof passwordSchema>
+  return z
+    .object({
+      old_password: z.string().min(1, tt("请输入当前密码")),
+      new_password: z
+        .string()
+        .min(10, tt("新密码至少需要 10 位"))
+        .max(128, tt("新密码不能超过 128 位")),
+      confirm_password: z.string().min(1, tt("请再次输入新密码")),
+    })
+    .refine((values) => values.new_password === values.confirm_password, {
+      path: ["confirm_password"],
+      message: tt("两次输入的新密码不一致"),
+    })
+    .refine((values) => values.old_password !== values.new_password, {
+      path: ["new_password"],
+      message: tt("新密码不能和当前密码相同"),
+    })
+}
+
+type PasswordFormValues = z.infer<ReturnType<typeof createPasswordSchema>>
 
 export function PasswordForm() {
+  const { locale } = useTranslation()
+  const passwordSchema = React.useMemo(
+    () => createPasswordSchema(locale),
+    [locale]
+  )
+  const tt = React.useCallback(
+    (text: string) => translateAdminText(locale, text),
+    [locale]
+  )
   const form = useForm<PasswordFormValues>({
     resolver: zodResolver(passwordSchema),
     defaultValues: {
@@ -80,10 +96,10 @@ export function PasswordForm() {
       }),
     onSuccess: () => {
       form.reset()
-      toast.success("登录密码已更新")
+      toast.success(tt("登录密码已更新"))
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "密码修改失败")
+      toast.error(error instanceof Error ? error.message : tt("密码修改失败"))
     },
   })
 
@@ -94,14 +110,16 @@ export function PasswordForm() {
         onSubmit={form.handleSubmit((values) => updatePassword.mutate(values))}
       >
         <CardHeader className="pb-0">
-          <CardTitle>修改密码</CardTitle>
-          <CardDescription>修改后请使用新密码登录当前账号。</CardDescription>
+          <CardTitle>{tt("修改密码")}</CardTitle>
+          <CardDescription>
+            {tt("修改后请使用新密码登录当前账号。")}
+          </CardDescription>
         </CardHeader>
         <CardContent className="pt-0">
           <FieldGroup className="gap-4">
             <PasswordField
               id="account-old-password"
-              label="当前密码"
+              label={tt("当前密码")}
               autoComplete="current-password"
               disabled={updatePassword.isPending}
               error={form.formState.errors.old_password?.message}
@@ -109,17 +127,22 @@ export function PasswordForm() {
             />
             <PasswordField
               id="account-new-password"
-              label="新密码"
-              description="至少 10 位，建议包含大小写字母、数字或符号。"
+              label={tt("新密码")}
+              description={tt("至少 10 位，建议包含大小写字母、数字或符号。")}
               autoComplete="new-password"
               disabled={updatePassword.isPending}
               error={form.formState.errors.new_password?.message}
-              footer={<PasswordStrengthMeter strength={passwordStrength} />}
+              footer={
+                <PasswordStrengthMeter
+                  locale={locale}
+                  strength={passwordStrength}
+                />
+              }
               {...form.register("new_password")}
             />
             <PasswordField
               id="account-confirm-password"
-              label="确认新密码"
+              label={tt("确认新密码")}
               autoComplete="new-password"
               disabled={updatePassword.isPending}
               error={form.formState.errors.confirm_password?.message}
@@ -129,7 +152,7 @@ export function PasswordForm() {
         </CardContent>
         <CardFooter className="mx-3 mt-2 flex flex-col items-stretch gap-2 rounded-lg border-t-0 bg-muted/40 p-3 sm:flex-row sm:items-center sm:justify-between">
           <span className="text-xs text-muted-foreground">
-            保存后服务端会校验当前密码是否正确。
+            {tt("保存后服务端会校验当前密码是否正确。")}
           </span>
           <div className="grid grid-cols-5 gap-2 sm:min-w-64">
             <Button
@@ -140,7 +163,7 @@ export function PasswordForm() {
               disabled={updatePassword.isPending || !form.formState.isDirty}
               onClick={() => form.reset()}
             >
-              清空
+              {tt("清空")}
             </Button>
             <Button
               type="submit"
@@ -153,7 +176,7 @@ export function PasswordForm() {
               ) : (
                 <SaveIcon data-icon="inline-start" />
               )}
-              保存密码
+              {tt("保存密码")}
             </Button>
           </div>
         </CardFooter>
@@ -177,6 +200,11 @@ function PasswordField({
   disabled,
   ...props
 }: PasswordFieldProps) {
+  const { locale } = useTranslation()
+  const tt = React.useCallback(
+    (text: string) => translateAdminText(locale, text),
+    [locale]
+  )
   const [visible, setVisible] = React.useState(false)
 
   return (
@@ -191,7 +219,7 @@ function PasswordField({
         />
         <InputGroupAddon align="inline-end">
           <InputGroupButton
-            aria-label={visible ? "隐藏密码" : "显示密码"}
+            aria-label={visible ? tt("隐藏密码") : tt("显示密码")}
             aria-pressed={visible}
             disabled={disabled}
             size="icon-xs"
@@ -214,20 +242,32 @@ type PasswordStrength = {
   value: number
 }
 
-function PasswordStrengthMeter({ strength }: { strength: PasswordStrength }) {
+function PasswordStrengthMeter({
+  locale,
+  strength,
+}: {
+  locale: Locale
+  strength: PasswordStrength
+}) {
+  const translatedLabel = translateAdminText(locale, strength.label)
+
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-center justify-between gap-3">
-        <span className="text-xs text-muted-foreground">密码强度</span>
+        <span className="text-xs text-muted-foreground">
+          {translateAdminText(locale, "密码强度")}
+        </span>
         <Badge variant={strength.value >= 80 ? "default" : "secondary"}>
-          {strength.label}
+          {translatedLabel}
         </Badge>
       </div>
       <Progress
         value={strength.value}
-        aria-label={`密码强度：${strength.label}`}
+        aria-label={`${translateAdminText(locale, "密码强度")}：${translatedLabel}`}
       />
-      <p className="text-xs text-muted-foreground">{strength.hint}</p>
+      <p className="text-xs text-muted-foreground">
+        {translateAdminText(locale, strength.hint)}
+      </p>
     </div>
   )
 }

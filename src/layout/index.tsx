@@ -33,6 +33,8 @@ import {
   monitorQueryKeys,
   systemQueryKeys,
 } from "@/lib/query-keys"
+import { useTranslation } from "@/components/providers/language-context"
+import { localizedPublicPath } from "@/lib/i18n"
 import { AppSidebar } from "@/layout/components/app-sidebar"
 import { PageTransition } from "@/layout/components/page-transition"
 import { SiteHeader } from "@/layout/components/site-header"
@@ -55,6 +57,7 @@ export default function AppLayout() {
   const currentUser = useCurrentUser()
   const authPermissions = useAuthPermissions()
   const logout = useLogoutMutation()
+  const { locale, t } = useTranslation()
   const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [visitedTagIds, setVisitedTagIds] = useAtom(visitedTagIdsAtom)
@@ -161,9 +164,9 @@ export default function AppLayout() {
         )
       )
       setOutletRefreshKey((key) => key + 1)
-      toast.success("刷新完成")
+      toast.success(t("layout.refreshSuccess"))
     } catch (error) {
-      toast.error(getErrorMessage(error))
+      toast.error(getErrorMessage(error, t("layout.actionFailed")))
     } finally {
       window.setTimeout(() => setRefreshing(false), 560)
     }
@@ -175,10 +178,11 @@ export default function AppLayout() {
     logout.mutate(undefined, {
       onSuccess: () => {
         setLogoutConfirmOpen(false)
-        toast.success("已退出登录")
-        navigate("/login", { replace: true })
+        toast.success(t("logout.success"))
+        navigate(localizedPublicPath(locale, "login"), { replace: true })
       },
-      onError: (error) => toast.error(getErrorMessage(error)),
+      onError: (error) =>
+        toast.error(getErrorMessage(error, t("layout.actionFailed"))),
     })
   }
 
@@ -212,21 +216,21 @@ export default function AppLayout() {
             <AlertDialogMedia>
               <LogOutIcon />
             </AlertDialogMedia>
-            <AlertDialogTitle>确认退出登录？</AlertDialogTitle>
+            <AlertDialogTitle>{t("logout.confirmTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              退出后需要重新登录才能继续使用后台管理功能。
+              {t("logout.confirmDescription")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={logout.isPending}>
-              取消
+              {t("logout.cancel")}
             </AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
               disabled={logout.isPending}
               onClick={handleLogoutConfirm}
             >
-              {logout.isPending ? "退出中..." : "确认退出"}
+              {logout.isPending ? t("logout.pending") : t("logout.confirm")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -260,8 +264,8 @@ export default function AppLayout() {
   )
 }
 
-function getErrorMessage(error: unknown) {
-  return error instanceof Error ? error.message : "操作失败，请稍后重试。"
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback
 }
 
 function getRefreshQueryKeys(routeId: AppRouteMeta["id"]) {

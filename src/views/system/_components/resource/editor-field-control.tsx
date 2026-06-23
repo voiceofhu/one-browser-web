@@ -30,6 +30,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import type { Locale } from "@/lib/i18n"
+import { translate } from "@/lib/i18n"
+import { translateText } from "@/lib/i18n-text"
 import { cn } from "@/lib/utils"
 import type { DeptResource, MenuTypeFlag } from "@/types/admin"
 import type {
@@ -53,6 +56,7 @@ type ResourceFieldControlProps = {
   watch: ReturnType<typeof useForm<ResourceFormValues>>["watch"]
   setValue: ReturnType<typeof useForm<ResourceFormValues>>["setValue"]
   useMultiColumn: boolean
+  locale: Locale
 }
 
 const MENU_PARENT_TYPES = {
@@ -71,6 +75,7 @@ export function ResourceFieldControl({
   watch,
   setValue,
   useMultiColumn,
+  locale,
 }: ResourceFieldControlProps) {
   const controlId = `dashboard-field-${field.name}`
   const isDisabled =
@@ -100,9 +105,12 @@ export function ResourceFieldControl({
       >
         <RequiredFieldLabel
           htmlFor={controlId}
-          label={field.label}
+          label={translateText(locale, field.label)}
           required={field.required}
-          tooltip={field.tooltip}
+          tooltip={
+            field.tooltip ? translateText(locale, field.tooltip) : undefined
+          }
+          locale={locale}
         />
         <Switch
           id={controlId}
@@ -140,14 +148,18 @@ export function ResourceFieldControl({
       {field.hideLabel ? null : (
         <RequiredFieldLabel
           htmlFor={controlId}
-          label={field.label}
+          label={translateText(locale, field.label)}
           required={field.required}
-          tooltip={field.tooltip}
+          tooltip={
+            field.tooltip ? translateText(locale, field.tooltip) : undefined
+          }
+          locale={locale}
         />
       )}
       {renderControl({
         field,
         mode,
+        locale,
         controlId,
         recordId,
         invalid,
@@ -157,7 +169,9 @@ export function ResourceFieldControl({
         setValue,
       })}
       {field.description ? (
-        <FieldDescription>{field.description}</FieldDescription>
+        <FieldDescription>
+          {translateText(locale, field.description)}
+        </FieldDescription>
       ) : null}
       <FieldErrorMessage errors={[error]} />
     </Field>
@@ -167,6 +181,7 @@ export function ResourceFieldControl({
 function renderControl({
   field,
   mode,
+  locale,
   controlId,
   recordId,
   invalid,
@@ -177,6 +192,7 @@ function renderControl({
 }: {
   field: ResourceField
   mode: ResourceFormMode
+  locale: Locale
   controlId: string
   recordId?: number
   invalid: boolean
@@ -198,13 +214,19 @@ function renderControl({
         }
       >
         <SelectTrigger id={controlId} className="w-full" aria-invalid={invalid}>
-          <SelectValue placeholder={field.placeholder ?? "请选择"} />
+          <SelectValue
+            placeholder={
+              field.placeholder
+                ? translateText(locale, field.placeholder)
+                : translate(locale, "resource.selectPlaceholder")
+            }
+          />
         </SelectTrigger>
         <SelectContent>
           <SelectGroup>
             {field.options?.map((option) => (
               <SelectItem key={option.value} value={option.value}>
-                {option.label}
+                {translateText(locale, option.label)}
               </SelectItem>
             ))}
           </SelectGroup>
@@ -260,7 +282,7 @@ function renderControl({
               disabled={isDisabled}
               className="px-4"
             >
-              {option.label}
+              {translateText(locale, option.label)}
             </TabsTrigger>
           ))}
         </TabsList>
@@ -308,7 +330,7 @@ function renderControl({
                 disabled={isDisabled}
                 aria-invalid={invalid}
               />
-              <span>{option.label}</span>
+              <span>{translateText(locale, option.label)}</span>
             </label>
           )
         })}
@@ -323,8 +345,12 @@ function renderControl({
         value={watch(field.name)}
         invalid={invalid}
         disabled={isDisabled}
-        placeholder={field.placeholder ?? "选择归属部门"}
-        title="选择归属部门"
+        placeholder={
+          field.placeholder
+            ? translateText(locale, field.placeholder)
+            : translate(locale, "resource.selectDept")
+        }
+        title={translate(locale, "resource.selectDept")}
         onChange={(dept) =>
           setValue(field.name, dept?.dept_id ?? null, {
             shouldDirty: true,
@@ -343,7 +369,11 @@ function renderControl({
         currentDeptId={recordId}
         invalid={invalid}
         disabled={isDisabled}
-        placeholder={field.placeholder ?? "选择上级部门"}
+        placeholder={
+          field.placeholder
+            ? translateText(locale, field.placeholder)
+            : translate(locale, "resource.selectParentDept")
+        }
         hideWhenEmpty
         onChange={(dept) => {
           setValue(field.name, dept?.dept_id ?? null, {
@@ -369,10 +399,10 @@ function renderControl({
         currentMenuId={mode === "edit" ? recordId : undefined}
         invalid={invalid}
         disabled={isDisabled}
-        placeholder={menuParentPlaceholder(menuType, field.placeholder)}
+        placeholder={menuParentPlaceholder(menuType, locale, field.placeholder)}
         allowedTypes={MENU_PARENT_TYPES[menuType]}
         allowEmpty={menuType !== "F"}
-        emptyLabel="顶级权限"
+        emptyLabel={translate(locale, "resource.topPermission")}
         onChange={(menu) =>
           setValue(field.name, menu?.menu_id ?? null, {
             shouldDirty: true,
@@ -470,7 +500,11 @@ function renderControl({
         id={controlId}
         disabled={isDisabled}
         aria-invalid={invalid}
-        placeholder={field.placeholder}
+        placeholder={
+          field.placeholder
+            ? translateText(locale, field.placeholder)
+            : undefined
+        }
         className="min-h-16"
         {...register(field.name)}
       />
@@ -483,7 +517,9 @@ function renderControl({
       type={field.type}
       disabled={isDisabled}
       aria-invalid={invalid}
-      placeholder={field.placeholder}
+      placeholder={
+        field.placeholder ? translateText(locale, field.placeholder) : undefined
+      }
       {...register(field.name, {
         setValueAs:
           field.type === "number"
@@ -498,11 +534,13 @@ function RequiredFieldLabel({
   label,
   required,
   tooltip,
+  locale,
   ...props
 }: Omit<React.ComponentProps<typeof FieldLabel>, "children"> & {
   label: string
   required?: boolean
   tooltip?: string
+  locale: Locale
 }) {
   return (
     <div className="flex w-fit items-center gap-1.5">
@@ -519,7 +557,7 @@ function RequiredFieldLabel({
                 variant="ghost"
                 size="icon-xs"
                 className="-my-1 text-muted-foreground"
-                aria-label={`${label}说明`}
+                aria-label={translate(locale, "resource.fieldHelp", { label })}
               >
                 <HelpCircleIcon />
               </Button>
@@ -564,15 +602,18 @@ function normalizeMenuType(value: unknown): MenuTypeFlag {
 
 function menuParentPlaceholder(
   menuType: MenuTypeFlag,
+  locale: Locale,
   fallback?: string
 ): string {
   if (menuType === "F") {
-    return "选择所属菜单"
+    return translate(locale, "resource.selectParentMenu")
   }
 
   if (menuType === "C") {
-    return "选择上级目录"
+    return translate(locale, "resource.selectParentDirectory")
   }
 
-  return fallback ?? "选择上级权限"
+  return fallback
+    ? translateText(locale, fallback)
+    : translate(locale, "resource.selectParentPermission")
 }

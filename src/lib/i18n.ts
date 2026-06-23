@@ -1,0 +1,179 @@
+import { messagesByLocale, type LocaleMessageKey } from "@/local"
+
+export const LOCALE_STORAGE_KEY = "one-browser:locale"
+export const LOCALE_COOKIE_NAME = "one_browser_locale"
+export const DEFAULT_LOCALE = "zh-CN"
+export const SUPPORTED_LOCALES = ["zh-CN", "en-US"] as const
+export const PUBLIC_LOCALE_ROUTES = ["login", "terms", "privacy"] as const
+
+export type Locale = (typeof SUPPORTED_LOCALES)[number]
+export type PublicLocaleRoute = (typeof PUBLIC_LOCALE_ROUTES)[number]
+export type I18nKey = LocaleMessageKey
+export type I18nValues = Record<string, number | string>
+
+export const messages = messagesByLocale
+
+export const LOCALE_OPTIONS: ReadonlyArray<{
+  value: Locale
+  labelKey: I18nKey
+}> = [
+  { value: "zh-CN", labelKey: "language.zhCN" },
+  { value: "en-US", labelKey: "language.enUS" },
+]
+
+export function isSupportedLocale(value: string): value is Locale {
+  return SUPPORTED_LOCALES.some((locale) => locale === value)
+}
+
+export function normalizeLocale(value: string | null | undefined): Locale {
+  const locale = value?.trim()
+
+  if (!locale) {
+    return DEFAULT_LOCALE
+  }
+
+  if (isSupportedLocale(locale)) {
+    return locale
+  }
+
+  const lowerLocale = locale.toLowerCase()
+  if (lowerLocale === "en" || lowerLocale.startsWith("en-")) {
+    return "en-US"
+  }
+  if (
+    lowerLocale === "zh" ||
+    lowerLocale === "cn" ||
+    lowerLocale.startsWith("zh-")
+  ) {
+    return "zh-CN"
+  }
+
+  return DEFAULT_LOCALE
+}
+
+export function getLocaleFromPathname(pathname: string) {
+  return (
+    pathname
+      .split("/")
+      .filter(Boolean)
+      .find((segment): segment is Locale => isSupportedLocale(segment)) ?? null
+  )
+}
+
+export function localizedPublicPath(
+  locale: Locale | string | null | undefined,
+  route: PublicLocaleRoute
+) {
+  return `/${normalizeLocale(locale)}/${route}`
+}
+
+export function withLocaleInPublicPath(pathname: string, locale: Locale) {
+  const segments = pathname.split("/").filter(Boolean)
+  const firstSegment = segments[0]
+  const hasLocalePrefix = Boolean(
+    firstSegment && isSupportedLocale(firstSegment)
+  )
+  const route = segments[hasLocalePrefix ? 1 : 0]
+
+  if (!isPublicLocaleRoute(route)) {
+    return pathname
+  }
+
+  return localizedPublicPath(locale, route)
+}
+
+export function isLoginPath(pathname: string) {
+  const segments = pathname.split("/").filter(Boolean)
+  const firstSegment = segments[0]
+  const hasLocalePrefix = Boolean(
+    firstSegment && isSupportedLocale(firstSegment)
+  )
+
+  return segments[hasLocalePrefix ? 1 : 0] === "login"
+}
+
+function isPublicLocaleRoute(
+  value: string | undefined
+): value is PublicLocaleRoute {
+  return PUBLIC_LOCALE_ROUTES.some((route) => route === value)
+}
+
+export function getStoredLocale(): Locale {
+  if (typeof window !== "undefined") {
+    try {
+      const storedLocale = window.localStorage.getItem(LOCALE_STORAGE_KEY)
+      if (storedLocale) {
+        return normalizeLocale(storedLocale)
+      }
+    } catch {
+      // Ignore storage access failures and fall back to cookie/default locale.
+    }
+  }
+
+  if (typeof document !== "undefined") {
+    const cookieLocale = document.cookie
+      .split(";")
+      .map((part) => part.trim())
+      .find((part) => part.startsWith(`${LOCALE_COOKIE_NAME}=`))
+      ?.slice(LOCALE_COOKIE_NAME.length + 1)
+
+    if (cookieLocale) {
+      try {
+        return normalizeLocale(decodeURIComponent(cookieLocale))
+      } catch {
+        return normalizeLocale(cookieLocale)
+      }
+    }
+  }
+
+  return DEFAULT_LOCALE
+}
+
+export function persistLocale(locale: Locale) {
+  if (typeof window !== "undefined") {
+    try {
+      window.localStorage.setItem(LOCALE_STORAGE_KEY, locale)
+    } catch {
+      // Cookie persistence below keeps language choice available to requests.
+    }
+  }
+
+  if (typeof document !== "undefined") {
+    document.cookie = `${LOCALE_COOKIE_NAME}=${encodeURIComponent(
+      locale
+    )}; path=/; max-age=31536000; SameSite=Lax`
+  }
+}
+
+export function applyDocumentLocale(locale: Locale) {
+  if (typeof document !== "undefined") {
+    document.documentElement.lang = locale
+  }
+}
+
+export function getCurrentLocale() {
+  return getStoredLocale()
+}
+
+export function getAcceptLanguageHeader(locale = getCurrentLocale()) {
+  return locale === "en-US" ? "en-US,en;q=0.9" : "zh-CN,zh;q=0.9"
+}
+
+export function translate(
+  locale: Locale | string | null | undefined,
+  key: I18nKey,
+  values?: I18nValues
+) {
+  const normalizedLocale = normalizeLocale(locale)
+  const message =
+    messages[normalizedLocale][key] ?? messages[DEFAULT_LOCALE][key]
+
+  if (!values) {
+    return message
+  }
+
+  return message.replace(/\{(\w+)\}/g, (placeholder, name) => {
+    const value = values[name]
+    return value === undefined ? placeholder : String(value)
+  })
+}

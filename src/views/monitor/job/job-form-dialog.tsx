@@ -4,6 +4,7 @@ import * as React from "react"
 import { CheckIcon, CircleHelpIcon, CopyIcon, SaveIcon } from "lucide-react"
 import { toast } from "sonner"
 
+import { useTranslation } from "@/components/providers/language-context"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -39,14 +40,21 @@ import {
 import { Spinner } from "@/components/ui/spinner"
 import { Textarea } from "@/components/ui/textarea"
 import { formatAbsoluteDateTime } from "@/lib/datetime"
+import type { Locale } from "@/lib/i18n"
 import type { JobPayload, JobResource } from "@/types/admin"
 
 import {
   DEFAULT_JOB_INVOKE_TARGET,
+  getJobConcurrentLabel,
+  getJobInvokeTargetLabel,
+  getJobMisfirePolicyLabel,
+  getJobStatusLabel,
   JOB_CONCURRENT_OPTIONS,
   JOB_INVOKE_TARGET_OPTIONS,
   JOB_MISFIRE_POLICY_OPTIONS,
   JOB_STATUS_OPTIONS,
+  translateJobScheduleError,
+  translateMonitorJob,
 } from "./constants"
 import { getNextScheduleTimes } from "./schedule-preview"
 
@@ -76,8 +84,12 @@ export function JobFormDialog({
   onOpenChange,
   onSubmit,
 }: JobFormDialogProps) {
+  const { locale, t } = useTranslation()
   const [form, setForm] = React.useState<JobPayload>(EMPTY_JOB_FORM)
-  const title = record ? "编辑定时任务" : "新增定时任务"
+  const title = translateMonitorJob(
+    locale,
+    record ? "job.form.editTitle" : "job.form.createTitle"
+  )
   const schedulePreview = React.useMemo(
     () => getNextScheduleTimes(form.cron_expression),
     [form.cron_expression]
@@ -104,19 +116,25 @@ export function JobFormDialog({
     const payload = normalizePayload(form)
 
     if (!payload.job_name) {
-      toast.error("请输入任务名称")
+      toast.error(translateMonitorJob(locale, "job.form.validation.jobName"))
       return
     }
     if (!payload.invoke_target) {
-      toast.error("请选择调用目标")
+      toast.error(
+        translateMonitorJob(locale, "job.form.validation.invokeTarget")
+      )
       return
     }
     if (!payload.cron_expression) {
-      toast.error("请输入执行表达式")
+      toast.error(
+        translateMonitorJob(locale, "job.form.validation.cronExpression")
+      )
       return
     }
     if (!getNextScheduleTimes(payload.cron_expression).ok) {
-      toast.error("执行表达式不正确")
+      toast.error(
+        translateMonitorJob(locale, "job.form.validation.invalidCron")
+      )
       return
     }
 
@@ -130,17 +148,22 @@ export function JobFormDialog({
           <ResponsiveDialogHeader className="border-b px-5 py-3 text-left">
             <ResponsiveDialogTitle>{title}</ResponsiveDialogTitle>
             <ResponsiveDialogDescription>
-              配置后台白名单定时任务。
+              {translateMonitorJob(locale, "job.form.description")}
             </ResponsiveDialogDescription>
           </ResponsiveDialogHeader>
           <ResponsiveDialogBody className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
             <FieldGroup className="gap-4">
               <Field>
-                <FieldLabel htmlFor="job-name">任务名称</FieldLabel>
+                <FieldLabel htmlFor="job-name">
+                  {translateMonitorJob(locale, "job.form.jobName")}
+                </FieldLabel>
                 <Input
                   id="job-name"
                   value={form.job_name}
-                  placeholder="请输入任务名称"
+                  placeholder={translateMonitorJob(
+                    locale,
+                    "job.form.jobNamePlaceholder"
+                  )}
                   onChange={(event) =>
                     updateField("job_name", event.target.value)
                   }
@@ -148,7 +171,9 @@ export function JobFormDialog({
               </Field>
 
               <Field>
-                <FieldLabel>调用目标</FieldLabel>
+                <FieldLabel>
+                  {translateMonitorJob(locale, "job.form.invokeTarget")}
+                </FieldLabel>
                 <Select
                   value={form.invoke_target}
                   onValueChange={(value) =>
@@ -159,46 +184,57 @@ export function JobFormDialog({
                   }
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="选择调用目标" />
+                    <SelectValue
+                      placeholder={translateMonitorJob(
+                        locale,
+                        "job.form.invokeTargetPlaceholder"
+                      )}
+                    />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
                       {JOB_INVOKE_TARGET_OPTIONS.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
-                          {option.label}
+                          {getJobInvokeTargetLabel(locale, option.value)}
                         </SelectItem>
                       ))}
                     </SelectGroup>
                   </SelectContent>
                 </Select>
                 <FieldDescription>
-                  仅支持服务端白名单内置任务，避免任意方法调用。
+                  {translateMonitorJob(locale, "job.form.invokeTargetHelp")}
                 </FieldDescription>
               </Field>
 
               <Field>
                 <div className="flex items-center gap-1">
-                  <FieldLabel htmlFor="cron-expression">执行表达式</FieldLabel>
-                  <ScheduleExpressionHelp />
+                  <FieldLabel htmlFor="cron-expression">
+                    {translateMonitorJob(locale, "job.form.cronExpression")}
+                  </FieldLabel>
+                  <ScheduleExpressionHelp locale={locale} />
                 </div>
                 <Input
                   id="cron-expression"
                   value={form.cron_expression}
-                  placeholder="@every 5m 或 */5 * * * *"
+                  placeholder={translateMonitorJob(
+                    locale,
+                    "job.form.cronExpressionPlaceholder"
+                  )}
                   onChange={(event) =>
                     updateField("cron_expression", event.target.value)
                   }
                 />
                 <FieldDescription>
-                  支持 @hourly、@daily、@every 5m 或 5 字段 cron
-                  表达式，按本地时间计算。
+                  {translateMonitorJob(locale, "job.form.cronHelp")}
                 </FieldDescription>
-                <SchedulePreview result={schedulePreview} />
+                <SchedulePreview locale={locale} result={schedulePreview} />
               </Field>
 
               <div className="grid gap-4 md:grid-cols-3">
                 <Field>
-                  <FieldLabel>错过策略</FieldLabel>
+                  <FieldLabel>
+                    {translateMonitorJob(locale, "job.form.misfirePolicy")}
+                  </FieldLabel>
                   <Select
                     value={form.misfire_policy}
                     onValueChange={(value) =>
@@ -209,13 +245,18 @@ export function JobFormDialog({
                     }
                   >
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder="选择策略" />
+                      <SelectValue
+                        placeholder={translateMonitorJob(
+                          locale,
+                          "job.form.misfirePolicyPlaceholder"
+                        )}
+                      />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
                         {JOB_MISFIRE_POLICY_OPTIONS.map((option) => (
                           <SelectItem key={option.value} value={option.value}>
-                            {option.label}
+                            {getJobMisfirePolicyLabel(locale, option.value)}
                           </SelectItem>
                         ))}
                       </SelectGroup>
@@ -224,7 +265,9 @@ export function JobFormDialog({
                 </Field>
 
                 <Field>
-                  <FieldLabel>并发执行</FieldLabel>
+                  <FieldLabel>
+                    {translateMonitorJob(locale, "job.form.concurrent")}
+                  </FieldLabel>
                   <Select
                     value={form.concurrent}
                     onValueChange={(value) =>
@@ -235,13 +278,18 @@ export function JobFormDialog({
                     }
                   >
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder="选择并发策略" />
+                      <SelectValue
+                        placeholder={translateMonitorJob(
+                          locale,
+                          "job.form.concurrentPlaceholder"
+                        )}
+                      />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
                         {JOB_CONCURRENT_OPTIONS.map((option) => (
                           <SelectItem key={option.value} value={option.value}>
-                            {option.label}
+                            {getJobConcurrentLabel(locale, option.value)}
                           </SelectItem>
                         ))}
                       </SelectGroup>
@@ -250,7 +298,9 @@ export function JobFormDialog({
                 </Field>
 
                 <Field>
-                  <FieldLabel>状态</FieldLabel>
+                  <FieldLabel>
+                    {translateMonitorJob(locale, "job.form.status")}
+                  </FieldLabel>
                   <Select
                     value={form.status}
                     onValueChange={(value) =>
@@ -258,13 +308,18 @@ export function JobFormDialog({
                     }
                   >
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder="选择状态" />
+                      <SelectValue
+                        placeholder={translateMonitorJob(
+                          locale,
+                          "job.form.statusPlaceholder"
+                        )}
+                      />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectGroup>
                         {JOB_STATUS_OPTIONS.map((option) => (
                           <SelectItem key={option.value} value={option.value}>
-                            {option.label}
+                            {getJobStatusLabel(locale, option.value)}
                           </SelectItem>
                         ))}
                       </SelectGroup>
@@ -274,11 +329,16 @@ export function JobFormDialog({
               </div>
 
               <Field>
-                <FieldLabel htmlFor="job-remark">备注</FieldLabel>
+                <FieldLabel htmlFor="job-remark">
+                  {translateMonitorJob(locale, "job.form.remark")}
+                </FieldLabel>
                 <Textarea
                   id="job-remark"
                   value={form.remark}
-                  placeholder="请输入备注"
+                  placeholder={translateMonitorJob(
+                    locale,
+                    "job.form.remarkPlaceholder"
+                  )}
                   onChange={(event) =>
                     updateField("remark", event.target.value)
                   }
@@ -289,7 +349,7 @@ export function JobFormDialog({
           <ResponsiveDialogFooter className="mx-0 mb-0 shrink-0 rounded-b-xl bg-muted/50 px-5 py-3">
             <ResponsiveDialogClose asChild>
               <Button type="button" variant="outline" disabled={isSubmitting}>
-                取消
+                {t("common.cancel")}
               </Button>
             </ResponsiveDialogClose>
             <Button type="submit" disabled={isSubmitting}>
@@ -298,7 +358,9 @@ export function JobFormDialog({
               ) : (
                 <SaveIcon data-icon="inline-start" />
               )}
-              {record ? "保存修改" : "创建"}
+              {record
+                ? translateMonitorJob(locale, "job.form.saveChanges")
+                : t("common.create")}
             </Button>
           </ResponsiveDialogFooter>
         </form>
@@ -340,21 +402,25 @@ function normalizePayload(payload: JobPayload): JobPayload {
 }
 
 function SchedulePreview({
+  locale,
   result,
 }: {
+  locale: Locale
   result: ReturnType<typeof getNextScheduleTimes>
 }) {
   if (!result.ok) {
     return (
       <div className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
-        {result.message}
+        {translateJobScheduleError(locale, result.message)}
       </div>
     )
   }
 
   return (
     <div className="space-y-2 rounded-lg bg-muted/50 px-3 py-2">
-      <div className="text-xs text-muted-foreground">后续三次执行时间</div>
+      <div className="text-xs text-muted-foreground">
+        {translateMonitorJob(locale, "job.schedule.nextThreeRuns")}
+      </div>
       <div className="flex flex-wrap gap-2">
         {result.times.map((time) => (
           <Badge key={time.toISOString()} variant="secondary">
@@ -367,14 +433,14 @@ function SchedulePreview({
 }
 
 const SCHEDULE_EXAMPLES = [
-  { label: "每 5 分钟", value: "@every 5m" },
-  { label: "每小时", value: "@hourly" },
-  { label: "每天 2 点", value: "0 2 * * *" },
-  { label: "工作日 9 点", value: "0 9 * * 1-5" },
-  { label: "每月 1 日 3 点", value: "0 3 1 * *" },
+  { labelKey: "job.schedule.example.every5m", value: "@every 5m" },
+  { labelKey: "job.schedule.example.hourly", value: "@hourly" },
+  { labelKey: "job.schedule.example.daily2", value: "0 2 * * *" },
+  { labelKey: "job.schedule.example.weekday9", value: "0 9 * * 1-5" },
+  { labelKey: "job.schedule.example.monthly1", value: "0 3 1 * *" },
 ] as const
 
-function ScheduleExpressionHelp() {
+function ScheduleExpressionHelp({ locale }: { locale: Locale }) {
   const [copiedValue, setCopiedValue] = React.useState<string | null>(null)
   const resetTimerRef = React.useRef<number | null>(null)
 
@@ -397,9 +463,9 @@ function ScheduleExpressionHelp() {
       resetTimerRef.current = window.setTimeout(() => {
         setCopiedValue((current) => (current === value ? null : current))
       }, 2_000)
-      toast.success("执行表达式已复制")
+      toast.success(translateMonitorJob(locale, "job.schedule.copySuccess"))
     } catch {
-      toast.error("复制失败，请手动复制")
+      toast.error(translateMonitorJob(locale, "job.schedule.copyFailed"))
     }
   }
 
@@ -411,7 +477,7 @@ function ScheduleExpressionHelp() {
           variant="ghost"
           size="icon-xs"
           className="text-muted-foreground"
-          aria-label="查看执行表达式说明"
+          aria-label={translateMonitorJob(locale, "job.schedule.helpAria")}
         >
           <CircleHelpIcon />
         </Button>
@@ -419,22 +485,24 @@ function ScheduleExpressionHelp() {
       <HoverCardContent align="start" className="w-80">
         <div className="flex flex-col gap-3">
           <div>
-            <div className="font-medium">执行表达式怎么写</div>
+            <div className="font-medium">
+              {translateMonitorJob(locale, "job.schedule.helpTitle")}
+            </div>
             <div className="mt-1 text-muted-foreground">
-              支持 @every、@hourly、@daily，也支持 5 字段 cron：分 时 日 月
-              周，按本地时间计算。
+              {translateMonitorJob(locale, "job.schedule.helpDescription")}
             </div>
           </div>
           <div className="grid gap-2">
             {SCHEDULE_EXAMPLES.map((example) => {
               const copied = copiedValue === example.value
+              const label = translateMonitorJob(locale, example.labelKey)
 
               return (
                 <div
                   key={example.value}
                   className="grid grid-cols-[7rem_minmax(0,1fr)_1.75rem] items-center gap-2"
                 >
-                  <span className="text-muted-foreground">{example.label}</span>
+                  <span className="text-muted-foreground">{label}</span>
                   <code className="rounded-md bg-muted px-2 py-1 font-mono text-xs">
                     {example.value}
                   </code>
@@ -442,7 +510,11 @@ function ScheduleExpressionHelp() {
                     type="button"
                     variant="ghost"
                     size="icon-xs"
-                    aria-label={`复制${example.label}执行表达式`}
+                    aria-label={translateMonitorJob(
+                      locale,
+                      "job.schedule.copyExample",
+                      { label }
+                    )}
                     onClick={() => void copyExample(example.value)}
                   >
                     {copied ? <CheckIcon /> : <CopyIcon />}

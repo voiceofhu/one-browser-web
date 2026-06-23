@@ -2,6 +2,7 @@
 
 import { PlusIcon, RefreshCwIcon } from "lucide-react"
 
+import { useTranslation } from "@/components/providers/language-context"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
@@ -16,6 +17,8 @@ export function ResourceToolbarActions({
   onRefresh,
   onCreate,
 }: ResourceToolbarActionsProps) {
+  const { t } = useTranslation()
+
   return (
     <>
       <Button
@@ -29,12 +32,12 @@ export function ResourceToolbarActions({
           data-icon="inline-start"
           className={cn(isRefreshing && "animate-spin")}
         />
-        刷新
+        {t("common.refresh")}
       </Button>
       {onCreate ? (
         <Button type="button" size="sm" onClick={onCreate}>
           <PlusIcon data-icon="inline-start" />
-          新增
+          {t("common.create")}
         </Button>
       ) : null}
     </>

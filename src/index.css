@@ -235,9 +235,7 @@
   }
 
   .tags-view-chrome__refresh {
-    width: 60px;
-    gap: 4px;
-    font-size: 12px;
+    width: var(--tags-nav-width);
   }
 
   .tags-view-chrome__wrapper {

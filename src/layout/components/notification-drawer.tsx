@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { useTranslation } from "@/components/providers/language-context"
 import {
   AnimatedSegmentedTabs,
   type AnimatedSegmentedTabsOption,
@@ -68,6 +69,7 @@ const notificationQueryKeys = {
 
 export function NotificationDrawer() {
   const queryClient = useQueryClient()
+  const { t } = useTranslation()
   const currentUser = useCurrentUser()
   const userId = currentUser.data?.user_id
   const listRef = React.useRef<HTMLDivElement>(null)
@@ -90,7 +92,8 @@ export function NotificationDrawer() {
     enabled: userId !== undefined,
   })
   const markRead = useMutation({
-    mutationFn: (noticeId: number) => markNoticeRead(noticeId, userId),
+    mutationFn: (noticeId: number) =>
+      markNoticeRead(noticeId, userId, t("notifications.error.userNotReady")),
     onSuccess: (read) => {
       queryClient.setQueryData<NoticeRead[]>(
         notificationQueryKeys.reads(read.user_id),
@@ -98,23 +101,37 @@ export function NotificationDrawer() {
       )
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "通知标记已读失败")
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : t("notifications.toast.markReadFailed")
+      )
     },
   })
   const markAllRead = useMutation({
     mutationFn: (noticeIds: number[]) =>
       Promise.all(
-        noticeIds.map((noticeId) => markNoticeRead(noticeId, userId))
+        noticeIds.map((noticeId) =>
+          markNoticeRead(
+            noticeId,
+            userId,
+            t("notifications.error.userNotReady")
+          )
+        )
       ),
     onSuccess: (reads) => {
       queryClient.setQueryData<NoticeRead[]>(
         notificationQueryKeys.reads(userId),
         (current = []) => mergeReads(current, reads)
       )
-      toast.success("未读通知已全部处理")
+      toast.success(t("notifications.toast.markAllReadSuccess"))
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "通知标记已读失败")
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : t("notifications.toast.markReadFailed")
+      )
     },
   })
 
@@ -146,18 +163,36 @@ export function NotificationDrawer() {
     noticesQuery.isRefetching ||
     (userId !== undefined && readsQuery.isRefetching)
   const isRefreshButtonBusy = isRefreshing || isManualRefreshing
-  const triggerLabel = unreadCount > 0 ? `通知，${unreadCount} 条未读` : "通知"
+  const triggerLabel =
+    unreadCount > 0
+      ? t("notifications.triggerUnread", { count: unreadCount })
+      : t("notifications.trigger")
   const filterOptions: AnimatedSegmentedTabsOption<NotificationFilter>[] = [
     {
-      label: <NotificationFilterLabel label="全部" count={notices.length} />,
+      label: (
+        <NotificationFilterLabel
+          label={t("notifications.tabs.all")}
+          count={notices.length}
+        />
+      ),
       value: "all",
     },
     {
-      label: <NotificationFilterLabel label="未读" count={unreadCount} />,
+      label: (
+        <NotificationFilterLabel
+          label={t("notifications.tabs.unread")}
+          count={unreadCount}
+        />
+      ),
       value: "unread",
     },
     {
-      label: <NotificationFilterLabel label="已读" count={readCount} />,
+      label: (
+        <NotificationFilterLabel
+          label={t("notifications.tabs.read")}
+          count={readCount}
+        />
+      ),
       value: "read",
     },
   ]
@@ -219,9 +254,9 @@ export function NotificationDrawer() {
       ])
 
       if (succeeded) {
-        toast.success("通知已刷新")
+        toast.success(t("notifications.toast.refreshSuccess"))
       } else {
-        toast.error("通知刷新失败")
+        toast.error(t("notifications.toast.refreshFailed"))
       }
     } finally {
       setIsManualRefreshing(false)
@@ -260,7 +295,7 @@ export function NotificationDrawer() {
         <SheetHeader className="relative border-b px-4 pt-3 pb-2">
           <div className="flex h-7 items-center pr-24">
             <SheetTitle className="truncate text-base leading-none">
-              通知中心
+              {t("notifications.title")}
             </SheetTitle>
           </div>
           <div className="absolute top-3 right-12 flex items-center gap-0.5">
@@ -268,8 +303,8 @@ export function NotificationDrawer() {
               type="button"
               variant="ghost"
               size="icon-sm"
-              aria-label="全部标记为已读"
-              title="全部标记为已读"
+              aria-label={t("notifications.actions.markAllRead")}
+              title={t("notifications.actions.markAllRead")}
               disabled={unreadCount === 0 || isMutating}
               onClick={markUnreadNoticesRead}
             >
@@ -283,8 +318,8 @@ export function NotificationDrawer() {
               type="button"
               variant="ghost"
               size="icon-sm"
-              aria-label="刷新通知"
-              title="刷新通知"
+              aria-label={t("notifications.actions.refresh")}
+              title={t("notifications.actions.refresh")}
               disabled={isLoading || isRefreshButtonBusy}
               onClick={() => void refreshWithFeedback()}
             >
@@ -293,7 +328,7 @@ export function NotificationDrawer() {
           </div>
 
           <AnimatedSegmentedTabs
-            label="通知筛选"
+            label={t("notifications.filter.label")}
             options={filterOptions}
             value={filter}
             onValueChange={setFilter}
@@ -311,10 +346,11 @@ export function NotificationDrawer() {
             <div className="p-4">
               <Alert variant="destructive">
                 <CircleAlertIcon />
-                <AlertTitle>通知加载失败</AlertTitle>
+                <AlertTitle>{t("notifications.loadFailed")}</AlertTitle>
                 <AlertDescription>
                   {getErrorMessage(
-                    currentUser.error ?? noticesQuery.error ?? readsQuery.error
+                    currentUser.error ?? noticesQuery.error ?? readsQuery.error,
+                    t("layout.actionFailed")
                   )}
                 </AlertDescription>
                 <AlertAction>
@@ -323,7 +359,7 @@ export function NotificationDrawer() {
                     size="xs"
                     variant="outline"
                   >
-                    重试
+                    {t("notifications.retry")}
                   </Button>
                 </AlertAction>
               </Alert>
@@ -383,9 +419,13 @@ function mergeReads(current: NoticeRead[], incoming: NoticeRead[]) {
   return [...nextReads, ...current]
 }
 
-function markNoticeRead(noticeId: number, userId: number | undefined) {
+function markNoticeRead(
+  noticeId: number,
+  userId: number | undefined,
+  userNotReadyMessage: string
+) {
   if (userId === undefined) {
-    throw new Error("当前用户信息尚未加载完成")
+    throw new Error(userNotReadyMessage)
   }
 
   return http.post<NoticeRead>(
@@ -400,8 +440,8 @@ function getNoticeDate(value: string) {
   }
 }
 
-function getErrorMessage(error: unknown) {
-  return error instanceof Error ? error.message : "操作失败，请稍后重试。"
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback
 }
 
 function rotateRefreshIcon(icon: SVGSVGElement | null) {

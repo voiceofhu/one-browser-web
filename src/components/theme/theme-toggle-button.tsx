@@ -3,6 +3,7 @@
 import { MoonIcon, SunIcon } from "lucide-react"
 import { type MouseEvent } from "react"
 
+import { useTranslation } from "@/components/providers/language-context"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
@@ -63,9 +64,11 @@ function ThemeToggleViewTransitionStyles() {
 
 export function ThemeToggleButton({
   className,
-  label = "切换主题",
+  label,
 }: ThemeToggleButtonProps) {
   const { resolvedTheme, setTheme } = useTheme()
+  const { t } = useTranslation()
+  const accessibleLabel = label ?? t("theme.toggle")
 
   function updateTheme(nextTheme: ThemeName) {
     applyThemeToRoot(nextTheme)
@@ -137,18 +140,14 @@ export function ThemeToggleButton({
     <>
       <ThemeToggleViewTransitionStyles />
       <Button
-        aria-label={label}
+        aria-label={accessibleLabel}
         className={cn("shrink-0", className)}
         onClick={handleToggle}
         size="icon-sm"
-        title={label}
+        title={accessibleLabel}
         variant="outline"
       >
-        <MoonIcon
-          aria-hidden="true"
-          strokeWidth={2}
-          className="dark:hidden"
-        />
+        <MoonIcon aria-hidden="true" strokeWidth={2} className="dark:hidden" />
         <SunIcon
           aria-hidden="true"
           strokeWidth={2}

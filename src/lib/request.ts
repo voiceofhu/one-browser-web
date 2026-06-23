@@ -1,5 +1,13 @@
 import { toast } from "sonner"
 
+import {
+  getAcceptLanguageHeader,
+  getCurrentLocale,
+  isLoginPath,
+  localizedPublicPath,
+  translate,
+} from "@/lib/i18n"
+
 export class HttpError extends Error {
   readonly status: number
   readonly code: string
@@ -73,12 +81,13 @@ function buildLoginUrl() {
   const basePath = getAppBasePath()
   const currentPath = stripAppBasePath(window.location.pathname)
 
-  if (currentPath === "/login") {
+  if (isLoginPath(currentPath)) {
     return null
   }
 
+  const loginPath = localizedPublicPath(getCurrentLocale(), "login")
   const redirect = `${currentPath}${window.location.search}${window.location.hash}`
-  return `${basePath}/login?redirect=${encodeURIComponent(redirect)}`
+  return `${basePath}${loginPath}?redirect=${encodeURIComponent(redirect)}`
 }
 
 function redirectToLogin(path: string) {
@@ -97,8 +106,9 @@ function redirectToLogin(path: string) {
 
   isRedirectingToLogin = true
   markAuthExpiredNotice()
-  toast.warning("登录状态已失效", {
-    description: "请重新登录后继续操作。",
+  const locale = getCurrentLocale()
+  toast.warning(translate(locale, "auth.expired.title"), {
+    description: translate(locale, "auth.expired.description"),
   })
   window.location.assign(loginUrl)
 }
@@ -145,11 +155,15 @@ export function buildQueryPath(path: string, params?: object) {
 }
 
 function buildHeaders(init: RequestInit) {
-  if (init.body instanceof FormData) {
-    return init.headers
+  const headers = new Headers(init.headers)
+  if (!headers.has("Accept-Language")) {
+    headers.set("Accept-Language", getAcceptLanguageHeader())
   }
 
-  const headers = new Headers(init.headers)
+  if (init.body instanceof FormData) {
+    return headers
+  }
+
   if (!headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json")
   }

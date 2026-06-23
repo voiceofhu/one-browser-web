@@ -23,6 +23,8 @@ import {
   LogOutIcon,
 } from "lucide-react"
 
+import { useTranslation } from "@/components/providers/language-context"
+
 export function NavUser({
   user,
   onLogout,
@@ -31,8 +33,9 @@ export function NavUser({
   onLogout?: () => void
 }) {
   const { isMobile } = useSidebar()
-  const displayName = user?.nick_name || user?.user_name || "未登录"
-  const email = user?.email || "需要登录"
+  const { t } = useTranslation()
+  const displayName = user?.nick_name || user?.user_name || t("nav.guestName")
+  const email = user?.email || t("nav.loginRequired")
   const avatar = user?.avatar || ""
   const fallback = (displayName || "OB").slice(0, 2).toUpperCase()
 
@@ -87,14 +90,14 @@ export function NavUser({
               <DropdownMenuItem asChild>
                 <NavLink to="/account/profile">
                   <CircleUserRoundIcon />
-                  账号设置
+                  {t("nav.accountSettings")}
                 </NavLink>
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={onLogout}>
               <LogOutIcon />
-              退出登录
+              {t("nav.logout")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

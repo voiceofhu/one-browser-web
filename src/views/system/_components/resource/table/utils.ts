@@ -1,12 +1,14 @@
 import type { Column } from "@tanstack/react-table"
 
+import { translate, type Locale } from "@/lib/i18n"
+
 type ResourceColumnMeta = {
   label?: string
   headerClassName?: string
   cellClassName?: string
 }
 
-export function getErrorMessage(error: unknown) {
+export function getErrorMessage(error: unknown, locale?: Locale) {
   if (!error) {
     return null
   }
@@ -19,7 +21,7 @@ export function getErrorMessage(error: unknown) {
     return error
   }
 
-  return "服务器返回了未知错误。"
+  return translate(locale, "common.unknownServerError")
 }
 
 export function getColumnMeta<TData, TValue>(column: Column<TData, TValue>) {

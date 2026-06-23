@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { TriangleAlertIcon } from "lucide-react"
 
 import { listDictData } from "@/api/system/dict"
+import { useTranslation } from "@/components/providers/language-context"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,6 +24,7 @@ import {
   ResponsiveDialogTitle,
 } from "@/components/ui/responsive-dialog"
 import { Spinner } from "@/components/ui/spinner"
+import { translateAdminText } from "@/lib/i18n-admin"
 import { systemQueryKeys } from "@/lib/query-keys"
 import type {
   DictDataResource,
@@ -77,6 +79,8 @@ export function DictDataListDialog({
   open,
   onOpenChange,
 }: DictDataListDialogProps) {
+  const { locale, t } = useTranslation()
+  const tt = (text: string) => translateAdminText(locale, text)
   const queryClient = useQueryClient()
   const [search, setSearch] = React.useState("")
   const debouncedSearch = useDebouncedValue(search, 300)
@@ -87,6 +91,14 @@ export function DictDataListDialog({
     React.useState<DictDataResource | null>(null)
   const [isManualRefreshing, setIsManualRefreshing] = React.useState(false)
   const dictTypeValue = dictType?.dict_type
+  const statusFilterOptions = React.useMemo(
+    () =>
+      dictDataConfig.statusFilters?.map((option) => ({
+        ...option,
+        label: translateAdminText(locale, String(option.label)),
+      })),
+    [locale]
+  )
   const fields = React.useMemo<ResourceField[]>(
     () =>
       dictDataConfig.fields.map((field) =>
@@ -133,10 +145,10 @@ export function DictDataListDialog({
       await queryClient.invalidateQueries({
         queryKey: systemQueryKeys.dictData,
       })
-      showResourceCreateSuccess("字典数据")
+      showResourceCreateSuccess("字典数据", locale)
       setEditor(null)
     },
-    onError: showResourceError,
+    onError: (error) => showResourceError(error, locale),
   })
   const updateMutation = useMutation({
     mutationFn: ({
@@ -150,10 +162,10 @@ export function DictDataListDialog({
       await queryClient.invalidateQueries({
         queryKey: systemQueryKeys.dictData,
       })
-      showResourceUpdateSuccess("字典数据")
+      showResourceUpdateSuccess("字典数据", locale)
       setEditor(null)
     },
-    onError: showResourceError,
+    onError: (error) => showResourceError(error, locale),
   })
   const deleteMutation = useMutation({
     mutationFn: (record: DictDataResource) => dictDataConfig.remove(record),
@@ -161,15 +173,15 @@ export function DictDataListDialog({
       await queryClient.invalidateQueries({
         queryKey: systemQueryKeys.dictData,
       })
-      showResourceDeleteSuccess("字典数据")
+      showResourceDeleteSuccess("字典数据", locale)
       setDeletingRecord(null)
     },
-    onError: showResourceError,
+    onError: (error) => showResourceError(error, locale),
   })
   const reorderMutation = useMutation({
     mutationFn: (payload: DictDataReorderPayload) => {
       if (!dictDataConfig.reorder) {
-        throw new Error("字典数据暂不支持拖拽排序")
+        throw new Error(tt("字典数据暂不支持拖拽排序"))
       }
 
       return dictDataConfig.reorder(payload)
@@ -178,7 +190,7 @@ export function DictDataListDialog({
       await queryClient.invalidateQueries({
         queryKey: systemQueryKeys.dictData,
       })
-      showResourceReorderSuccess("字典数据", count)
+      showResourceReorderSuccess("字典数据", count, locale)
     },
   })
   const isSubmitting = createMutation.isPending || updateMutation.isPending
@@ -186,7 +198,7 @@ export function DictDataListDialog({
 
   function withDialogDictType(values: ResourceFormValues): ResourceFormValues {
     if (!dictTypeValue) {
-      throw new Error("缺少字典类型")
+      throw new Error(tt("缺少字典类型"))
     }
 
     return {
@@ -212,7 +224,7 @@ export function DictDataListDialog({
     )
     reorderMutation.mutate(payload, {
       onError: async (error) => {
-        showResourceError(error)
+        showResourceError(error, locale)
         await queryClient.invalidateQueries({ queryKey: dictDataQueryKey })
       },
     })
@@ -228,7 +240,7 @@ export function DictDataListDialog({
       const detailRecord = await dictDataConfig.detail(record)
       setEditor({ mode: "edit", record: detailRecord })
     } catch (error) {
-      showResourceError(error)
+      showResourceError(error, locale)
     }
   }
 
@@ -237,12 +249,12 @@ export function DictDataListDialog({
     try {
       const [result] = await Promise.all([query.refetch(), delay(1_000)])
       if (result.isError) {
-        showResourceError(result.error)
+        showResourceError(result.error, locale)
         return
       }
-      showResourceRefreshSuccess("字典数据")
+      showResourceRefreshSuccess("字典数据", locale)
     } catch (error) {
-      showResourceError(error)
+      showResourceError(error, locale)
     } finally {
       setIsManualRefreshing(false)
     }
@@ -265,7 +277,9 @@ export function DictDataListDialog({
       <ResponsiveDialogContent className="max-h-[76vh] gap-0 overflow-hidden p-0 sm:max-w-[880px]">
         <ResponsiveDialogHeader className="min-h-14 border-b px-5 py-3 pr-12 text-left">
           <ResponsiveDialogTitle className="text-lg leading-7 font-semibold">
-            {dictType ? `${dictType.dict_name} 字典列表` : "字典列表"}
+            {dictType
+              ? tt("{name} 字典列表").replace("{name}", dictType.dict_name)
+              : tt("字典列表")}
           </ResponsiveDialogTitle>
         </ResponsiveDialogHeader>
         <div className="flex h-[320px] max-h-[52vh] min-h-[240px] flex-1 overflow-hidden md:h-[360px]">
@@ -288,19 +302,19 @@ export function DictDataListDialog({
             isLoading={query.isLoading}
             isFetching={query.isFetching}
             error={query.error}
-            searchPlaceholder="搜索字典标签、键值..."
-            emptyTitle="暂无字典数据"
-            emptyDescription="当前字典类型下还没有字典数据。"
-            emptyActionLabel="新增字典数据"
+            searchPlaceholder={tt("搜索字典标签、键值...")}
+            emptyTitle={tt("暂无字典数据")}
+            emptyDescription={tt("当前字典类型下还没有字典数据。")}
+            emptyActionLabel={tt("新增字典数据")}
             onEmptyAction={handleCreate}
             isFiltered={hasActiveFilters}
             getRowId={(row, index) => String(row.dict_code || index)}
             selectionResetKey={`${dictTypeValue}:${debouncedSearch}:${statusFilter}`}
             toolbarLeading={
-              dictDataConfig.statusFilters ? (
+              statusFilterOptions ? (
                 <ResourceStatusFilterTabs
-                  label="字典数据状态"
-                  options={dictDataConfig.statusFilters}
+                  label={tt("字典数据状态")}
+                  options={statusFilterOptions}
                   value={statusFilter}
                   listClassName="h-7 rounded-md p-0.5"
                   triggerClassName="px-2 text-xs"
@@ -373,16 +387,22 @@ export function DictDataListDialog({
               <AlertDialogMedia>
                 <TriangleAlertIcon />
               </AlertDialogMedia>
-              <AlertDialogTitle>删除字典数据</AlertDialogTitle>
+              <AlertDialogTitle>
+                {t("resource.deleteConfirmTitle", {
+                  noun: tt("字典数据"),
+                })}
+              </AlertDialogTitle>
               <AlertDialogDescription>
-                确认删除“
-                {deletingRecord ? dictDataConfig.getName(deletingRecord) : ""}
-                ”吗？该操作会提交到后台，删除后需要通过后端数据恢复。
+                {t("resource.deleteConfirmDescription", {
+                  name: deletingRecord
+                    ? dictDataConfig.getName(deletingRecord)
+                    : "",
+                })}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel disabled={deleteMutation.isPending}>
-                取消
+                {t("common.cancel")}
               </AlertDialogCancel>
               <AlertDialogAction
                 variant="destructive"
@@ -397,7 +417,7 @@ export function DictDataListDialog({
                 {deleteMutation.isPending ? (
                   <Spinner data-icon="inline-start" />
                 ) : null}
-                删除
+                {t("common.delete")}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

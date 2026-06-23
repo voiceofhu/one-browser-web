@@ -1,15 +1,18 @@
 import * as React from "react"
 import { ListIcon } from "lucide-react"
 
+import { useTranslation } from "@/components/providers/language-context"
 import { Button } from "@/components/ui/button"
 import { useAuthPermissions } from "@/hooks/use-auth"
 import { hasPermission } from "@/lib/auth-permissions"
+import { translateAdminText } from "@/lib/i18n-admin"
 import type { DictTypeResource } from "@/types/admin"
 import { RESOURCE_CONFIGS } from "@/views/system/_components/resource/configs"
 import { ResourceManager } from "@/views/system/_components/resource/manager"
 import { DictDataListDialog } from "./dict-data-list-dialog"
 
 export default function DictTypePage() {
+  const { locale } = useTranslation()
   const [activeDictType, setActiveDictType] =
     React.useState<DictTypeResource | null>(null)
   const authPermissions = useAuthPermissions()
@@ -32,7 +35,7 @@ export default function DictTypePage() {
                   onClick={() => setActiveDictType(record)}
                 >
                   <ListIcon data-icon="inline-start" />
-                  列表
+                  {translateAdminText(locale, "列表")}
                 </Button>
               )
             : undefined

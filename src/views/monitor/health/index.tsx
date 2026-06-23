@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef } from "react"
+import { useCallback, useLayoutEffect, useMemo, useRef } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { gsap } from "gsap"
 import {
@@ -8,6 +8,7 @@ import {
   RefreshCwIcon,
 } from "lucide-react"
 
+import { useTranslation } from "@/components/providers/language-context"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -15,15 +16,19 @@ import { HEALTH_STREAM_PATH, getHealth } from "@/api/monitor/health"
 import { monitorQueryKeys } from "@/lib/query-keys"
 import { useSse, type SseStatus } from "@/lib/sse"
 import { cn } from "@/lib/utils"
+import type { Locale } from "@/lib/i18n"
 
 import type { HealthResponse } from "@/types/admin"
 
+import { monitorText } from "../_lib/i18n"
 import { ProcessInfoCard } from "./components/process-info-card"
 import { QuickStatCard } from "./components/quick-stat-card"
 import { ServerInfoCard } from "./components/server-info-card"
 import { formatBytes, formatLoad, formatPercent } from "./lib/format"
 
 export default function HealthPage() {
+  const { locale } = useTranslation()
+  const mt = useCallback((key: string) => monitorText(locale, key), [locale])
   const rootRef = useRef<HTMLDivElement>(null)
   const healthQuery = useQuery({
     queryKey: monitorQueryKeys.health,
@@ -48,37 +53,37 @@ export default function HealthPage() {
         label: "CPU",
         icon: CpuIcon,
         value: cpuUsagePercent,
-        formatValue: formatPercent,
+        formatValue: (value: number) => formatPercent(value, locale),
         hint: load
-          ? `负载 ${formatLoad(load.one)} / ${formatLoad(load.five)} / ${formatLoad(load.fifteen)}`
-          : "等待 CPU 负载返回。",
+          ? `${mt("health.cpu.load")} ${formatLoad(load.one)} / ${formatLoad(load.five)} / ${formatLoad(load.fifteen)}`
+          : mt("health.cpu.wait"),
         percent: cpuUsagePercent,
       },
       {
-        label: "内存",
+        label: mt("health.memory.label"),
         icon: MemoryStickIcon,
         value: memory?.usage_percent,
-        formatValue: formatPercent,
+        formatValue: (value: number) => formatPercent(value, locale),
         hint:
           memory && process
-            ? `限制 ${formatBytes(memory.total_bytes)}，进程占用 ${formatBytes(process.rss_bytes)}`
-            : "等待内存指标返回。",
+            ? `${mt("health.memory.limit")} ${formatBytes(memory.total_bytes, locale)}${mt("common.metricSeparator")}${mt("health.memory.processUsage")} ${formatBytes(process.rss_bytes, locale)}`
+            : mt("health.memory.wait"),
         percent: memory?.usage_percent,
       },
       {
-        label: "存储",
+        label: mt("health.storage.label"),
         icon: HardDriveIcon,
         value: storage?.usage_percent,
-        formatValue: formatPercent,
+        formatValue: (value: number) => formatPercent(value, locale),
         hint:
           typeof storage?.used_bytes === "number" &&
           typeof storage.total_bytes === "number"
-            ? `${formatBytes(storage.used_bytes)} / ${formatBytes(storage.total_bytes)}`
-            : "等待存储指标返回。",
+            ? `${formatBytes(storage.used_bytes, locale)} / ${formatBytes(storage.total_bytes, locale)}`
+            : mt("health.storage.wait"),
         percent: storage?.usage_percent,
       },
     ],
-    [cpuUsagePercent, load, memory, process, storage]
+    [cpuUsagePercent, load, locale, memory, process, storage, mt]
   )
 
   useLayoutEffect(() => {
@@ -117,9 +122,11 @@ export default function HealthPage() {
           className="flex items-start justify-between gap-3"
         >
           <div className="min-w-0 flex-1">
-            <h1 className="text-2xl font-semibold tracking-normal">服务监控</h1>
+            <h1 className="text-2xl font-semibold tracking-normal">
+              {mt("health.title")}
+            </h1>
             <p className="text-sm text-muted-foreground">
-              聚焦后台服务器程序，CPU / 内存 / 存储。
+              {mt("health.description")}
             </p>
           </div>
           <div className="flex shrink-0 flex-col items-end gap-2 sm:flex-row sm:items-center">
@@ -132,7 +139,7 @@ export default function HealthPage() {
                 onClick={healthStream.reconnect}
               >
                 <RefreshCwIcon data-icon="inline-start" />
-                重新连接
+                {mt("health.reconnect")}
               </Button>
             ) : null}
           </div>
@@ -140,16 +147,16 @@ export default function HealthPage() {
 
         {healthQuery.error ? (
           <Alert data-monitor-animate variant="destructive">
-            <AlertTitle>健康检查返回错误</AlertTitle>
+            <AlertTitle>{mt("health.error.title")}</AlertTitle>
             <AlertDescription>
-              {getErrorMessage(healthQuery.error)}
+              {getErrorMessage(healthQuery.error, locale)}
             </AlertDescription>
           </Alert>
         ) : null}
 
         {healthStream.error ? (
           <Alert data-monitor-animate>
-            <AlertTitle>实时连接状态</AlertTitle>
+            <AlertTitle>{mt("health.stream.title")}</AlertTitle>
             <AlertDescription>{healthStream.error}</AlertDescription>
           </Alert>
         ) : null}
@@ -163,11 +170,15 @@ export default function HealthPage() {
               <QuickStatCard key={stat.label} {...stat} />
             ))}
           </div>
-          <ServerInfoCard health={health} lastUpdated={lastUpdated} />
+          <ServerInfoCard
+            health={health}
+            lastUpdated={lastUpdated}
+            locale={locale}
+          />
         </section>
 
         <section data-monitor-animate>
-          <ProcessInfoCard health={health} />
+          <ProcessInfoCard health={health} locale={locale} />
         </section>
       </div>
     </div>
@@ -175,6 +186,7 @@ export default function HealthPage() {
 }
 
 function ConnectionBadge({ status }: { status: SseStatus }) {
+  const { locale } = useTranslation()
   const open = status === "open"
 
   return (
@@ -188,25 +200,25 @@ function ConnectionBadge({ status }: { status: SseStatus }) {
           open ? "animate-pulse bg-primary" : "bg-muted-foreground/50"
         )}
       />
-      {connectionStatusText(status)}
+      {monitorText(locale, connectionStatusKey(status))}
     </Badge>
   )
 }
 
-function connectionStatusText(status: SseStatus) {
+function connectionStatusKey(status: SseStatus) {
   switch (status) {
     case "open":
-      return "实时"
+      return "health.connection.live"
     case "connecting":
-      return "连接中"
+      return "health.connection.connecting"
     case "error":
-      return "重连中"
+      return "health.connection.reconnecting"
     case "closed":
-      return "已断开"
+      return "health.connection.closed"
   }
 }
 
-function getErrorMessage(error: unknown) {
+function getErrorMessage(error: unknown, locale: Locale) {
   if (error instanceof Error) {
     return error.message
   }
@@ -215,5 +227,5 @@ function getErrorMessage(error: unknown) {
     return error
   }
 
-  return "服务器返回了未知错误。"
+  return monitorText(locale, "common.unknownServerError")
 }

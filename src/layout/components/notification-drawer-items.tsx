@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/item"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
+import { useTranslation } from "@/components/providers/language-context"
 import { cn } from "@/lib/utils"
 
 export type NotificationFilter = "all" | "unread" | "read"
@@ -66,6 +67,8 @@ export function NoticeItem({
   isMarkingRead: boolean
   onMarkRead: () => void
 }) {
+  const { t } = useTranslation()
+
   return (
     <Item
       size="sm"
@@ -94,7 +97,9 @@ export function NoticeItem({
             </ItemTitle>
             <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               <Badge variant="outline">
-                {notice.notice_type === "1" ? "通知" : "公告"}
+                {notice.notice_type === "1"
+                  ? t("notifications.type.notice")
+                  : t("notifications.type.announcement")}
               </Badge>
               <time dateTime={notice.created_at} title={date.absolute}>
                 {date.relative}
@@ -103,11 +108,13 @@ export function NoticeItem({
           </div>
           {isUnread ? (
             <Button
-              aria-label={`将“${notice.notice_title}”标记为已读`}
+              aria-label={t("notifications.markRead.aria", {
+                title: notice.notice_title,
+              })}
               disabled={isMarkingRead}
               onClick={onMarkRead}
               size="icon-xs"
-              title="标记为已读"
+              title={t("notifications.markRead.title")}
               variant="ghost"
             >
               {isMarkingRead ? <Spinner /> : <CheckIcon />}
@@ -134,12 +141,13 @@ export function NoticeItem({
 }
 
 export function NotificationEmpty({ filter }: { filter: NotificationFilter }) {
+  const { t } = useTranslation()
   const title =
     filter === "unread"
-      ? "暂无未读通知"
+      ? t("notifications.empty.unread")
       : filter === "read"
-        ? "暂无已读通知"
-        : "暂无通知"
+        ? t("notifications.empty.read")
+        : t("notifications.empty.all")
 
   return (
     <Empty className="min-h-80">
@@ -148,15 +156,19 @@ export function NotificationEmpty({ filter }: { filter: NotificationFilter }) {
           <BellOffIcon />
         </EmptyMedia>
         <EmptyTitle>{title}</EmptyTitle>
-        <EmptyDescription>当前没有可显示的通知或公告。</EmptyDescription>
+        <EmptyDescription>
+          {t("notifications.empty.description")}
+        </EmptyDescription>
       </EmptyHeader>
     </Empty>
   )
 }
 
 export function NotificationSkeleton() {
+  const { t } = useTranslation()
+
   return (
-    <div className="flex flex-col" aria-label="正在加载通知">
+    <div className="flex flex-col" aria-label={t("notifications.loading")}>
       {Array.from({ length: 4 }, (_, index) => (
         <div className="flex gap-3 border-b p-4" key={index}>
           <Skeleton className="size-9 rounded-lg" />

@@ -6,11 +6,13 @@ import { ChevronDownIcon, ChevronRightIcon } from "lucide-react"
 
 import { getRoleMenuIds } from "@/api/system/role"
 import { listMenus } from "@/api/system/menu"
+import { useTranslation } from "@/components/providers/language-context"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Spinner } from "@/components/ui/spinner"
+import { translateAdminText } from "@/lib/i18n-admin"
 import { systemQueryKeys } from "@/lib/query-keys"
 import { cn } from "@/lib/utils"
 import type { MenuResource } from "@/types/admin"
@@ -37,6 +39,7 @@ export function RoleMenuPermissionTree({
   invalid,
   onChange,
 }: RoleMenuPermissionTreeProps) {
+  const { locale } = useTranslation()
   const [expandedIds, setExpandedIds] = React.useState<Set<number>>(new Set())
   const [linked, setLinked] = React.useState(true)
   const menusQuery = useQuery({
@@ -146,19 +149,19 @@ export function RoleMenuPermissionTree({
     >
       <div className="flex flex-wrap items-center gap-3 border-b px-3 py-2 text-sm">
         <CheckboxOption
-          label="展开/折叠"
+          label={translateAdminText(locale, "展开/折叠")}
           checked={allExpanded}
           disabled={disabled || isLoading || expandableIds.length === 0}
           onCheckedChange={toggleExpandAll}
         />
         <CheckboxOption
-          label="全选/全不选"
+          label={translateAdminText(locale, "全选/全不选")}
           checked={allSelected}
           disabled={disabled || isLoading || allMenuIds.length === 0}
           onCheckedChange={toggleSelectAll}
         />
         <CheckboxOption
-          label="父子联动"
+          label={translateAdminText(locale, "父子联动")}
           checked={linked}
           disabled={disabled || isLoading}
           onCheckedChange={toggleLinked}
@@ -169,7 +172,7 @@ export function RoleMenuPermissionTree({
           {isLoading ? (
             <div className="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
               <Spinner />
-              正在加载权限...
+              {translateAdminText(locale, "正在加载权限...")}
             </div>
           ) : tree.length > 0 ? (
             tree.map((node) => (
@@ -186,7 +189,7 @@ export function RoleMenuPermissionTree({
             ))
           ) : (
             <div className="py-10 text-center text-sm text-muted-foreground">
-              暂无权限
+              {translateAdminText(locale, "暂无权限")}
             </div>
           )}
         </div>
@@ -245,6 +248,7 @@ function MenuTreeItem({
   const expanded = expandedIds.has(node.menu.menu_id)
   const checked = getNodeCheckedState(node, selectedIds)
   const inputId = React.useId()
+  const { locale } = useTranslation()
 
   return (
     <div>
@@ -257,7 +261,11 @@ function MenuTreeItem({
           variant="ghost"
           size="icon-xs"
           disabled={!hasChildren}
-          aria-label={expanded ? "收起权限节点" : "展开权限节点"}
+          aria-label={
+            expanded
+              ? translateAdminText(locale, "收起权限节点")
+              : translateAdminText(locale, "展开权限节点")
+          }
           onClick={() => onToggleExpanded(node.menu.menu_id)}
         >
           {hasChildren ? (
@@ -282,7 +290,9 @@ function MenuTreeItem({
           )}
         >
           <span className="truncate">{node.menu.menu_name}</span>
-          <Badge variant="outline">{menuTypeLabel(node.menu.menu_type)}</Badge>
+          <Badge variant="outline">
+            {translateAdminText(locale, menuTypeLabel(node.menu.menu_type))}
+          </Badge>
         </label>
       </div>
       {hasChildren && expanded

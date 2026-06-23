@@ -22,6 +22,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+import { useTranslation } from "@/components/providers/language-context"
 import { routeIcons } from "@/layout/components/route-icons"
 import { cn } from "@/lib/utils"
 import {
@@ -59,6 +65,7 @@ export function TagsView({
   onRefresh,
   onSelectTag,
 }: TagsViewProps) {
+  const { t } = useTranslation()
   const rootRef = useRef<HTMLDivElement>(null)
   const refreshIconRef = useRef<SVGSVGElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -266,7 +273,7 @@ export function TagsView({
       <button
         type="button"
         className="tags-view-chrome__nav tags-view-chrome__nav--left"
-        aria-label="向左滚动标签"
+        aria-label={t("tags.scrollLeft")}
         onClick={() => scrollBy(-SCROLL_OFFSET)}
       >
         <ChevronLeftIcon />
@@ -281,6 +288,7 @@ export function TagsView({
           {tags.map((tag, index) => {
             const active = tag.id === activeRoute
             const closable = tag.id !== DEFAULT_APP_ROUTE
+            const title = t(tag.labelKey)
             const previousTag = tags[index - 1]
             const separated =
               index > 0 && !active && previousTag?.id !== activeRoute
@@ -307,14 +315,14 @@ export function TagsView({
                   <span className="tags-view-chrome__icon">
                     {routeIcons[tag.id]}
                   </span>
-                  <span>{tag.title}</span>
+                  <span>{title}</span>
                 </button>
                 {closable ? (
                   <button
                     type="button"
                     className="tags-view-chrome__close"
                     tabIndex={-1}
-                    aria-label={`关闭${tag.title}`}
+                    aria-label={t("tags.close", { title })}
                     onClick={() => onCloseTag(tag)}
                   >
                     <XIcon />
@@ -328,7 +336,7 @@ export function TagsView({
       <button
         type="button"
         className="tags-view-chrome__nav tags-view-chrome__nav--right"
-        aria-label="向右滚动标签"
+        aria-label={t("tags.scrollRight")}
         onClick={() => scrollBy(SCROLL_OFFSET)}
       >
         <ChevronRightIcon />
@@ -339,7 +347,7 @@ export function TagsView({
             <button
               type="button"
               className="tags-view-chrome__action"
-              aria-label="标签操作"
+              aria-label={t("tags.actions")}
             >
               <ChevronDownIcon />
             </button>
@@ -351,49 +359,53 @@ export function TagsView({
                 onSelect={onCloseCurrent}
               >
                 <XIcon />
-                关闭当前
+                {t("tags.closeCurrent")}
               </DropdownMenuItem>
               <DropdownMenuItem
                 disabled={!canCloseOthers}
                 onSelect={onCloseOthers}
               >
                 <CircleXIcon />
-                关闭其他
+                {t("tags.closeOthers")}
               </DropdownMenuItem>
               <DropdownMenuItem disabled={!canCloseLeft} onSelect={onCloseLeft}>
                 <ArrowLeftIcon />
-                关闭左侧
+                {t("tags.closeLeft")}
               </DropdownMenuItem>
               <DropdownMenuItem
                 disabled={!canCloseRight}
                 onSelect={onCloseRight}
               >
                 <ArrowRightIcon />
-                关闭右侧
+                {t("tags.closeRight")}
               </DropdownMenuItem>
               <DropdownMenuItem disabled={!canCloseAll} onSelect={onCloseAll}>
                 <CircleXIcon />
-                全部关闭
+                {t("tags.closeAll")}
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem onSelect={toggleFullscreen}>
               <MaximizeIcon />
-              全屏显示
+              {t("tags.fullscreen")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       ) : null}
       {showTagActions ? (
-        <button
-          type="button"
-          className="tags-view-chrome__action tags-view-chrome__refresh"
-          aria-label="刷新当前页"
-          onClick={onRefresh}
-        >
-          <RefreshCwIcon ref={refreshIconRef} />
-          <span>刷新</span>
-        </button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              className="tags-view-chrome__action tags-view-chrome__refresh"
+              aria-label={t("tags.refreshCurrent")}
+              onClick={onRefresh}
+            >
+              <RefreshCwIcon ref={refreshIconRef} />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>{t("tags.refreshCurrent")}</TooltipContent>
+        </Tooltip>
       ) : null}
     </div>
   )
