@@ -11,6 +11,13 @@ import type {
 
 const OPERATION_LOG_PATH = "/system/operation-logs"
 const LOGIN_LOG_PATH = "/system/login-logs"
+const IP_LOCATION_PATH = "/system/ip-location"
+
+export type IpLocationResource = {
+  ip: string
+  location: string
+  provider: string
+}
 
 export function listOperationLogs(params?: ListParams) {
   return http.get<PageResponse<OperationLogSummaryResource>>(
@@ -30,4 +37,8 @@ export function listLoginLogs(params?: ListParams) {
 
 export function getLoginLog(infoId: number) {
   return http.get<LoginLogResource>(`${LOGIN_LOG_PATH}/${infoId}`)
+}
+
+export function getIpLocation(ip: string) {
+  return http.get<IpLocationResource>(buildQueryPath(IP_LOCATION_PATH, { ip }))
 }

@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query"
 import { CopyIcon, EyeIcon } from "lucide-react"
 import { toast } from "sonner"
 
-import { getLoginLog, getOperationLog } from "@/api/system/log"
+import { getIpLocation, getLoginLog, getOperationLog } from "@/api/system/log"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -42,15 +42,6 @@ type IpLocationLookup = {
   address: string
   error: string | null
   isLoading: boolean
-}
-
-type IpWhoIsResponse = {
-  success: boolean
-  message?: string
-  country?: string
-  region?: string
-  city?: string
-  isp?: string
 }
 
 const IP_LOCATION_CACHE = new Map<string, string>()
@@ -430,28 +421,15 @@ function useIpLocationLookup(
       }
     }
 
-    const controller = new AbortController()
     deferLookup({
       address: "",
       error: null,
       isLoading: true,
     })
 
-    fetch(`https://ipwho.is/${encodeURIComponent(normalizedIp)}?lang=zh-CN`, {
-      signal: controller.signal,
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`IP lookup failed with ${response.status}`)
-        }
-        return response.json() as Promise<IpWhoIsResponse>
-      })
+    getIpLocation(normalizedIp)
       .then((data) => {
-        if (!data.success) {
-          throw new Error(data.message || "IP lookup failed")
-        }
-
-        const address = formatIpLocation(data)
+        const address = data.location.trim()
         if (address) {
           IP_LOCATION_CACHE.set(normalizedIp, address)
         }
@@ -465,9 +443,6 @@ function useIpLocationLookup(
         })
       })
       .catch((error: unknown) => {
-        if (controller.signal.aborted) {
-          return
-        }
         if (!isActive) {
           return
         }
@@ -480,7 +455,6 @@ function useIpLocationLookup(
 
     return () => {
       isActive = false
-      controller.abort()
     }
   }, [fallbackLocation, normalizedIp, open])
 
@@ -532,14 +506,6 @@ function isPublicIpCandidate(ip: string) {
   }
 
   return true
-}
-
-function formatIpLocation(data: IpWhoIsResponse) {
-  const values = [data.country, data.region, data.city, data.isp]
-    .map((value) => value?.trim())
-    .filter((value): value is string => Boolean(value))
-
-  return Array.from(new Set(values)).join(" ")
 }
 
 function formatPayload(value: string) {

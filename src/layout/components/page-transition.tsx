@@ -57,7 +57,7 @@ export function PageTransition({
   return (
     <div
       ref={containerRef}
-      className="flex h-full min-h-0 flex-1 flex-col will-change-transform"
+      className="flex h-full min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto will-change-transform"
     >
       {children}
     </div>
