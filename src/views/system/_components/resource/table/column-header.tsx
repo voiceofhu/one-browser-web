@@ -3,7 +3,7 @@ import { ArrowUpDownIcon } from "lucide-react"
 
 import { useTranslation } from "@/components/providers/language-context"
 import { Button } from "@/components/ui/button"
-import { translateText } from "@/lib/i18n-text"
+import { translateText } from "@/local"
 
 export function ResourceTableColumnHeader<TData, TValue>({
   column,

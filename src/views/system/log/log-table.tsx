@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query"
 import type { ColumnDef } from "@tanstack/react-table"
 
 import { useTranslation } from "@/components/providers/language-context"
-import { translateAdminText } from "@/lib/i18n-admin"
+import { translateAdminText } from "@/local"
 import type { ListParams, PageResponse } from "@/types/admin"
 import { ResourceTable } from "@/views/system/_components/resource/table"
 import { useDebouncedValue } from "@/views/system/_components/resource/manager-utils"

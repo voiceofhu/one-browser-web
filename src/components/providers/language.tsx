@@ -12,7 +12,7 @@ import {
   type I18nKey,
   type I18nValues,
   type Locale,
-} from "@/lib/i18n"
+} from "@/local"
 
 export function LanguageProvider({ children }: React.PropsWithChildren) {
   const [locale, setLocaleState] = React.useState<Locale>(() => {

@@ -35,7 +35,7 @@ import {
 } from "@/api/index"
 import { indexQueryKeys } from "@/lib/query-keys"
 import { formatAbsoluteDateTime, formatRelativeTime } from "@/lib/datetime"
-import { translateText } from "@/lib/i18n-text"
+import { translateText } from "@/local"
 import { cn } from "@/lib/utils"
 import { APP_ROUTE_BY_ID } from "@/router/routes"
 import type { CurrentUser, HealthResponse } from "@/types/admin"

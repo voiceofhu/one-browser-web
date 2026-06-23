@@ -24,7 +24,7 @@ import {
   formatResourceEmptyText,
   formatResourceSearchPlaceholder,
   translateText,
-} from "@/lib/i18n-text"
+} from "@/local"
 
 import type { DashboardResourceConfig } from "./configs"
 import type { ResourceFormValues } from "./form"

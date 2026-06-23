@@ -16,7 +16,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { translateText } from "@/lib/i18n-text"
+import { translateText } from "@/local"
 
 type RowActionsProps = {
   noun: string

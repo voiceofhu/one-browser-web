@@ -13,7 +13,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import type { Locale } from "@/lib/i18n"
+import type { Locale } from "@/local"
 import { cn } from "@/lib/utils"
 
 import type { HealthResponse } from "@/types/admin"

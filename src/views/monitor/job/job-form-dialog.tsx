@@ -40,7 +40,7 @@ import {
 import { Spinner } from "@/components/ui/spinner"
 import { Textarea } from "@/components/ui/textarea"
 import { formatAbsoluteDateTime } from "@/lib/datetime"
-import type { Locale } from "@/lib/i18n"
+import type { Locale } from "@/local"
 import type { JobPayload, JobResource } from "@/types/admin"
 
 import {

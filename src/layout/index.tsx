@@ -34,7 +34,7 @@ import {
   systemQueryKeys,
 } from "@/lib/query-keys"
 import { useTranslation } from "@/components/providers/language-context"
-import { localizedPublicPath } from "@/lib/i18n"
+import { localizedPublicPath } from "@/local"
 import { AppSidebar } from "@/layout/components/app-sidebar"
 import { PageTransition } from "@/layout/components/page-transition"
 import { SiteHeader } from "@/layout/components/site-header"

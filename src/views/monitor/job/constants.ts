@@ -8,7 +8,7 @@ import {
   normalizeLocale,
   type I18nValues,
   type Locale,
-} from "@/lib/i18n"
+} from "@/local"
 import type {
   JobConcurrentFlag,
   JobMisfirePolicyFlag,

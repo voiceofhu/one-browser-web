@@ -2,7 +2,7 @@ import { CheckCircle2Icon, XCircleIcon } from "lucide-react"
 
 import { useTranslation } from "@/components/providers/language-context"
 import { Badge } from "@/components/ui/badge"
-import { translateAdminText } from "@/lib/i18n-admin"
+import { translateAdminText } from "@/local"
 import type { LogStatusFlag } from "@/types/admin"
 import { LOG_STATUS_LABELS } from "@/views/system/log/constants"
 

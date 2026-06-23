@@ -1,15 +1,17 @@
-import { messagesByLocale, type LocaleMessageKey } from "@/local"
+import { messagesByLocale } from "@/local/catalogs"
+import {
+  DEFAULT_LOCALE,
+  LOCALE_COOKIE_NAME,
+  LOCALE_STORAGE_KEY,
+  PUBLIC_LOCALE_ROUTES,
+  SUPPORTED_LOCALES,
+  type I18nValues,
+  type Locale,
+  type PublicLocaleRoute,
+} from "@/local/constants"
+import type { LocaleMessageKey } from "@/local/zh-CN/messages"
 
-export const LOCALE_STORAGE_KEY = "one-browser:locale"
-export const LOCALE_COOKIE_NAME = "one_browser_locale"
-export const DEFAULT_LOCALE = "zh-CN"
-export const SUPPORTED_LOCALES = ["zh-CN", "en-US"] as const
-export const PUBLIC_LOCALE_ROUTES = ["login", "terms", "privacy"] as const
-
-export type Locale = (typeof SUPPORTED_LOCALES)[number]
-export type PublicLocaleRoute = (typeof PUBLIC_LOCALE_ROUTES)[number]
 export type I18nKey = LocaleMessageKey
-export type I18nValues = Record<string, number | string>
 
 export const messages = messagesByLocale
 

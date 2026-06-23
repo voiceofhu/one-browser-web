@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/empty"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { translateAdminText } from "@/lib/i18n-admin"
+import { translateAdminText } from "@/local"
 import { cn } from "@/lib/utils"
 import {
   filterMenuIconOptions,

@@ -6,7 +6,7 @@ import { ChevronDownIcon, ChevronRightIcon } from "lucide-react"
 
 import { useTranslation } from "@/components/providers/language-context"
 import { Button } from "@/components/ui/button"
-import { translateAdminText } from "@/lib/i18n-admin"
+import { translateAdminText } from "@/local"
 
 type ResourceTableTreeCellProps<TData> = {
   row: Row<TData>

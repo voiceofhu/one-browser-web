@@ -24,7 +24,7 @@ import {
   ResponsiveDialogTitle,
 } from "@/components/ui/responsive-dialog"
 import { Spinner } from "@/components/ui/spinner"
-import { translateAdminText } from "@/lib/i18n-admin"
+import { translateAdminText } from "@/local"
 import { systemQueryKeys } from "@/lib/query-keys"
 import type {
   DictDataResource,

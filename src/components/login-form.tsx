@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
-import { localizedPublicPath } from "@/lib/i18n"
+import { localizedPublicPath } from "@/local"
 import { cn } from "@/lib/utils"
 
 type LoginFormValues = {

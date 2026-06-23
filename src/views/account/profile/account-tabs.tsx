@@ -1,8 +1,8 @@
 import { LockKeyholeIcon, UserRoundIcon } from "lucide-react"
 
 import { type AnimatedSegmentedTabsOption } from "@/components/ui/animated-segmented-tabs"
-import { translateAdminText } from "@/lib/i18n-admin"
-import type { Locale } from "@/lib/i18n"
+import { translateAdminText } from "@/local"
+import type { Locale } from "@/local"
 
 export type AccountTab = "profile" | "password"
 

@@ -7,7 +7,7 @@ import { useTranslation } from "@/components/providers/language-context"
 import { OverflowTooltipText } from "@/components/overflow-tooltip-text"
 import { Badge } from "@/components/ui/badge"
 import { formatAbsoluteDateTime, formatRelativeTime } from "@/lib/datetime"
-import { translateAdminText } from "@/lib/i18n-admin"
+import { translateAdminText } from "@/local"
 import type {
   LoginLogSummaryResource,
   OperationLogSummaryResource,

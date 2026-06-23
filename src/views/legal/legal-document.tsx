@@ -5,7 +5,7 @@ import { ThemeToggleButton } from "@/components/theme/theme-toggle-button"
 import { Button } from "@/components/ui/button"
 import { LanguageSwitcher } from "@/layout/components/language-switcher"
 import type { LegalDocumentContent } from "@/local"
-import { localizedPublicPath } from "@/lib/i18n"
+import { localizedPublicPath } from "@/local"
 
 export function LegalDocument({
   title,

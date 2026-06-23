@@ -74,7 +74,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
-import { translateText } from "@/lib/i18n-text"
+import { translateText } from "@/local"
 
 type ResourceTableProps<TData> = {
   data: TData[]

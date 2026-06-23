@@ -44,8 +44,8 @@ import {
 import { Spinner } from "@/components/ui/spinner"
 import { useAuthPermissions } from "@/hooks/use-auth"
 import { hasPermission } from "@/lib/auth-permissions"
-import { translate, type Locale } from "@/lib/i18n"
-import { translateText } from "@/lib/i18n-text"
+import { translate, type Locale } from "@/local"
+import { translateText } from "@/local"
 import { monitorQueryKeys } from "@/lib/query-keys"
 import type { JobListParams, JobPayload, JobResource } from "@/types/admin"
 import {
@@ -152,7 +152,9 @@ export default function JobsPage() {
       updateJobStatus(jobId, status),
     onSuccess: async (_, variables) => {
       await queryClient.invalidateQueries({ queryKey: monitorQueryKeys.jobs })
-      toast.success(variables.status === "0" ? tt("任务已启用") : tt("任务已停用"))
+      toast.success(
+        variables.status === "0" ? tt("任务已启用") : tt("任务已停用")
+      )
     },
     onError: (error) => showResourceError(error, locale),
   })
@@ -405,7 +407,9 @@ function JobRowActions({
       <DropdownMenuTrigger asChild>
         <Button type="button" variant="ghost" size="icon-sm" className="size-7">
           <MoreHorizontalIcon />
-          <span className="sr-only">{translateText(locale, "定时任务操作")}</span>
+          <span className="sr-only">
+            {translateText(locale, "定时任务操作")}
+          </span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-36">

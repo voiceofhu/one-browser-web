@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/responsive-dialog"
 import { Slider } from "@/components/ui/slider"
 import { Spinner } from "@/components/ui/spinner"
-import { translateAdminText } from "@/lib/i18n-admin"
+import { translateAdminText } from "@/local"
 import { cn } from "@/lib/utils"
 
 const AVATAR_OUTPUT_SIZE = 240

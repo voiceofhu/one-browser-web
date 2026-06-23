@@ -16,7 +16,7 @@ import { HEALTH_STREAM_PATH, getHealth } from "@/api/monitor/health"
 import { monitorQueryKeys } from "@/lib/query-keys"
 import { useSse, type SseStatus } from "@/lib/sse"
 import { cn } from "@/lib/utils"
-import type { Locale } from "@/lib/i18n"
+import type { Locale } from "@/local"
 
 import type { HealthResponse } from "@/types/admin"
 

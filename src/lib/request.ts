@@ -6,7 +6,7 @@ import {
   isLoginPath,
   localizedPublicPath,
   translate,
-} from "@/lib/i18n"
+} from "@/local"
 
 export class HttpError extends Error {
   readonly status: number

@@ -18,7 +18,7 @@ import {
   LOCALE_OPTIONS,
   normalizeLocale,
   withLocaleInPublicPath,
-} from "@/lib/i18n"
+} from "@/local"
 
 export function LanguageSwitcher() {
   const { locale, setLocale, t } = useLanguage()

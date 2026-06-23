@@ -35,8 +35,8 @@ import {
 import { Progress } from "@/components/ui/progress"
 import { Spinner } from "@/components/ui/spinner"
 import { useTranslation } from "@/components/providers/language-context"
-import { translateAdminText } from "@/lib/i18n-admin"
-import type { Locale } from "@/lib/i18n"
+import { translateAdminText } from "@/local"
+import type { Locale } from "@/local"
 
 function createPasswordSchema(locale: Locale) {
   const tt = (text: string) => translateAdminText(locale, text)

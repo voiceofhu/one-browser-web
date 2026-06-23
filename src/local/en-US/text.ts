@@ -120,8 +120,7 @@ export const enUSTextMessages: Record<string, string> = {
     "There is no data under this dictionary type yet.",
   新增字典数据: "Create dictionary data",
   字典数据状态: "Dictionary data status",
-  字典数据暂不支持拖拽排序:
-    "Dictionary data does not support drag sorting yet",
+  字典数据暂不支持拖拽排序: "Dictionary data does not support drag sorting yet",
   缺少字典类型: "Missing dictionary type",
   通知标题: "Notice title",
   通知类型: "Notice type",
@@ -172,25 +171,20 @@ export const enUSTextMessages: Record<string, string> = {
   已复制: "Copied",
   "复制失败，请手动选择文本复制。":
     "Copy failed. Select the text manually to copy.",
-  "搜索账号、IP、浏览器、消息...":
-    "Search account, IP, browser, message...",
+  "搜索账号、IP、浏览器、消息...": "Search account, IP, browser, message...",
   暂无登录日志: "No login logs",
-  系统还没有记录到任何登录访问:
-    "No sign-in access has been recorded yet.",
-  "系统还没有记录到任何登录访问。":
-    "No sign-in access has been recorded yet.",
+  系统还没有记录到任何登录访问: "No sign-in access has been recorded yet.",
+  "系统还没有记录到任何登录访问。": "No sign-in access has been recorded yet.",
   登录日志状态筛选: "Login log status filter",
   "搜索模块、人员、路径、IP...": "Search module, operator, path, IP...",
   暂无操作日志: "No operation logs",
-  系统还没有记录到任何后台操作:
-    "No backend operations have been recorded yet.",
+  系统还没有记录到任何后台操作: "No backend operations have been recorded yet.",
   "系统还没有记录到任何后台操作。":
     "No backend operations have been recorded yet.",
   操作日志状态筛选: "Operation log status filter",
   "搜索账号、IP、浏览器、系统...": "Search account, IP, browser, OS...",
   暂无在线用户: "No online users",
-  "当前没有可显示的登录会话。":
-    "There are no sign-in sessions to display.",
+  "当前没有可显示的登录会话。": "There are no sign-in sessions to display.",
   该会话令牌已从Redis中删除: "The session token has been deleted from Redis.",
   "该会话令牌已从 Redis 中删除。":
     "The session token has been deleted from Redis.",
@@ -299,8 +293,7 @@ export const enUSTextMessages: Record<string, string> = {
   允许并发: "Allow overlap",
   清理任务日志: "Clean job logs",
   空任务: "No-op job",
-  "执行后台依赖健康检查。":
-    "Run a backend dependency health check.",
+  "执行后台依赖健康检查。": "Run a backend dependency health check.",
   "清理 30 天前的任务执行日志。":
     "Clean task execution logs older than 30 days.",
   任务名称: "Job name",
@@ -365,8 +358,7 @@ export const enUSTextMessages: Record<string, string> = {
   头像已更新: "Avatar updated",
   头像上传失败: "Failed to upload avatar",
   请选择jpgpngwebp或gif图片: "Select a jpg, png, webp, or gif image",
-  "请选择 jpg、png、webp 或 gif 图片":
-    "Select a jpg, png, webp, or gif image",
+  "请选择 jpg、png、webp 或 gif 图片": "Select a jpg, png, webp, or gif image",
   "头像不能超过 5 MB": "Avatar must be 5 MB or smaller",
   暂无可复制的用户名: "No username to copy",
   用户名已复制: "Username copied",
@@ -376,14 +368,13 @@ export const enUSTextMessages: Record<string, string> = {
   "昵称不能超过 64 个字符": "Nickname cannot exceed 64 characters",
   邮箱格式不正确: "Invalid email address",
   "手机号不能超过 32 个字符": "Phone number cannot exceed 32 characters",
-  "头像地址不能超过 255 个字符":
-    "Avatar URL cannot exceed 255 characters",
+  "头像地址不能超过 255 个字符": "Avatar URL cannot exceed 255 characters",
   请输入当前密码: "Enter current password",
   "新密码至少需要 10 位": "New password must be at least 10 characters",
   "新密码不能超过 128 位": "New password cannot exceed 128 characters",
   请再次输入新密码: "Confirm the new password",
   两次输入的新密码不一致: "The new passwords do not match",
-  "新密码不能和当前密码相同":
+  新密码不能和当前密码相同:
     "The new password cannot be the same as the current password",
   登录密码已更新: "Password updated",
   密码修改失败: "Failed to change password",
@@ -428,8 +419,7 @@ export const enUSTextMessages: Record<string, string> = {
   "拖动图片调整位置，使用缩放控制头像范围。":
     "Drag the image to adjust position and use zoom to control the avatar area.",
   头像图片加载失败: "Failed to load avatar image",
-  当前浏览器不支持头像裁剪:
-    "This browser does not support avatar cropping",
+  当前浏览器不支持头像裁剪: "This browser does not support avatar cropping",
   头像裁剪失败: "Failed to crop avatar",
   "{title} 的头像": "{title}'s avatar",
 }

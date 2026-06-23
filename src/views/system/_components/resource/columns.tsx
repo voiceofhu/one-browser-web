@@ -23,8 +23,8 @@ import { Switch } from "@/components/ui/switch"
 import { useAuthPermissions } from "@/hooks/use-auth"
 import { hasPermission } from "@/lib/auth-permissions"
 import { formatAbsoluteDateTime, formatRelativeTime } from "@/lib/datetime"
-import { translate, type Locale } from "@/lib/i18n"
-import { translateText } from "@/lib/i18n-text"
+import { translate, type Locale } from "@/local"
+import { translateText } from "@/local"
 import { systemQueryKeys } from "@/lib/query-keys"
 
 import {

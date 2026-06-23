@@ -30,9 +30,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import type { Locale } from "@/lib/i18n"
-import { translate } from "@/lib/i18n"
-import { translateText } from "@/lib/i18n-text"
+import type { Locale } from "@/local"
+import { translate } from "@/local"
+import { translateText } from "@/local"
 import { cn } from "@/lib/utils"
 import type { DeptResource, MenuTypeFlag } from "@/types/admin"
 import type {

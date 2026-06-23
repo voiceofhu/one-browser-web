@@ -1,5 +1,5 @@
 import { formatRelativeTime, parseDateTime } from "@/lib/datetime"
-import type { Locale } from "@/lib/i18n"
+import type { Locale } from "@/local"
 
 import { monitorText } from "../../_lib/i18n"
 

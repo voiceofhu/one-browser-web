@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/empty"
 import { Spinner } from "@/components/ui/spinner"
 import { useLanguage } from "@/components/providers/language-context"
-import { localizedPublicPath } from "@/lib/i18n"
+import { localizedPublicPath } from "@/local"
 import { isUnauthorizedError } from "@/lib/request"
 import { useAuthPermissions, useCurrentUser } from "@/hooks/use-auth"
 import { getFirstAuthorizedPath, isAuthorizedPath } from "@/router/access"

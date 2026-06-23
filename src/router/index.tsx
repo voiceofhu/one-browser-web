@@ -16,7 +16,7 @@ import {
   getLocaleFromPathname,
   localizedPublicPath,
   type PublicLocaleRoute,
-} from "@/lib/i18n"
+} from "@/local"
 
 const AppLayout = lazy(() => import("@/layout"))
 const AccountProfilePage = lazy(() => import("@/views/account/profile"))

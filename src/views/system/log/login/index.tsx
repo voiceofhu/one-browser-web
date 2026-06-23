@@ -4,7 +4,7 @@ import * as React from "react"
 
 import { listLoginLogs } from "@/api/system/log"
 import { useTranslation } from "@/components/providers/language-context"
-import { translateAdminText } from "@/lib/i18n-admin"
+import { translateAdminText } from "@/local"
 import { systemQueryKeys } from "@/lib/query-keys"
 import { loginLogColumns } from "@/views/system/log/columns"
 import {

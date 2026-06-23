@@ -1,7 +1,8 @@
 import { enUSAdminExtraMessages } from "@/local/en-US/admin-extra"
 import { zhCNAdminExtraMessages } from "@/local/zh-CN/admin-extra"
-import { normalizeLocale, type Locale } from "@/lib/i18n"
-import { translateText } from "@/lib/i18n-text"
+import type { Locale } from "@/local/constants"
+import { normalizeLocale } from "@/local/runtime"
+import { translateText } from "@/local/text-helpers"
 
 const adminExtraMessagesByLocale = {
   "zh-CN": zhCNAdminExtraMessages,

@@ -6,7 +6,7 @@ import { LoginForm } from "@/components/login-form"
 import { useTranslation } from "@/components/providers/language-context"
 import { ThemeToggleButton } from "@/components/theme/theme-toggle-button"
 import { LanguageSwitcher } from "@/layout/components/language-switcher"
-import { isLoginPath } from "@/lib/i18n"
+import { isLoginPath } from "@/local"
 import { consumeAuthExpiredNotice } from "@/lib/request"
 import { useCurrentUser, useLoginMutation } from "@/hooks/use-auth"
 

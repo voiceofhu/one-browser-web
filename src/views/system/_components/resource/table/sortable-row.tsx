@@ -9,7 +9,7 @@ import { GripVerticalIcon } from "lucide-react"
 import { useTranslation } from "@/components/providers/language-context"
 import { Button } from "@/components/ui/button"
 import { TableRow } from "@/components/ui/table"
-import { translateAdminText } from "@/lib/i18n-admin"
+import { translateAdminText } from "@/local"
 import { cn } from "@/lib/utils"
 
 type SortableControls = Pick<

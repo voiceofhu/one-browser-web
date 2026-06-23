@@ -11,7 +11,7 @@ import {
   formatRelativeTime,
   parseDateTime,
 } from "@/lib/datetime"
-import type { Locale } from "@/lib/i18n"
+import type { Locale } from "@/local"
 import type { OnlineUserResource } from "@/types/admin"
 import { ResourceTableColumnHeader } from "@/views/system/_components/resource/table"
 

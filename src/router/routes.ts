@@ -1,4 +1,4 @@
-import type { I18nKey } from "@/lib/i18n"
+import type { I18nKey } from "@/local"
 
 export type AppRouteId =
   | "overview"

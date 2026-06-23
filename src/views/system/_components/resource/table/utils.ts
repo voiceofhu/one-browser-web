@@ -1,6 +1,6 @@
 import type { Column } from "@tanstack/react-table"
 
-import { translate, type Locale } from "@/lib/i18n"
+import { translate, type Locale } from "@/local"
 
 type ResourceColumnMeta = {
   label?: string

@@ -22,8 +22,8 @@ import { Spinner } from "@/components/ui/spinner"
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { formatAbsoluteDateTime } from "@/lib/datetime"
-import { translateAdminText } from "@/lib/i18n-admin"
-import type { Locale } from "@/lib/i18n"
+import { translateAdminText } from "@/local"
+import type { Locale } from "@/local"
 import { systemQueryKeys } from "@/lib/query-keys"
 import type {
   LoginLogSummaryResource,

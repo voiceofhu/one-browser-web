@@ -1,5 +1,6 @@
-import { textMessagesByLocale } from "@/local"
-import { DEFAULT_LOCALE, normalizeLocale, type Locale } from "@/lib/i18n"
+import { textMessagesByLocale } from "@/local/catalogs"
+import { DEFAULT_LOCALE, type Locale } from "@/local/constants"
+import { normalizeLocale } from "@/local/runtime"
 
 export function translateText(
   locale: Locale | string | null | undefined,

@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { formatAbsoluteDateTime } from "@/lib/datetime"
-import type { Locale } from "@/lib/i18n"
+import type { Locale } from "@/local"
 
 import type { HealthResponse } from "@/types/admin"
 

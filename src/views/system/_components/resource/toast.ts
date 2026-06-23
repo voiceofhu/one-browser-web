@@ -1,7 +1,7 @@
 import { toast } from "sonner"
 
-import { isSupportedLocale, translate, type Locale } from "@/lib/i18n"
-import { translateText } from "@/lib/i18n-text"
+import { isSupportedLocale, translate, type Locale } from "@/local"
+import { translateText } from "@/local"
 
 export function showResourceCreateSuccess(noun: string, locale?: Locale) {
   toast.success(

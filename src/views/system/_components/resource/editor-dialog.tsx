@@ -28,7 +28,7 @@ import { FieldGroup } from "@/components/ui/field"
 import { Spinner } from "@/components/ui/spinner"
 
 import { getUserPostIds, getUserRoleIds } from "@/api/system/user"
-import { formatResourceActionText, translateText } from "@/lib/i18n-text"
+import { formatResourceActionText, translateText } from "@/local"
 import { systemQueryKeys } from "@/lib/query-keys"
 import { cn } from "@/lib/utils"
 import type {

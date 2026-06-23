@@ -8,8 +8,8 @@ import { OverflowTooltipText } from "@/components/overflow-tooltip-text"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { formatAbsoluteDateTime, formatRelativeTime } from "@/lib/datetime"
-import { translateText } from "@/lib/i18n-text"
-import type { Locale } from "@/lib/i18n"
+import { translateText } from "@/local"
+import type { Locale } from "@/local"
 import type { JobLogResource, JobResource, LogStatusFlag } from "@/types/admin"
 import { ResourceTableColumnHeader } from "@/views/system/_components/resource/table"
 
@@ -113,9 +113,7 @@ export const jobLogColumns: ColumnDef<JobLogResource>[] = [
   {
     id: "trigger",
     header: ({ column }) => tableHeader(column, "触发方式"),
-    cell: ({ row }) => (
-      <JobRunMessageTriggerCell record={row.original} />
-    ),
+    cell: ({ row }) => <JobRunMessageTriggerCell record={row.original} />,
     meta: { label: "触发方式", cellClassName: "w-24" },
   },
   {
@@ -225,7 +223,9 @@ function LogStatusBadge({ status }: { status: LogStatusFlag }) {
 function JobRunMessageTriggerCell({ record }: { record: JobLogResource }) {
   const { locale } = useTranslation()
   return (
-    <TextCell value={translateText(locale, parseJobRunMessage(record).trigger)} />
+    <TextCell
+      value={translateText(locale, parseJobRunMessage(record).trigger)}
+    />
   )
 }
 
