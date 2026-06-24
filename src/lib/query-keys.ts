@@ -17,6 +17,32 @@ export const indexQueryKeys = {
   overview: ["index", "overview"] as const,
 }
 
+export const browserQueryKeys = {
+  all: ["browser"] as const,
+  environments: ["browser", "environments"] as const,
+  environmentDetail: (environmentId: number) =>
+    ["browser", "environments", "detail", environmentId] as const,
+  environmentAction: (environmentId: number, action: string) =>
+    ["browser", "environments", "action", environmentId, action] as const,
+  proxies: ["browser", "proxies"] as const,
+  proxyDetail: (proxyId: number) =>
+    ["browser", "proxies", "detail", proxyId] as const,
+  proxyAction: (proxyId: number, action: string) =>
+    ["browser", "proxies", "action", proxyId, action] as const,
+  members: ["browser", "members"] as const,
+  memberDetail: (memberId: number) =>
+    ["browser", "members", "detail", memberId] as const,
+  memberRoles: (memberId: number) =>
+    ["browser", "members", "roles", memberId] as const,
+  memberAction: (memberId: number, action: string) =>
+    ["browser", "members", "action", memberId, action] as const,
+  teams: ["browser", "teams"] as const,
+  teamDetail: (teamId: number) =>
+    ["browser", "teams", "detail", teamId] as const,
+  teamAction: (teamId: number, action: string) =>
+    ["browser", "teams", "action", teamId, action] as const,
+}
+
 export const systemQueryKeys = {
   all: ["system"] as const,
   users: ["system", "users"] as const,

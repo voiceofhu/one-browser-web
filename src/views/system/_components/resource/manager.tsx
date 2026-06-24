@@ -395,7 +395,7 @@ export function ResourceManager<TData, TDetail extends TData = TData>({
         isRowReordering={reorderMutation.isPending}
         onRowReorder={
           config.reorder && canReorder
-            ? (payload) => reorderMutation.mutate(payload)
+            ? (payload) => reorderMutation.mutateAsync(payload)
             : undefined
         }
         selectionResetKey={`${statusFilter}:${debouncedSearch}`}

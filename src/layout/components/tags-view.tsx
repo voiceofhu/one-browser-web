@@ -28,8 +28,9 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { useTranslation } from "@/components/providers/language-context"
-import { routeIcons } from "@/layout/components/route-icons"
+import { getRouteIcon } from "@/layout/components/route-icons"
 import { cn } from "@/lib/utils"
+import type { AuthorizedRouteIconValueMap } from "@/router/access"
 import {
   DEFAULT_APP_ROUTE,
   type AppRouteId,
@@ -39,6 +40,7 @@ import {
 type TagsViewProps = {
   activeRoute: AppRouteId
   isRefreshing?: boolean
+  routeIconValues?: AuthorizedRouteIconValueMap
   tags: AppRouteMeta[]
   onCloseAll: () => void
   onCloseCurrent: () => void
@@ -55,6 +57,7 @@ const SCROLL_OFFSET = 240
 export function TagsView({
   activeRoute,
   isRefreshing = false,
+  routeIconValues,
   tags,
   onCloseAll,
   onCloseCurrent,
@@ -292,6 +295,7 @@ export function TagsView({
             const previousTag = tags[index - 1]
             const separated =
               index > 0 && !active && previousTag?.id !== activeRoute
+            const icon = getRouteIcon(routeIconValues?.get(tag.id), tag.id)
 
             return (
               <div
@@ -312,9 +316,9 @@ export function TagsView({
                   className="tags-view-chrome__label"
                   onClick={() => onSelectTag(tag)}
                 >
-                  <span className="tags-view-chrome__icon">
-                    {routeIcons[tag.id]}
-                  </span>
+                  {icon ? (
+                    <span className="tags-view-chrome__icon">{icon}</span>
+                  ) : null}
                   <span>{title}</span>
                 </button>
                 {closable ? (

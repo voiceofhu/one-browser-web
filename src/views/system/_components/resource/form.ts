@@ -272,7 +272,7 @@ export const resourceFields = {
       "上级权限",
       "按钮权限必须挂在具体菜单下"
     ),
-    visibleWhen(menuIconSelectField("icon", "图标"), isRoutePermission),
+    visibleWhen(menuIconSelectField("icon", "图标"), isMenuRoutePermission),
     visibleWhen(textField("path", "路由路径"), isRoutePermission),
     visibleWhen(
       selectField("visible", "可见状态", visibleOptions),
@@ -590,6 +590,10 @@ function visibleWhen(
 
 function isRoutePermission(values: ResourceFormValues) {
   return values.menu_type !== "F"
+}
+
+function isMenuRoutePermission(values: ResourceFormValues) {
+  return values.menu_type === "C"
 }
 
 function hasPermissionCode(values: ResourceFormValues) {

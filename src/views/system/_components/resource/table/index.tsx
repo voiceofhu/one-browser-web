@@ -26,12 +26,15 @@ import {
   type ColumnDef,
   type ExpandedState,
   type PaginationState,
+  type Row,
   type RowSelectionState,
   type Updater,
   type VisibilityState,
 } from "@tanstack/react-table"
 import {
   ChevronDownIcon,
+  ListCollapseIcon,
+  ListTreeIcon,
   SearchIcon,
   SlidersHorizontalIcon,
 } from "lucide-react"
@@ -74,7 +77,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
-import { translateText } from "@/local"
+import { translateAdminText, translateText } from "@/local"
 
 type ResourceTableProps<TData> = {
   data: TData[]
@@ -110,7 +113,7 @@ type ResourceTableProps<TData> = {
     active: TData
     over: TData
     orderedRecords: TData[]
-  }) => void
+  }) => Promise<unknown> | void
   isRowReordering?: boolean
   selectionResetKey?: React.Key
   density?: "default" | "compact"
@@ -162,6 +165,7 @@ export function ResourceTable<TData>({
     React.useState<VisibilityState>(() => defaultColumnVisibility ?? {})
   const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({})
   const [expanded, setExpanded] = React.useState<ExpandedState>(true)
+  const [orderedData, setOrderedData] = React.useState<TData[]>(() => data)
   const enableBulkSelection = Boolean(onBulkDelete)
   const enableRowReorder = Boolean(onRowReorder)
   const isCompact = density === "compact"
@@ -206,6 +210,10 @@ export function ResourceTable<TData>({
       setExpanded(true)
     }
   }, [getSubRows, selectionResetKey])
+
+  React.useEffect(() => {
+    setOrderedData(data)
+  }, [data])
 
   const tableColumns = React.useMemo<ColumnDef<TData>[]>(() => {
     const nextColumns = [...columns]
@@ -310,7 +318,7 @@ export function ResourceTable<TData>({
 
   // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Table v8 exposes stateful table helpers by design.
   const table = useReactTable({
-    data,
+    data: orderedData,
     columns: tableColumns,
     state: {
       columnVisibility,
@@ -337,6 +345,10 @@ export function ResourceTable<TData>({
 
   const visibleColumns = table.getVisibleLeafColumns()
   const rows = table.getRowModel().rows
+  const expandableRows = rows.filter((row) => row.getCanExpand())
+  const hasExpandableRows = expandableRows.length > 0
+  const allRowsExpanded =
+    hasExpandableRows && expandableRows.every((row) => row.getIsExpanded())
   const rowIds = React.useMemo<UniqueIdentifier[]>(
     () => rows.map((row) => row.id),
     [rows]
@@ -372,11 +384,36 @@ export function ResourceTable<TData>({
     }
 
     const orderedRows = arrayMove(rows, oldIndex, newIndex)
-    onRowReorder?.({
-      active: rows[oldIndex].original,
-      over: rows[newIndex].original,
-      orderedRecords: orderedRows.map((row) => row.original),
+    const previousData = orderedData
+    const nextData = getOptimisticReorderedData({
+      data: orderedData,
+      rows,
+      oldIndex,
+      newIndex,
+      getRowId,
+      getSubRows,
     })
+
+    if (nextData) {
+      setOrderedData(nextData)
+    }
+
+    try {
+      const result = onRowReorder?.({
+        active: rows[oldIndex].original,
+        over: rows[newIndex].original,
+        orderedRecords: orderedRows.map((row) => row.original),
+      })
+
+      if (nextData) {
+        void Promise.resolve(result).catch(() => setOrderedData(previousData))
+      }
+    } catch (error) {
+      if (nextData) {
+        setOrderedData(previousData)
+      }
+      throw error
+    }
   }
 
   return (
@@ -421,6 +458,24 @@ export function ResourceTable<TData>({
           )}
         >
           {toolbarActions}
+          {getSubRows && hasExpandableRows ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setExpanded(allRowsExpanded ? {} : true)}
+            >
+              {allRowsExpanded ? (
+                <ListCollapseIcon data-icon="inline-start" />
+              ) : (
+                <ListTreeIcon data-icon="inline-start" />
+              )}
+              {translateAdminText(
+                locale,
+                allRowsExpanded ? "全部收起" : "全部展开"
+              )}
+            </Button>
+          ) : null}
           {showColumnControls ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -596,4 +651,114 @@ export function ResourceTable<TData>({
       ) : null}
     </section>
   )
+}
+
+function getOptimisticReorderedData<TData>({
+  data,
+  rows,
+  oldIndex,
+  newIndex,
+  getRowId,
+  getSubRows,
+}: {
+  data: TData[]
+  rows: Row<TData>[]
+  oldIndex: number
+  newIndex: number
+  getRowId?: (row: TData, index: number) => string
+  getSubRows?: (row: TData) => TData[] | undefined
+}) {
+  if (!getSubRows) {
+    return arrayMove(data, oldIndex, newIndex)
+  }
+
+  if (!getRowId) {
+    return null
+  }
+
+  const activeRow = rows[oldIndex]
+  const overRow = rows[newIndex]
+  if (activeRow.parentId !== overRow.parentId) {
+    return null
+  }
+
+  const siblingRows = rows.filter((row) => row.parentId === activeRow.parentId)
+  const oldSiblingIndex = siblingRows.findIndex(
+    (row) => row.id === activeRow.id
+  )
+  const newSiblingIndex = siblingRows.findIndex((row) => row.id === overRow.id)
+  if (oldSiblingIndex < 0 || newSiblingIndex < 0) {
+    return null
+  }
+
+  const siblingIds = arrayMove(
+    siblingRows.map((row) => row.id),
+    oldSiblingIndex,
+    newSiblingIndex
+  )
+  return reorderTreeDataBySiblingIds({
+    records: data,
+    parentId: activeRow.parentId,
+    siblingIds,
+    getRowId,
+    getSubRows,
+  })
+}
+
+function reorderTreeDataBySiblingIds<TData>({
+  records,
+  parentId,
+  siblingIds,
+  getRowId,
+  getSubRows,
+}: {
+  records: TData[]
+  parentId: string | undefined
+  siblingIds: string[]
+  getRowId: (row: TData, index: number) => string
+  getSubRows: (row: TData) => TData[] | undefined
+}): TData[] {
+  if (!parentId) {
+    return sortRecordsByRowIds(records, siblingIds, getRowId)
+  }
+
+  return records.map((record, index) => {
+    const children = getSubRows(record)
+    if (!children?.length) {
+      return record
+    }
+
+    const rowId = getRowId(record, index)
+    const nextChildren =
+      rowId === parentId
+        ? sortRecordsByRowIds(children, siblingIds, getRowId)
+        : reorderTreeDataBySiblingIds({
+            records: children,
+            parentId,
+            siblingIds,
+            getRowId,
+            getSubRows,
+          })
+
+    return {
+      ...(record as object),
+      children: nextChildren,
+    } as TData
+  })
+}
+
+function sortRecordsByRowIds<TData>(
+  records: TData[],
+  rowIds: string[],
+  getRowId: (row: TData, index: number) => string
+) {
+  const orderById = new Map(rowIds.map((id, index) => [id, index]))
+
+  return records
+    .map((record, index) => ({
+      record,
+      order: orderById.get(getRowId(record, index)) ?? index,
+    }))
+    .sort((left, right) => left.order - right.order)
+    .map(({ record }) => record)
 }

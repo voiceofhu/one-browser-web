@@ -48,6 +48,7 @@ import type {
   UserResource,
 } from "@/types/admin"
 import { ResourceTableColumnHeader } from "./table"
+import { findMenuIconOption } from "./menu-icons"
 import { showResourceError } from "./toast"
 
 export const userColumns: ColumnDef<UserResource>[] = [
@@ -108,7 +109,6 @@ export const menuColumns: ColumnDef<MenuResource>[] = [
     cell: ({ row }) => <MenuNameCell menu={row.original} />,
     meta: { label: "权限名称", cellClassName: "min-w-72 max-w-96" },
   },
-  numberColumn("order_num", "排序"),
   textColumn("path", "路由路径"),
   textColumn("perms", "权限标识"),
   {
@@ -327,9 +327,17 @@ function TranslatedBadge({ label }: { label: string }) {
 
 function MenuNameCell({ menu }: { menu: MenuResource }) {
   const { locale } = useTranslation()
+  const iconOption = isMenuRoute(menu) ? findMenuIconOption(menu.icon) : null
+  const MenuIcon = iconOption?.Icon
 
   return (
     <div className="flex min-w-0 items-center gap-2">
+      {MenuIcon ? (
+        <MenuIcon
+          aria-hidden="true"
+          className="size-4 shrink-0 text-muted-foreground"
+        />
+      ) : null}
       <span className="truncate">{menu.menu_name}</span>
       <Badge
         variant={menu.visible === "0" ? "secondary" : "destructive"}
@@ -339,6 +347,10 @@ function MenuNameCell({ menu }: { menu: MenuResource }) {
       </Badge>
     </div>
   )
+}
+
+function isMenuRoute(menu: MenuResource) {
+  return menu.menu_type === "C"
 }
 
 function UserStatusSwitch({ user }: { user: UserResource }) {

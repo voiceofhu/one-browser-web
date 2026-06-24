@@ -9,6 +9,10 @@ export type AppRouteId =
   | "posts"
   | "dict"
   | "notices"
+  | "browser-teams"
+  | "browser-environments"
+  | "browser-proxies"
+  | "browser-members"
   | "operation-logs"
   | "login-logs"
   | "health"
@@ -93,6 +97,38 @@ export const APP_ROUTES: AppRouteMeta[] = [
     path: "/system/notice",
   },
   {
+    id: "browser-teams",
+    labelKey: "route.browserTeams",
+    label: "团队管理",
+    title: "团队管理",
+    description: "管理浏览器团队、负责人和资源规模。",
+    path: "/browser/team",
+  },
+  {
+    id: "browser-environments",
+    labelKey: "route.browserEnvironments",
+    label: "环境管理",
+    title: "环境管理",
+    description: "管理浏览器环境、分组、代理绑定和运行状态。",
+    path: "/browser/environment",
+  },
+  {
+    id: "browser-proxies",
+    labelKey: "route.browserProxies",
+    label: "代理管理",
+    title: "代理管理",
+    description: "管理团队代理、检测状态和环境关联。",
+    path: "/browser/proxy",
+  },
+  {
+    id: "browser-members",
+    labelKey: "route.browserMembers",
+    label: "成员管理",
+    title: "成员管理",
+    description: "管理团队成员、账号绑定和团队内角色。",
+    path: "/browser/member",
+  },
+  {
     id: "operation-logs",
     labelKey: "route.operationLogs",
     label: "操作日志",
@@ -156,6 +192,17 @@ export const APP_ROUTE_GROUPS = [
     routes: ["users", "roles", "menus", "depts", "posts", "dict", "notices"],
   },
   {
+    id: "browser",
+    labelKey: "routeGroup.browser",
+    label: "浏览器管理",
+    routes: [
+      "browser-teams",
+      "browser-environments",
+      "browser-proxies",
+      "browser-members",
+    ],
+  },
+  {
     id: "logs",
     labelKey: "routeGroup.logs",
     label: "系统日志",
@@ -210,6 +257,14 @@ export const LEGACY_ROUTE_REDIRECTS: Record<string, string> = {
   "/dashboard/notices": "/system/notice",
   "/dashboard/system/notices": "/system/notice",
   "/dashboard/system/notice": "/system/notice",
+  "/dashboard/browser/teams": "/browser/team",
+  "/dashboard/browser/team": "/browser/team",
+  "/dashboard/browser/environments": "/browser/environment",
+  "/dashboard/browser/environment": "/browser/environment",
+  "/dashboard/browser/proxies": "/browser/proxy",
+  "/dashboard/browser/proxy": "/browser/proxy",
+  "/dashboard/browser/members": "/browser/member",
+  "/dashboard/browser/member": "/browser/member",
   "/dashboard/operation-logs": "/system/log/operation",
   "/dashboard/system/operation-logs": "/system/log/operation",
   "/dashboard/system/log/operation": "/system/log/operation",

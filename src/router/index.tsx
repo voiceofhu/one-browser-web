@@ -22,6 +22,7 @@ const AppLayout = lazy(() => import("@/layout"))
 const AccountProfilePage = lazy(() => import("@/views/account/profile"))
 const IndexPage = lazy(() => import("@/views/index"))
 const LoginPage = lazy(() => import("@/views/login"))
+const OAuthCallbackPage = lazy(() => import("@/views/login/oauth"))
 const TermsPage = lazy(() => import("@/views/legal/terms"))
 const PrivacyPage = lazy(() => import("@/views/legal/privacy"))
 const HealthPage = lazy(() => import("@/views/monitor/health"))
@@ -34,6 +35,10 @@ const DeptPage = lazy(() => import("@/views/system/dept"))
 const PostPage = lazy(() => import("@/views/system/post"))
 const DictTypePage = lazy(() => import("@/views/system/dict/type"))
 const NoticePage = lazy(() => import("@/views/system/notice"))
+const BrowserTeamPage = lazy(() => import("@/views/browser/team"))
+const BrowserEnvironmentPage = lazy(() => import("@/views/browser/environment"))
+const BrowserProxyPage = lazy(() => import("@/views/browser/proxy"))
+const BrowserMemberPage = lazy(() => import("@/views/browser/member"))
 const OperationLogPage = lazy(() => import("@/views/system/log/operation"))
 const LoginLogPage = lazy(() => import("@/views/system/log/login"))
 
@@ -47,6 +52,8 @@ export function AppRouter() {
           <Route path="/login" element={<LocaleRedirect to="login" />} />
           <Route path="/terms" element={<LocaleRedirect to="terms" />} />
           <Route path="/privacy" element={<LocaleRedirect to="privacy" />} />
+          <Route path="/oauth" element={<OAuthCallbackPage />} />
+          <Route path="/:locale/oauth" element={<OAuthCallbackPage />} />
           <Route path="/:locale/login" element={<LoginPage />} />
           <Route path="/:locale/terms" element={<TermsPage />} />
           <Route path="/:locale/privacy" element={<PrivacyPage />} />
@@ -76,6 +83,13 @@ export function AppRouter() {
               path="system/dict/data"
               element={<Navigate to="/system/dict" replace />}
             />
+            <Route path="browser/team" element={<BrowserTeamPage />} />
+            <Route
+              path="browser/environment"
+              element={<BrowserEnvironmentPage />}
+            />
+            <Route path="browser/proxy" element={<BrowserProxyPage />} />
+            <Route path="browser/member" element={<BrowserMemberPage />} />
             <Route path="system/log/operation" element={<OperationLogPage />} />
             <Route path="system/log/login" element={<LoginLogPage />} />
             <Route path="monitor/health" element={<HealthPage />} />

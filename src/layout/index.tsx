@@ -30,6 +30,7 @@ import {
 } from "@/hooks/use-auth"
 import {
   authQueryKeys,
+  browserQueryKeys,
   monitorQueryKeys,
   systemQueryKeys,
 } from "@/lib/query-keys"
@@ -40,7 +41,10 @@ import { PageTransition } from "@/layout/components/page-transition"
 import { SiteHeader } from "@/layout/components/site-header"
 import { TagsView } from "@/layout/components/tags-view"
 import { visitedTagIdsAtom } from "@/layout/stores/tags-view"
-import { getRouteAccessTarget } from "@/router/access"
+import {
+  getAuthorizedRouteIconValues,
+  getRouteAccessTarget,
+} from "@/router/access"
 import {
   APP_ROUTE_BY_ID,
   APP_ROUTE_BY_PATH,
@@ -70,6 +74,10 @@ export default function AppLayout() {
   const visitedTags = useMemo(
     () => visitedTagIds.map((tagId) => APP_ROUTE_BY_ID[tagId]),
     [visitedTagIds]
+  )
+  const routeIconValues = useMemo(
+    () => getAuthorizedRouteIconValues(authPermissions.data),
+    [authPermissions.data]
   )
 
   useEffect(() => {
@@ -240,6 +248,7 @@ export default function AppLayout() {
           <TagsView
             activeRoute={routeMeta.id}
             isRefreshing={refreshing}
+            routeIconValues={routeIconValues}
             tags={visitedTags}
             onCloseAll={handleCloseAll}
             onCloseCurrent={handleCloseCurrent}
@@ -290,6 +299,14 @@ function getRefreshQueryKeys(routeId: AppRouteMeta["id"]) {
       return [systemQueryKeys.dictTypes, systemQueryKeys.dictData]
     case "notices":
       return [systemQueryKeys.notices]
+    case "browser-teams":
+      return [browserQueryKeys.teams]
+    case "browser-environments":
+      return [browserQueryKeys.environments]
+    case "browser-proxies":
+      return [browserQueryKeys.proxies]
+    case "browser-members":
+      return [browserQueryKeys.members]
     case "operation-logs":
       return [systemQueryKeys.operationLogs]
     case "login-logs":

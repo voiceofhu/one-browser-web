@@ -257,6 +257,12 @@ function renderControl({
               shouldDirty: true,
               shouldValidate: true,
             })
+            if (nextType !== "C") {
+              setValue("icon", "#", {
+                shouldDirty: true,
+                shouldValidate: true,
+              })
+            }
           }
 
           if (nextType === "F") {
@@ -403,12 +409,14 @@ function renderControl({
         allowedTypes={MENU_PARENT_TYPES[menuType]}
         allowEmpty={menuType !== "F"}
         emptyLabel={translate(locale, "resource.topPermission")}
-        onChange={(menu) =>
-          setValue(field.name, menu?.menu_id ?? null, {
+        onChange={(menu) => {
+          const nextParentId = menu?.menu_id ?? null
+
+          setValue(field.name, nextParentId, {
             shouldDirty: true,
             shouldValidate: true,
           })
-        }
+        }}
       />
     )
   }

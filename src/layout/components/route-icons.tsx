@@ -1,36 +1,25 @@
 import type * as React from "react"
-import {
-  BookOpenTextIcon,
-  Building2Icon,
-  CalendarClockIcon,
-  ClipboardListIcon,
-  FileBadgeIcon,
-  FileClockIcon,
-  KeyRoundIcon,
-  LayoutDashboardIcon,
-  MegaphoneIcon,
-  ServerCogIcon,
-  ShieldIcon,
-  UserRoundCheckIcon,
-  UserRoundIcon,
-  UsersIcon,
-} from "lucide-react"
+import { UserRoundIcon } from "lucide-react"
 
+import { findMenuIconOption } from "@/views/system/_components/resource/menu-icons"
 import type { AppRouteId } from "@/router/routes"
 
-export const routeIcons: Record<AppRouteId, React.ReactNode> = {
-  overview: <LayoutDashboardIcon />,
-  users: <UsersIcon />,
-  roles: <ShieldIcon />,
-  menus: <KeyRoundIcon />,
-  depts: <Building2Icon />,
-  posts: <FileBadgeIcon />,
-  dict: <BookOpenTextIcon />,
-  notices: <MegaphoneIcon />,
-  "operation-logs": <ClipboardListIcon />,
-  "login-logs": <FileClockIcon />,
-  health: <ServerCogIcon />,
-  "online-users": <UserRoundCheckIcon />,
-  jobs: <CalendarClockIcon />,
+const fallbackRouteIcons: Partial<Record<AppRouteId, React.ReactNode>> = {
   account: <UserRoundIcon />,
+}
+
+export function getRouteIcon(
+  iconValue: string | null | undefined,
+  routeId: AppRouteId
+) {
+  if (iconValue !== undefined) {
+    const option = findMenuIconOption(iconValue)
+    if (!option) {
+      return null
+    }
+
+    return <option.Icon />
+  }
+
+  return fallbackRouteIcons[routeId] ?? null
 }

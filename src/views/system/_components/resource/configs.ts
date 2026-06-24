@@ -27,6 +27,7 @@ import {
   deleteMenu,
   getMenu,
   listMenus,
+  setMenuOrder,
   updateMenu,
 } from "@/api/system/menu"
 import {
@@ -247,6 +248,7 @@ export const RESOURCE_CONFIGS = {
       update: "system:menu:update",
       delete: "system:menu:delete",
       createChild: "system:menu:create",
+      reorder: "system:menu:update",
     },
     columns: menuColumns,
     getId: (record) => record.menu_id,
@@ -260,6 +262,7 @@ export const RESOURCE_CONFIGS = {
     create: (values) => createMenu(menuPayload(values)),
     update: (record, values) => updateMenu(record.menu_id, menuPayload(values)),
     remove: (record) => deleteMenu(record.menu_id),
+    reorder: reorderMenuRows,
     tree: {
       columnId: "menu_name",
       getParentId: (record) => record.parent_id,
@@ -445,17 +448,19 @@ function rolePayload(values: ResourceFormValues) {
 function menuPayload(values: ResourceFormValues) {
   const menuType = textPayload(values, "menu_type", "M")
   const isButtonPermission = menuType === "F"
+  const parentId = nullableNumberPayload(values, "parent_id")
+  const canUseIcon = menuType === "C"
 
   return {
     menu_name: textPayload(values, "menu_name"),
-    parent_id: nullableNumberPayload(values, "parent_id"),
+    parent_id: parentId,
     order_num: numberPayload(values, "order_num"),
     path: isButtonPermission ? "" : textPayload(values, "path"),
     menu_type: menuType,
     visible: isButtonPermission ? "1" : textPayload(values, "visible", "0"),
     status: textPayload(values, "status", "0"),
     perms: menuType === "M" ? null : nullableTextPayload(values, "perms"),
-    icon: isButtonPermission ? "#" : textPayload(values, "icon", "#"),
+    icon: canUseIcon ? textPayload(values, "icon", "#") : "#",
     remark: textPayload(values, "remark"),
   }
 }
@@ -474,6 +479,34 @@ function menuChildCreateValues(menu: MenuResource): ResourceFormValues | null {
     visible: childType === "F" ? "1" : "0",
     icon: childType === "F" ? "#" : defaultValues.menus.icon,
   }
+}
+
+async function reorderMenuRows({
+  active,
+  over,
+  orderedRecords,
+}: ResourceReorderPayload<MenuResource>) {
+  if (active.parent_id !== over.parent_id) {
+    throw new Error("权限只能在同一个上级权限下拖拽排序")
+  }
+
+  const siblings = orderedRecords.filter(
+    (record) => record.parent_id === active.parent_id
+  )
+  const nextOrderNums = siblings
+    .map((record) => record.order_num)
+    .sort((left, right) => left - right)
+  const updates = siblings
+    .map((record, index) => ({
+      record,
+      orderNum: nextOrderNums[index] ?? index + 1,
+    }))
+    .filter(({ record, orderNum }) => record.order_num !== orderNum)
+
+  await Promise.all(
+    updates.map(({ record, orderNum }) => setMenuOrder(record, orderNum))
+  )
+  return updates.length
 }
 
 function deptPayload(values: ResourceFormValues) {

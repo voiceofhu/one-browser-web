@@ -155,6 +155,8 @@ export const enUSAdminExtraMessages: Record<string, string> = {
   字典数据暂不支持拖拽排序: "Dictionary data does not support drag sorting yet",
   缺少字典类型: "Missing dictionary type",
   拖拽调整排序: "Drag to reorder",
+  全部展开: "Expand all",
+  全部收起: "Collapse all",
   收起节点: "Collapse node",
   展开节点: "Expand node",
   选择上级部门: "Select parent department",

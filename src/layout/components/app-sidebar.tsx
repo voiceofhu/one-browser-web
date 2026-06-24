@@ -4,9 +4,12 @@ import { NavLink } from "react-router"
 import { useTranslation } from "@/components/providers/language-context"
 import { NavMain } from "@/layout/components/nav-main"
 import { NavUser } from "@/layout/components/nav-user"
-import { routeIcons } from "@/layout/components/route-icons"
+import { getRouteIcon } from "@/layout/components/route-icons"
 import type { AuthPermissions, CurrentUser } from "@/types/admin"
-import { getAuthorizedRouteGroups } from "@/router/access"
+import {
+  getAuthorizedRouteGroups,
+  getAuthorizedRouteIconValues,
+} from "@/router/access"
 import { APP_ROUTE_BY_ID, type AppRouteId } from "@/router/routes"
 import {
   Sidebar,
@@ -33,6 +36,7 @@ export function AppSidebar({
   ...props
 }: AppSidebarProps) {
   const { t } = useTranslation()
+  const routeIconValues = getAuthorizedRouteIconValues(authPermissions)
   const navGroups = getAuthorizedRouteGroups(authPermissions).map((group) => ({
     label: t(group.labelKey),
     showLabel: group.routes[0] === "overview" ? false : undefined,
@@ -41,7 +45,7 @@ export function AppSidebar({
       return {
         title: t(route.labelKey),
         url: route.path,
-        icon: routeIcons[route.id],
+        icon: getRouteIcon(routeIconValues.get(route.id), route.id),
       }
     }),
   }))

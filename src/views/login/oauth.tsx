@@ -1,0 +1,92 @@
+import { useEffect } from "react"
+import {
+  Navigate,
+  useLocation,
+  useNavigate,
+  useSearchParams,
+} from "react-router"
+
+import { completeGoogleLogin, consumeGoogleOAuthState } from "@/api/auth"
+import { useLanguage } from "@/components/providers/language-context"
+import { Spinner } from "@/components/ui/spinner"
+import { authQueryKeys } from "@/hooks/use-auth"
+import { localizedPublicPath } from "@/local"
+import { useQueryClient } from "@tanstack/react-query"
+
+function buildLoginPath(locale: string, redirect?: string | null) {
+  const params = new URLSearchParams({ oauth_error: "google" })
+  if (redirect) {
+    params.set("redirect", redirect)
+  }
+
+  return `${localizedPublicPath(locale, "login")}?${params.toString()}`
+}
+
+export default function OAuthCallbackPage() {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const [searchParams] = useSearchParams()
+  const queryClient = useQueryClient()
+  const { locale } = useLanguage()
+  const code = searchParams.get("code")
+  const state = searchParams.get("state")
+  const error = searchParams.get("error")
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function finishLogin() {
+      if (error || !code || !state) {
+        navigate(buildLoginPath(locale), { replace: true })
+        return
+      }
+
+      const redirect = consumeGoogleOAuthState(state)
+      if (!redirect) {
+        navigate(buildLoginPath(locale), { replace: true })
+        return
+      }
+
+      try {
+        const redirectUri = `${window.location.origin}${location.pathname}`
+        const response = await completeGoogleLogin({
+          code,
+          state,
+          redirect_uri: redirectUri,
+        })
+
+        if (cancelled) {
+          return
+        }
+
+        await queryClient.invalidateQueries({
+          queryKey: authQueryKeys.currentUser,
+        })
+        await queryClient.invalidateQueries({
+          queryKey: authQueryKeys.permissions,
+        })
+        navigate(response.redirect || redirect, { replace: true })
+      } catch {
+        if (!cancelled) {
+          navigate(buildLoginPath(locale, redirect), { replace: true })
+        }
+      }
+    }
+
+    void finishLogin()
+
+    return () => {
+      cancelled = true
+    }
+  }, [code, error, locale, location.pathname, navigate, queryClient, state])
+
+  if (!code && !error) {
+    return <Navigate to={buildLoginPath(locale)} replace />
+  }
+
+  return (
+    <main className="grid min-h-svh place-items-center bg-background text-muted-foreground">
+      <Spinner />
+    </main>
+  )
+}

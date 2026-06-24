@@ -14,6 +14,7 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { translateText } from "@/local"
@@ -38,6 +39,9 @@ export function RowActions({
   const { locale, t } = useTranslation()
   const hasActions = Boolean(
     onEdit || onDelete || onCreateChild || onResetPassword || onAssignRoles
+  )
+  const hasPrimaryActions = Boolean(
+    onEdit || onCreateChild || onResetPassword || onAssignRoles
   )
 
   if (!hasActions) {
@@ -69,12 +73,6 @@ export function RowActions({
               {translateText(locale, "编辑")}
             </DropdownMenuItem>
           ) : null}
-          {onDelete ? (
-            <DropdownMenuItem variant="destructive" onSelect={onDelete}>
-              <Trash2Icon />
-              {t("common.delete")}
-            </DropdownMenuItem>
-          ) : null}
           {onResetPassword ? (
             <DropdownMenuItem onSelect={onResetPassword}>
               <KeyRoundIcon />
@@ -88,6 +86,13 @@ export function RowActions({
             </DropdownMenuItem>
           ) : null}
         </DropdownMenuGroup>
+        {onDelete && hasPrimaryActions ? <DropdownMenuSeparator /> : null}
+        {onDelete ? (
+          <DropdownMenuItem variant="destructive" onSelect={onDelete}>
+            <Trash2Icon />
+            {t("common.delete")}
+          </DropdownMenuItem>
+        ) : null}
       </DropdownMenuContent>
     </DropdownMenu>
   )

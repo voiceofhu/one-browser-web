@@ -10,10 +10,12 @@ import {
   BoxesIcon,
   BriefcaseBusinessIcon,
   Building2Icon,
+  CalendarClockIcon,
   CalendarIcon,
   ChartColumnIcon,
   ChartNoAxesColumnIcon,
   CircleGaugeIcon,
+  ClipboardListIcon,
   CogIcon,
   CpuIcon,
   CreditCardIcon,
@@ -21,6 +23,7 @@ import {
   DatabaseZapIcon,
   DownloadIcon,
   FileBadgeIcon,
+  FileClockIcon,
   FileCogIcon,
   FileSearchIcon,
   FileTextIcon,
@@ -31,6 +34,7 @@ import {
   GlobeIcon,
   HardDriveIcon,
   HashIcon,
+  HandshakeIcon,
   HeartPulseIcon,
   HistoryIcon,
   HomeIcon,
@@ -61,6 +65,8 @@ import {
   UserCheckIcon,
   UserCogIcon,
   UserRoundCogIcon,
+  UserRoundCheckIcon,
+  UsersRoundIcon,
   UsersIcon,
   WorkflowIcon,
   WrenchIcon,
@@ -167,6 +173,12 @@ export const MENU_ICON_OPTIONS: MenuIconOption[] = [
     Icon: UserCheckIcon,
   },
   {
+    value: "user-round-check",
+    label: "在线用户",
+    category: "organization",
+    Icon: UserRoundCheckIcon,
+  },
+  {
     value: "user-cog",
     label: "用户配置",
     category: "organization",
@@ -177,6 +189,18 @@ export const MENU_ICON_OPTIONS: MenuIconOption[] = [
     label: "账号设置",
     category: "organization",
     Icon: UserRoundCogIcon,
+  },
+  {
+    value: "handshake",
+    label: "团队",
+    category: "organization",
+    Icon: HandshakeIcon,
+  },
+  {
+    value: "users-round",
+    label: "成员",
+    category: "organization",
+    Icon: UsersRoundIcon,
   },
   {
     value: "building-2",
@@ -226,6 +250,18 @@ export const MENU_ICON_OPTIONS: MenuIconOption[] = [
     label: "日志文档",
     category: "content",
     Icon: ScrollTextIcon,
+  },
+  {
+    value: "clipboard-list",
+    label: "操作日志",
+    category: "content",
+    Icon: ClipboardListIcon,
+  },
+  {
+    value: "file-clock",
+    label: "登录日志",
+    category: "content",
+    Icon: FileClockIcon,
   },
   {
     value: "list-tree",
@@ -293,6 +329,12 @@ export const MENU_ICON_OPTIONS: MenuIconOption[] = [
     category: "monitor",
     Icon: AlarmClockIcon,
   },
+  {
+    value: "calendar-clock",
+    label: "定时任务",
+    category: "monitor",
+    Icon: CalendarClockIcon,
+  },
   { value: "bell", label: "通知", category: "tools", Icon: BellIcon },
   { value: "calendar", label: "日历", category: "tools", Icon: CalendarIcon },
   { value: "globe", label: "全局", category: "tools", Icon: GlobeIcon },
@@ -332,11 +374,18 @@ export const MENU_ICON_OPTIONS: MenuIconOption[] = [
   },
 ]
 
+export function findMenuIconOption(value: string | null | undefined) {
+  const normalizedValue = value?.trim()
+
+  if (!normalizedValue || normalizedValue === "#") {
+    return null
+  }
+
+  return MENU_ICON_OPTIONS.find((option) => option.value === normalizedValue)
+}
+
 export function getMenuIconOption(value: string) {
-  return (
-    MENU_ICON_OPTIONS.find((option) => option.value === value) ??
-    MENU_ICON_OPTIONS[0]
-  )
+  return findMenuIconOption(value) ?? MENU_ICON_OPTIONS[0]
 }
 
 export function filterMenuIconOptions(

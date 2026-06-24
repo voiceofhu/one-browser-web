@@ -29,7 +29,18 @@ export function updateMenu(menuId: number, payload: MenuPayload) {
 }
 
 export function setMenuStatus(menu: MenuResource, status: StatusFlag) {
-  return updateMenu(menu.menu_id, {
+  return updateMenu(menu.menu_id, buildMenuPayload(menu, { status }))
+}
+
+export function setMenuOrder(menu: MenuResource, orderNum: number) {
+  return updateMenu(
+    menu.menu_id,
+    buildMenuPayload(menu, { order_num: orderNum })
+  )
+}
+
+function buildMenuPayload(menu: MenuResource, overrides: Partial<MenuPayload>) {
+  return {
     menu_name: menu.menu_name,
     parent_id: menu.parent_id,
     order_num: menu.order_num,
@@ -40,7 +51,8 @@ export function setMenuStatus(menu: MenuResource, status: StatusFlag) {
     perms: menu.perms,
     icon: menu.icon,
     remark: menu.remark,
-  })
+    ...overrides,
+  }
 }
 
 export function deleteMenu(menuId: number) {

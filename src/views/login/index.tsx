@@ -1,7 +1,8 @@
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { Navigate, useNavigate, useSearchParams } from "react-router"
 import { toast } from "sonner"
 
+import { buildGoogleLoginUrl } from "@/api/auth"
 import { LoginForm } from "@/components/login-form"
 import { useTranslation } from "@/components/providers/language-context"
 import { ThemeToggleButton } from "@/components/theme/theme-toggle-button"
@@ -28,6 +29,9 @@ export default function LoginPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const redirectTo = normalizeRedirect(searchParams.get("redirect"))
+  const oauthError = searchParams.get("oauth_error")
+  const [googleLoginUrl, setGoogleLoginUrl] = useState<string | null>(null)
+  const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY || undefined
   const loginMutation = useLoginMutation()
   const currentUser = useCurrentUser()
   const { t } = useTranslation()
@@ -39,6 +43,10 @@ export default function LoginPage() {
       })
     }
   }, [t])
+
+  useEffect(() => {
+    setGoogleLoginUrl(buildGoogleLoginUrl(redirectTo))
+  }, [redirectTo])
 
   if (currentUser.isSuccess) {
     return <Navigate to={redirectTo} replace />
@@ -63,7 +71,12 @@ export default function LoginPage() {
         <LoginForm
           className="w-full max-w-sm"
           isSubmitting={loginMutation.isPending}
-          error={loginMutation.error}
+          error={
+            loginMutation.error ||
+            (oauthError === "google" ? new Error(t("login.googleError")) : null)
+          }
+          googleLoginUrl={googleLoginUrl}
+          turnstileSiteKey={turnstileSiteKey}
           onSubmit={async (values) => {
             await loginMutation.mutateAsync(values)
             navigate(redirectTo, { replace: true })
