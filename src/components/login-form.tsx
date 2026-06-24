@@ -1,11 +1,18 @@
 import { zodResolver } from "@hookform/resolvers/zod"
-import { EyeIcon, EyeOffIcon, LogInIcon } from "lucide-react"
+import {
+  EyeIcon,
+  EyeOffIcon,
+  LockKeyholeIcon,
+  LogInIcon,
+  UserIcon,
+} from "lucide-react"
 import { useMemo, useState } from "react"
 import { useForm } from "react-hook-form"
 import { Link } from "react-router"
 import { z } from "zod"
 
 import { useTranslation } from "@/components/providers/language-context"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import {
@@ -15,7 +22,13 @@ import {
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+  InputGroupText,
+} from "@/components/ui/input-group"
 import { Spinner } from "@/components/ui/spinner"
 import { localizedPublicPath } from "@/local"
 import { cn } from "@/lib/utils"
@@ -40,7 +53,6 @@ export function LoginForm({
 }: LoginFormProps) {
   const { locale, t } = useTranslation()
   const [showPassword, setShowPassword] = useState(false)
-  const [loginImageSeed] = useState(() => Math.random().toString(36).slice(2))
   const loginSchema = useMemo(
     () =>
       z.object({
@@ -60,21 +72,18 @@ export function LoginForm({
   const termsPath = localizedPublicPath(locale, "terms")
   const privacyPath = localizedPublicPath(locale, "privacy")
   const disabled = isSubmitting || form.formState.isSubmitting
-  const loginImageSrc = `https://picsum.photos/960/1280?random=${loginImageSeed}`
 
   return (
-    <div className={cn("flex flex-col gap-5", className)} {...props}>
-      <Card className="overflow-hidden p-0 shadow-none">
-        <CardContent className="grid p-0 md:grid-cols-[1fr_0.84fr]">
+    <div className={cn("flex flex-col gap-4", className)} {...props}>
+      <Card className="p-0 shadow-lg shadow-foreground/5">
+        <CardContent className="p-0">
           <form
-            className="p-6 md:p-8"
+            className="flex flex-col justify-center p-6 sm:p-8"
             onSubmit={form.handleSubmit((values) => onSubmit(values))}
           >
-            <FieldGroup>
-              <div className="flex flex-col gap-2">
-                <h1 className="text-2xl font-semibold tracking-tight">
-                  {t("login.title")}
-                </h1>
+            <FieldGroup className="gap-4">
+              <div className="mb-2 flex flex-col gap-1">
+                <h1 className="text-2xl font-semibold">{t("login.title")}</h1>
               </div>
 
               <Field
@@ -84,14 +93,21 @@ export function LoginForm({
                 <FieldLabel htmlFor="username">
                   {t("login.username")}
                 </FieldLabel>
-                <Input
-                  id="username"
-                  autoComplete="username"
-                  disabled={disabled}
-                  placeholder={t("login.usernamePlaceholder")}
-                  aria-invalid={Boolean(form.formState.errors.username)}
-                  {...form.register("username")}
-                />
+                <InputGroup className="h-10">
+                  <InputGroupAddon>
+                    <InputGroupText>
+                      <UserIcon />
+                    </InputGroupText>
+                  </InputGroupAddon>
+                  <InputGroupInput
+                    id="username"
+                    autoComplete="username"
+                    disabled={disabled}
+                    placeholder={t("login.usernamePlaceholder")}
+                    aria-invalid={Boolean(form.formState.errors.username)}
+                    {...form.register("username")}
+                  />
+                </InputGroup>
                 <FieldError errors={[form.formState.errors.username]} />
               </Field>
 
@@ -102,44 +118,49 @@ export function LoginForm({
                 <FieldLabel htmlFor="password">
                   {t("login.password")}
                 </FieldLabel>
-                <div className="relative">
-                  <Input
+                <InputGroup className="h-10">
+                  <InputGroupAddon>
+                    <InputGroupText>
+                      <LockKeyholeIcon />
+                    </InputGroupText>
+                  </InputGroupAddon>
+                  <InputGroupInput
                     id="password"
                     type={showPassword ? "text" : "password"}
                     autoComplete="current-password"
                     disabled={disabled}
                     placeholder={t("login.passwordPlaceholder")}
                     aria-invalid={Boolean(form.formState.errors.password)}
-                    className="pr-10"
                     {...form.register("password")}
                   />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute top-1/2 right-1 size-8 -translate-y-1/2 text-muted-foreground hover:bg-transparent"
-                    disabled={disabled}
-                    aria-label={
-                      showPassword
-                        ? t("login.hidePassword")
-                        : t("login.showPassword")
-                    }
-                    onClick={() => setShowPassword((value) => !value)}
-                  >
-                    {showPassword ? <EyeOffIcon /> : <EyeIcon />}
-                  </Button>
-                </div>
+                  <InputGroupAddon align="inline-end">
+                    <InputGroupButton
+                      size="icon-sm"
+                      disabled={disabled}
+                      aria-label={
+                        showPassword
+                          ? t("login.hidePassword")
+                          : t("login.showPassword")
+                      }
+                      onClick={() => setShowPassword((value) => !value)}
+                    >
+                      {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+                    </InputGroupButton>
+                  </InputGroupAddon>
+                </InputGroup>
                 <FieldError errors={[form.formState.errors.password]} />
               </Field>
 
               {error ? (
-                <p className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                  {getErrorMessage(error, t("login.fallbackError"))}
-                </p>
+                <Alert variant="destructive">
+                  <AlertDescription>
+                    {getErrorMessage(error, t("login.fallbackError"))}
+                  </AlertDescription>
+                </Alert>
               ) : null}
 
               <Field>
-                <Button type="submit" disabled={disabled}>
+                <Button className="h-10" type="submit" disabled={disabled}>
                   {disabled ? (
                     <Spinner data-icon="inline-start" />
                   ) : (
@@ -150,14 +171,6 @@ export function LoginForm({
               </Field>
             </FieldGroup>
           </form>
-
-          <div className="relative hidden bg-muted md:block">
-            <img
-              src={loginImageSrc}
-              alt=""
-              className="absolute inset-0 h-full w-full object-cover"
-            />
-          </div>
         </CardContent>
       </Card>
 

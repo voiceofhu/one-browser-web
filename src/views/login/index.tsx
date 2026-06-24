@@ -9,6 +9,7 @@ import { LanguageSwitcher } from "@/layout/components/language-switcher"
 import { isLoginPath } from "@/local"
 import { consumeAuthExpiredNotice } from "@/lib/request"
 import { useCurrentUser, useLoginMutation } from "@/hooks/use-auth"
+import { InteractiveGridBackground } from "./interactive-grid-background"
 
 function normalizeRedirect(value: string | null) {
   if (!value || !value.startsWith("/") || value.startsWith("//")) {
@@ -44,26 +45,31 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="relative flex min-h-svh flex-col items-center justify-center bg-muted p-6 pt-20 md:p-10">
-      <div className="absolute top-5 left-5 flex items-center gap-2">
-        <img src="/pwa-512x512.png" alt="" className="size-8 rounded-lg" />
-        <span className="text-sm font-semibold tracking-tight">
-          {t("brand.name")}
-        </span>
-      </div>
-      <div className="absolute top-5 right-5 flex items-center gap-1.5">
-        <LanguageSwitcher />
-        <ThemeToggleButton />
-      </div>
-      <LoginForm
-        className="w-full max-w-sm md:max-w-4xl"
-        isSubmitting={loginMutation.isPending}
-        error={loginMutation.error}
-        onSubmit={async (values) => {
-          await loginMutation.mutateAsync(values)
-          navigate(redirectTo, { replace: true })
-        }}
-      />
+    <main className="relative flex min-h-svh flex-col overflow-hidden bg-background px-4 py-5 sm:px-6 lg:px-8">
+      <InteractiveGridBackground />
+      <header className="relative z-10 flex items-center justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-2">
+          <img src="/pwa-512x512.png" alt="" className="size-8 rounded-lg" />
+          <span className="truncate text-sm font-semibold">
+            {t("brand.name")}
+          </span>
+        </div>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <LanguageSwitcher />
+          <ThemeToggleButton />
+        </div>
+      </header>
+      <section className="relative z-10 grid flex-1 place-items-center py-8 sm:py-10 lg:py-12">
+        <LoginForm
+          className="w-full max-w-sm"
+          isSubmitting={loginMutation.isPending}
+          error={loginMutation.error}
+          onSubmit={async (values) => {
+            await loginMutation.mutateAsync(values)
+            navigate(redirectTo, { replace: true })
+          }}
+        />
+      </section>
     </main>
   )
 }
