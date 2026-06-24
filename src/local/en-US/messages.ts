@@ -1,3 +1,4 @@
+import { APP_NAME } from "@/app"
 import type { LocaleMessageKey } from "@/local/zh-CN/messages"
 
 export const enUSMessages: Record<LocaleMessageKey, string> = {
@@ -45,7 +46,7 @@ export const enUSMessages: Record<LocaleMessageKey, string> = {
     "This account has no accessible menus. Contact an administrator to adjust role permissions.",
   "auth.state.backendUnavailable":
     "Confirm the backend service is available, then try again.",
-  "brand.name": "One Browser",
+  "brand.name": APP_NAME,
   "nav.guestName": "Not signed in",
   "nav.loginRequired": "Sign-in required",
   "nav.accountSettings": "Account settings",

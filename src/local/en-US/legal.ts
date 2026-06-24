@@ -1,13 +1,14 @@
+import { APP_NAME } from "@/app"
 import type { LegalContentCollection } from "@/local/types"
 
 export const enUSLegal = {
   terms: {
     title: "Terms of Service",
-    description: "General terms for accessing and using One Browser.",
+    description: `General terms for accessing and using ${APP_NAME}.`,
     sections: [
       {
         title: "1. Acceptance of terms",
-        body: "By accessing or using One Browser, you agree to follow these terms and any policies referenced from the service. If you use the service on behalf of an organization, you confirm that you are authorized to do so.",
+        body: `By accessing or using ${APP_NAME}, you agree to follow these terms and any policies referenced from the service. If you use the service on behalf of an organization, you confirm that you are authorized to do so.`,
       },
       {
         title: "2. Account responsibilities",
@@ -37,11 +38,11 @@ export const enUSLegal = {
   },
   privacy: {
     title: "Privacy Policy",
-    description: "A general overview of how One Browser handles information.",
+    description: `A general overview of how ${APP_NAME} handles information.`,
     sections: [
       {
         title: "1. Information we process",
-        body: "One Browser may process account details, profile settings, operational records, login records, browser or device metadata, and other information needed to provide administrative features.",
+        body: `${APP_NAME} may process account details, profile settings, operational records, login records, browser or device metadata, and other information needed to provide administrative features.`,
       },
       {
         title: "2. How information is used",

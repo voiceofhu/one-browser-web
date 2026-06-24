@@ -22,10 +22,11 @@ export function useCurrentUser() {
   })
 }
 
-export function useAuthPermissions() {
+export function useAuthPermissions(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: authQueryKeys.permissions,
     queryFn: getAuthPermissions,
+    enabled: options?.enabled ?? true,
     retry: shouldRetryAuth,
   })
 }

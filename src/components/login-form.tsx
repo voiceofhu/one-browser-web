@@ -38,9 +38,6 @@ import { Spinner } from "@/components/ui/spinner"
 import { localizedPublicPath } from "@/local"
 import { cn } from "@/lib/utils"
 
-const TURNSTILE_ALWAYS_PASS_TEST_SITE_KEY = "1x00000000000000000000AA"
-const TURNSTILE_TEST_BYPASS_TOKEN = "turnstile-test-bypass"
-
 type LoginFormValues = {
   username: string
   password: string
@@ -68,13 +65,8 @@ export function LoginForm({
   const [showPassword, setShowPassword] = useState(false)
   const [turnstileToken, setTurnstileToken] = useState("")
   const [turnstileError, setTurnstileError] = useState("")
-  const [turnstileBypassed, setTurnstileBypassed] = useState(false)
   const turnstileRef = useRef<TurnstileWidgetHandle>(null)
   const turnstileEnabled = Boolean(turnstileSiteKey)
-  const turnstileFallbackToken =
-    turnstileSiteKey === TURNSTILE_ALWAYS_PASS_TEST_SITE_KEY
-      ? TURNSTILE_TEST_BYPASS_TOKEN
-      : ""
   const loginSchema = useMemo(
     () =>
       z.object({
@@ -94,28 +86,19 @@ export function LoginForm({
   const termsPath = localizedPublicPath(locale, "terms")
   const privacyPath = localizedPublicPath(locale, "privacy")
   const disabled = isSubmitting || form.formState.isSubmitting
-  const waitingForTurnstile =
-    turnstileEnabled && !turnstileToken && !turnstileBypassed
+  const waitingForTurnstile = turnstileEnabled && !turnstileToken
   const submitDisabled = disabled || waitingForTurnstile
   const displayError =
     error || (turnstileError ? new Error(turnstileError) : null)
   const handleTurnstileTokenChange = useCallback((token: string) => {
     setTurnstileToken(token)
     if (token) {
-      setTurnstileBypassed(false)
       setTurnstileError("")
     }
   }, [])
   const handleTurnstileError = useCallback(() => {
-    if (turnstileFallbackToken) {
-      setTurnstileToken(turnstileFallbackToken)
-      setTurnstileBypassed(true)
-      setTurnstileError("")
-      return
-    }
-
     setTurnstileError(t("login.turnstileLoadFailed"))
-  }, [t, turnstileFallbackToken])
+  }, [t])
 
   return (
     <div className={cn("flex flex-col gap-4", className)} {...props}>
@@ -214,7 +197,7 @@ export function LoginForm({
                 <FieldError errors={[form.formState.errors.password]} />
               </Field>
 
-              {turnstileSiteKey && !turnstileBypassed ? (
+              {turnstileSiteKey ? (
                 <Field data-disabled={disabled} className="items-center">
                   <FieldLabel className="sr-only">
                     {t("login.turnstile")}

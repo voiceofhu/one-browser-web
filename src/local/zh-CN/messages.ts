@@ -1,3 +1,5 @@
+import { APP_NAME } from "@/app"
+
 export const zhCNMessages = {
   "language.switch": "切换语言",
   "language.current": "当前语言",
@@ -40,7 +42,7 @@ export const zhCNMessages = {
   "auth.state.noMenuDescription":
     "当前账号没有分配任何可访问的菜单，请联系管理员调整角色权限。",
   "auth.state.backendUnavailable": "请确认后端服务可用后重试。",
-  "brand.name": "One Browser",
+  "brand.name": APP_NAME,
   "nav.guestName": "未登录",
   "nav.loginRequired": "需要登录",
   "nav.accountSettings": "账号设置",

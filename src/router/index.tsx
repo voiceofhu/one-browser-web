@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from "react"
+import { lazy, Suspense, useEffect, useMemo } from "react"
 import {
   BrowserRouter,
   Navigate,
@@ -8,105 +8,119 @@ import {
 } from "react-router"
 
 import { useLanguage } from "@/components/providers/language-context"
-import { Spinner } from "@/components/ui/spinner"
+import { useAuthPermissions } from "@/hooks/use-auth"
 import { RouteProgressBar } from "@/layout/components/route-progress-bar"
+import {
+  getAuthorizedDynamicRouteElements,
+  getAuthorizedDynamicRouteRedirects,
+  getLocalAuthenticatedRouteElements,
+} from "@/router/dynamic-routes"
 import { RequireAuth } from "@/router/guards/require-auth"
 import { LEGACY_ROUTE_REDIRECTS } from "@/router/routes"
+import { getFirstAuthorizedPath } from "@/router/access"
 import {
   getLocaleFromPathname,
+  isSupportedLocale,
   localizedPublicPath,
+  PUBLIC_LOCALE_ROUTES,
   type PublicLocaleRoute,
 } from "@/local"
+import type { AuthPermissions } from "@/types/admin"
+import { APP_NAME } from "@/app"
 
 const AppLayout = lazy(() => import("@/layout"))
-const AccountProfilePage = lazy(() => import("@/views/account/profile"))
-const IndexPage = lazy(() => import("@/views/index"))
 const LoginPage = lazy(() => import("@/views/login"))
 const OAuthCallbackPage = lazy(() => import("@/views/login/oauth"))
 const TermsPage = lazy(() => import("@/views/legal/terms"))
 const PrivacyPage = lazy(() => import("@/views/legal/privacy"))
-const HealthPage = lazy(() => import("@/views/monitor/health"))
-const JobsPage = lazy(() => import("@/views/monitor/job"))
-const OnlineUsersPage = lazy(() => import("@/views/monitor/online"))
-const UserPage = lazy(() => import("@/views/system/user"))
-const RolePage = lazy(() => import("@/views/system/role"))
-const MenuPage = lazy(() => import("@/views/system/menu"))
-const DeptPage = lazy(() => import("@/views/system/dept"))
-const PostPage = lazy(() => import("@/views/system/post"))
-const DictTypePage = lazy(() => import("@/views/system/dict/type"))
-const NoticePage = lazy(() => import("@/views/system/notice"))
-const BrowserTeamPage = lazy(() => import("@/views/browser/team"))
-const BrowserEnvironmentPage = lazy(() => import("@/views/browser/environment"))
-const BrowserProxyPage = lazy(() => import("@/views/browser/proxy"))
-const BrowserMemberPage = lazy(() => import("@/views/browser/member"))
-const OperationLogPage = lazy(() => import("@/views/system/log/operation"))
-const LoginLogPage = lazy(() => import("@/views/system/log/login"))
 
 export function AppRouter() {
   return (
     <BrowserRouter basename={import.meta.env.VITE_BASE_URL}>
       <RouteLocaleSync />
       <RouteProgressBar />
+      {/* <RouteLoading /> */}
       <Suspense fallback={<RouteLoading />}>
-        <Routes>
-          <Route path="/login" element={<LocaleRedirect to="login" />} />
-          <Route path="/terms" element={<LocaleRedirect to="terms" />} />
-          <Route path="/privacy" element={<LocaleRedirect to="privacy" />} />
-          <Route path="/oauth" element={<OAuthCallbackPage />} />
-          <Route path="/:locale/oauth" element={<OAuthCallbackPage />} />
-          <Route path="/:locale/login" element={<LoginPage />} />
-          <Route path="/:locale/terms" element={<TermsPage />} />
-          <Route path="/:locale/privacy" element={<PrivacyPage />} />
-          <Route
-            path="/"
-            element={
-              <RequireAuth>
-                <AppLayout />
-              </RequireAuth>
-            }
-          >
-            <Route index element={<Navigate to="/index" replace />} />
-            <Route path="index" element={<IndexPage />} />
-            <Route path="account/profile" element={<AccountProfilePage />} />
-            <Route path="system/user" element={<UserPage />} />
-            <Route path="system/role" element={<RolePage />} />
-            <Route path="system/menu" element={<MenuPage />} />
-            <Route path="system/dept" element={<DeptPage />} />
-            <Route path="system/post" element={<PostPage />} />
-            <Route path="system/dict" element={<DictTypePage />} />
-            <Route path="system/notice" element={<NoticePage />} />
-            <Route
-              path="system/dict/type"
-              element={<Navigate to="/system/dict" replace />}
-            />
-            <Route
-              path="system/dict/data"
-              element={<Navigate to="/system/dict" replace />}
-            />
-            <Route path="browser/team" element={<BrowserTeamPage />} />
-            <Route
-              path="browser/environment"
-              element={<BrowserEnvironmentPage />}
-            />
-            <Route path="browser/proxy" element={<BrowserProxyPage />} />
-            <Route path="browser/member" element={<BrowserMemberPage />} />
-            <Route path="system/log/operation" element={<OperationLogPage />} />
-            <Route path="system/log/login" element={<LoginLogPage />} />
-            <Route path="monitor/health" element={<HealthPage />} />
-            <Route path="monitor/online" element={<OnlineUsersPage />} />
-            <Route path="monitor/job" element={<JobsPage />} />
-          </Route>
-          {Object.entries(LEGACY_ROUTE_REDIRECTS).map(([path, target]) => (
-            <Route
-              key={path}
-              path={path}
-              element={<Navigate to={target} replace />}
-            />
-          ))}
-          <Route path="*" element={<Navigate to="/index" replace />} />
-        </Routes>
+        <AppRouteTree />
       </Suspense>
     </BrowserRouter>
+  )
+}
+
+function AppRouteTree() {
+  const location = useLocation()
+  const shouldLoadAuthorizedRoutes = !isPublicAppPath(location.pathname)
+  const authPermissions = useAuthPermissions({
+    enabled: shouldLoadAuthorizedRoutes,
+  })
+  const authorizedRouteElements = useMemo(
+    () =>
+      getAuthorizedDynamicRouteElements(
+        shouldLoadAuthorizedRoutes ? authPermissions.data : undefined
+      ),
+    [authPermissions.data, shouldLoadAuthorizedRoutes]
+  )
+  const authorizedRouteRedirects = useMemo(
+    () =>
+      getAuthorizedDynamicRouteRedirects(
+        shouldLoadAuthorizedRoutes ? authPermissions.data : undefined
+      ),
+    [authPermissions.data, shouldLoadAuthorizedRoutes]
+  )
+  const localRouteElements = useMemo(
+    () => getLocalAuthenticatedRouteElements(),
+    []
+  )
+
+  return (
+    <Routes>
+      <Route path="/login" element={<LocaleRedirect to="login" />} />
+      <Route path="/terms" element={<LocaleRedirect to="terms" />} />
+      <Route path="/privacy" element={<LocaleRedirect to="privacy" />} />
+      <Route path="/oauth" element={<OAuthCallbackPage />} />
+      <Route path="/:locale/oauth" element={<OAuthCallbackPage />} />
+      <Route path="/:locale/login" element={<LoginPage />} />
+      <Route path="/:locale/terms" element={<TermsPage />} />
+      <Route path="/:locale/privacy" element={<PrivacyPage />} />
+      <Route
+        path="/"
+        element={
+          <RequireAuth>
+            <AppLayout />
+          </RequireAuth>
+        }
+      >
+        <Route
+          index
+          element={<AuthorizedIndexRedirect access={authPermissions.data} />}
+        />
+        {localRouteElements.map((route) => (
+          <Route key={route.id} path={route.path} element={route.element} />
+        ))}
+        {authorizedRouteElements.map((route) => (
+          <Route key={route.id} path={route.path} element={route.element} />
+        ))}
+        {authorizedRouteRedirects.map((redirect) => (
+          <Route
+            key={redirect.key}
+            path={redirect.path}
+            element={<Navigate to={redirect.to} replace />}
+          />
+        ))}
+        <Route
+          path="*"
+          element={<AuthorizedRouteFallback access={authPermissions.data} />}
+        />
+      </Route>
+      {Object.entries(LEGACY_ROUTE_REDIRECTS).map(([path, target]) => (
+        <Route
+          key={path}
+          path={path}
+          element={<Navigate to={target} replace />}
+        />
+      ))}
+      <Route path="*" element={<Navigate to="/index" replace />} />
+    </Routes>
   )
 }
 
@@ -136,10 +150,43 @@ function LocaleRedirect({ to }: { to: PublicLocaleRoute }) {
   )
 }
 
+function AuthorizedIndexRedirect({
+  access,
+}: {
+  access: AuthPermissions | undefined
+}) {
+  return <Navigate to={getFirstAuthorizedPath(access) ?? "/index"} replace />
+}
+
+function AuthorizedRouteFallback({
+  access,
+}: {
+  access: AuthPermissions | undefined
+}) {
+  return <Navigate to={getFirstAuthorizedPath(access) ?? "/index"} replace />
+}
+
+function isPublicAppPath(pathname: string) {
+  const segments = pathname.split("/").filter(Boolean)
+  const firstSegment = segments[0]
+  const hasLocalePrefix = Boolean(
+    firstSegment && isSupportedLocale(firstSegment)
+  )
+  const route = segments[hasLocalePrefix ? 1 : 0]
+
+  return (
+    route === "oauth" ||
+    (route !== undefined &&
+      PUBLIC_LOCALE_ROUTES.some((publicRoute) => publicRoute === route))
+  )
+}
+
 function RouteLoading() {
   return (
-    <div className="flex min-h-svh items-center justify-center bg-background text-muted-foreground">
-      <Spinner />
+    <div className="fixed inset-0 z-50 flex min-h-svh items-center justify-center bg-primary/90 text-muted">
+      <div className="text-center text-[12vmin] font-semibold tracking-normal select-none sm:text-[15vmin] md:text-[15vmin] lg:text-[17vim]">
+        {APP_NAME}
+      </div>
     </div>
   )
 }

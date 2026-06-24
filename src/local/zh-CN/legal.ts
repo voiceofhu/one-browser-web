@@ -1,13 +1,14 @@
+import { APP_NAME } from "@/app"
 import type { LegalContentCollection } from "@/local/types"
 
 export const zhCNLegal = {
   terms: {
     title: "服务条款",
-    description: "使用 One Browser 前请阅读以下通用条款。",
+    description: `使用 ${APP_NAME} 前请阅读以下通用条款。`,
     sections: [
       {
         title: "1. 接受条款",
-        body: "访问或使用 One Browser 即表示您同意遵守本条款以及服务中引用的相关政策。如果您代表组织使用本服务，您确认自己已获得相应授权。",
+        body: `访问或使用 ${APP_NAME} 即表示您同意遵守本条款以及服务中引用的相关政策。如果您代表组织使用本服务，您确认自己已获得相应授权。`,
       },
       {
         title: "2. 账号责任",
@@ -37,11 +38,11 @@ export const zhCNLegal = {
   },
   privacy: {
     title: "隐私政策",
-    description: "以下内容概述 One Browser 处理信息的通用方式。",
+    description: `以下内容概述 ${APP_NAME} 处理信息的通用方式。`,
     sections: [
       {
         title: "1. 我们处理的信息",
-        body: "One Browser 可能会处理账号资料、个人设置、操作记录、登录记录、浏览器或设备元数据，以及提供管理功能所需的其他信息。",
+        body: `${APP_NAME} 可能会处理账号资料、个人设置、操作记录、登录记录、浏览器或设备元数据，以及提供管理功能所需的其他信息。`,
       },
       {
         title: "2. 信息用途",

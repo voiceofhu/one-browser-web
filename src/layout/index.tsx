@@ -42,13 +42,16 @@ import { SiteHeader } from "@/layout/components/site-header"
 import { TagsView } from "@/layout/components/tags-view"
 import { visitedTagIdsAtom } from "@/layout/stores/tags-view"
 import {
+  getAuthorizedRouteIds,
   getAuthorizedRouteIconValues,
+  getFirstAuthorizedPath,
   getRouteAccessTarget,
 } from "@/router/access"
 import {
   APP_ROUTE_BY_ID,
   APP_ROUTE_BY_PATH,
   DEFAULT_APP_ROUTE,
+  type AppRouteId,
   type AppRouteMeta,
 } from "@/router/routes"
 
@@ -71,9 +74,20 @@ export default function AppLayout() {
     APP_ROUTE_BY_PATH[routePath] ?? APP_ROUTE_BY_ID[DEFAULT_APP_ROUTE]
   const routeTransitionKey = `${location.pathname}${location.search}`
   const pageTransitionKey = `${routeTransitionKey}:${outletRefreshKey}`
+  const authorizedRouteIds = useMemo(
+    () => getLayoutAuthorizedRouteIds(authPermissions.data),
+    [authPermissions.data]
+  )
+  const firstAuthorizedRoute = useMemo(
+    () => getLayoutFirstAuthorizedRoute(authPermissions.data),
+    [authPermissions.data]
+  )
   const visitedTags = useMemo(
-    () => visitedTagIds.map((tagId) => APP_ROUTE_BY_ID[tagId]),
-    [visitedTagIds]
+    () =>
+      visitedTagIds
+        .filter((tagId) => authorizedRouteIds.has(tagId))
+        .map((tagId) => APP_ROUTE_BY_ID[tagId]),
+    [authorizedRouteIds, visitedTagIds]
   )
   const routeIconValues = useMemo(
     () => getAuthorizedRouteIconValues(authPermissions.data),
@@ -106,8 +120,13 @@ export default function AppLayout() {
     setVisitedTagIds(nextTagIds)
 
     if (route.id === routeMeta.id) {
+      const visibleNextTagIds = nextTagIds.filter((tagId) =>
+        authorizedRouteIds.has(tagId)
+      )
       const fallbackTagId =
-        nextTagIds[index - 1] ?? nextTagIds[index] ?? DEFAULT_APP_ROUTE
+        visibleNextTagIds[index - 1] ??
+        visibleNextTagIds[index] ??
+        firstAuthorizedRoute.id
       const fallback = APP_ROUTE_BY_ID[fallbackTagId]
       navigate(fallback.path)
     }
@@ -118,10 +137,13 @@ export default function AppLayout() {
   }
 
   function handleCloseOthers() {
+    const nextTagIds = [DEFAULT_APP_ROUTE, routeMeta.id].filter(
+      (tagId, index, tagIds): tagId is AppRouteId =>
+        authorizedRouteIds.has(tagId) && tagIds.indexOf(tagId) === index
+    )
+
     setVisitedTagIds(
-      routeMeta.id === DEFAULT_APP_ROUTE
-        ? [DEFAULT_APP_ROUTE]
-        : [DEFAULT_APP_ROUTE, routeMeta.id]
+      nextTagIds.length > 0 ? nextTagIds : [firstAuthorizedRoute.id]
     )
   }
 
@@ -135,7 +157,10 @@ export default function AppLayout() {
 
     setVisitedTagIds((tagIds) =>
       tagIds.filter(
-        (tagId, index) => tagId === DEFAULT_APP_ROUTE || index >= activeIndex
+        (tagId, index) =>
+          (tagId === DEFAULT_APP_ROUTE &&
+            authorizedRouteIds.has(DEFAULT_APP_ROUTE)) ||
+          index >= activeIndex
       )
     )
   }
@@ -150,15 +175,18 @@ export default function AppLayout() {
 
     setVisitedTagIds((tagIds) =>
       tagIds.filter(
-        (tagId, index) => tagId === DEFAULT_APP_ROUTE || index <= activeIndex
+        (tagId, index) =>
+          (tagId === DEFAULT_APP_ROUTE &&
+            authorizedRouteIds.has(DEFAULT_APP_ROUTE)) ||
+          index <= activeIndex
       )
     )
   }
 
   function handleCloseAll() {
-    setVisitedTagIds([DEFAULT_APP_ROUTE])
-    if (routeMeta.id !== DEFAULT_APP_ROUTE) {
-      navigate(HOME_ROUTE.path)
+    setVisitedTagIds([firstAuthorizedRoute.id])
+    if (routeMeta.id !== firstAuthorizedRoute.id) {
+      navigate(firstAuthorizedRoute.path)
     }
   }
 
@@ -275,6 +303,21 @@ export default function AppLayout() {
 
 function getErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error ? error.message : fallback
+}
+
+function getLayoutAuthorizedRouteIds(
+  access: Parameters<typeof getAuthorizedRouteIds>[0]
+) {
+  const routeIds = new Set<AppRouteId>(getAuthorizedRouteIds(access))
+  routeIds.add("account")
+  return routeIds
+}
+
+function getLayoutFirstAuthorizedRoute(
+  access: Parameters<typeof getFirstAuthorizedPath>[0]
+) {
+  const path = getFirstAuthorizedPath(access)
+  return path ? (APP_ROUTE_BY_PATH[path] ?? HOME_ROUTE) : HOME_ROUTE
 }
 
 function getRefreshQueryKeys(routeId: AppRouteMeta["id"]) {

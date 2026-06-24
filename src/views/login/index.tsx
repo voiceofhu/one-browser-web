@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useMemo } from "react"
 import { Navigate, useNavigate, useSearchParams } from "react-router"
 import { toast } from "sonner"
 
@@ -30,7 +30,10 @@ export default function LoginPage() {
   const [searchParams] = useSearchParams()
   const redirectTo = normalizeRedirect(searchParams.get("redirect"))
   const oauthError = searchParams.get("oauth_error")
-  const [googleLoginUrl, setGoogleLoginUrl] = useState<string | null>(null)
+  const googleLoginUrl = useMemo(
+    () => buildGoogleLoginUrl(redirectTo),
+    [redirectTo]
+  )
   const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY || undefined
   const loginMutation = useLoginMutation()
   const currentUser = useCurrentUser()
@@ -43,10 +46,6 @@ export default function LoginPage() {
       })
     }
   }, [t])
-
-  useEffect(() => {
-    setGoogleLoginUrl(buildGoogleLoginUrl(redirectTo))
-  }, [redirectTo])
 
   if (currentUser.isSuccess) {
     return <Navigate to={redirectTo} replace />
