@@ -49,6 +49,7 @@ import type {
 } from "@/types/admin"
 import { ResourceTableColumnHeader } from "./table"
 import { findMenuIconOption } from "./menu-icons"
+import { isSuperAdminRole } from "./protected-records"
 import { showResourceError } from "./toast"
 
 export const userColumns: ColumnDef<UserResource>[] = [
@@ -421,7 +422,9 @@ function RoleStatusSwitch({ role }: { role: RoleResource }) {
   return (
     <ResourceStatusSwitch
       checked={enabled}
-      disabled={!canChangeStatus || mutation.isPending}
+      disabled={
+        !canChangeStatus || isSuperAdminRole(role) || mutation.isPending
+      }
       label={getStatusSwitchLabel(locale, enabled, "角色", role.role_name)}
       onCheckedChange={(checked) => mutation.mutate(checked ? "0" : "1")}
     />

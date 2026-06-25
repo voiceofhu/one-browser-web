@@ -29,6 +29,7 @@ type RoleMenuPermissionTreeProps = {
   roleId?: number
   disabled: boolean
   invalid: boolean
+  forceAllSelected?: boolean
   onChange: (menuIds: number[]) => void
 }
 
@@ -37,6 +38,7 @@ export function RoleMenuPermissionTree({
   roleId,
   disabled,
   invalid,
+  forceAllSelected = false,
   onChange,
 }: RoleMenuPermissionTreeProps) {
   const { locale } = useTranslation()
@@ -50,16 +52,11 @@ export function RoleMenuPermissionTree({
   const roleMenusQuery = useQuery({
     queryKey: [...systemQueryKeys.roles, "menus", roleId],
     queryFn: () => getRoleMenuIds(roleId ?? 0),
-    enabled: roleId != null,
+    enabled: roleId != null && !forceAllSelected,
     staleTime: 30_000,
   })
-
-  React.useEffect(() => {
-    if (roleMenusQuery.data) {
-      onChange(roleMenusQuery.data.ids)
-    }
-  }, [onChange, roleMenusQuery.data])
-
+  const onChangeRef = React.useRef(onChange)
+  const appliedRoleMenuIdsKeyRef = React.useRef<string | null>(null)
   const menus = React.useMemo(
     () => menusQuery.data?.list ?? [],
     [menusQuery.data]
@@ -78,15 +75,68 @@ export function RoleMenuPermissionTree({
         .map(([menuId]) => menuId),
     [childrenById]
   )
+  const effectiveValue = React.useMemo(
+    () =>
+      forceAllSelected
+        ? allMenuIds
+        : value.filter((item) => typeof item === "number"),
+    [allMenuIds, forceAllSelected, value]
+  )
   const selectedIds = React.useMemo(
-    () => new Set(value.filter((item) => typeof item === "number")),
-    [value]
+    () => new Set(effectiveValue),
+    [effectiveValue]
   )
   const allSelected =
     allMenuIds.length > 0 && allMenuIds.every((id) => selectedIds.has(id))
   const allExpanded =
     expandableIds.length > 0 && expandableIds.every((id) => expandedIds.has(id))
   const isLoading = menusQuery.isLoading || roleMenusQuery.isLoading
+  const isReadOnly = disabled || forceAllSelected
+
+  React.useEffect(() => {
+    onChangeRef.current = onChange
+  }, [onChange])
+
+  React.useEffect(() => {
+    if (!forceAllSelected) {
+      return
+    }
+
+    const nextKey = `all:${allMenuIds.join(",")}`
+    if (
+      allMenuIds.length === 0 ||
+      appliedRoleMenuIdsKeyRef.current === nextKey
+    ) {
+      return
+    }
+
+    appliedRoleMenuIdsKeyRef.current = nextKey
+    if (createMenuIdsKey(value) !== allMenuIds.join(",")) {
+      onChangeRef.current(allMenuIds)
+    }
+  }, [allMenuIds, forceAllSelected, value])
+
+  React.useEffect(() => {
+    if (forceAllSelected) {
+      return
+    }
+
+    if (!roleMenusQuery.data) {
+      appliedRoleMenuIdsKeyRef.current = null
+      return
+    }
+
+    const nextIds = normalizeMenuIds(roleMenusQuery.data.ids)
+    const nextKey = `${roleId ?? "create"}:${nextIds.join(",")}`
+    if (appliedRoleMenuIdsKeyRef.current === nextKey) {
+      return
+    }
+
+    appliedRoleMenuIdsKeyRef.current = nextKey
+    if (createMenuIdsKey(value) !== nextIds.join(",")) {
+      onChangeRef.current(nextIds)
+    }
+  }, [forceAllSelected, roleId, roleMenusQuery.data, value])
 
   function updateSelection(next: Set<number>) {
     onChange(Array.from(next).sort((left, right) => left - right))
@@ -151,19 +201,19 @@ export function RoleMenuPermissionTree({
         <CheckboxOption
           label={translateAdminText(locale, "展开/折叠")}
           checked={allExpanded}
-          disabled={disabled || isLoading || expandableIds.length === 0}
+          disabled={isReadOnly || isLoading || expandableIds.length === 0}
           onCheckedChange={toggleExpandAll}
         />
         <CheckboxOption
           label={translateAdminText(locale, "全选/全不选")}
           checked={allSelected}
-          disabled={disabled || isLoading || allMenuIds.length === 0}
+          disabled={isReadOnly || isLoading || allMenuIds.length === 0}
           onCheckedChange={toggleSelectAll}
         />
         <CheckboxOption
           label={translateAdminText(locale, "父子联动")}
           checked={linked}
-          disabled={disabled || isLoading}
+          disabled={isReadOnly || isLoading}
           onCheckedChange={toggleLinked}
         />
       </div>
@@ -182,7 +232,7 @@ export function RoleMenuPermissionTree({
                 depth={0}
                 selectedIds={selectedIds}
                 expandedIds={expandedIds}
-                disabled={disabled}
+                disabled={isReadOnly}
                 onToggleNode={toggleNode}
                 onToggleExpanded={toggleExpanded}
               />
@@ -214,15 +264,18 @@ function CheckboxOption({
   return (
     <label
       htmlFor={id}
-      className="flex cursor-pointer items-center gap-2 has-disabled:cursor-not-allowed has-disabled:opacity-50"
+      className="flex cursor-pointer items-center gap-2 has-disabled:cursor-not-allowed"
     >
       <Checkbox
         id={id}
         checked={checked}
         disabled={disabled}
+        className="data-checked:disabled:opacity-100"
         onCheckedChange={(value) => onCheckedChange(value === true)}
       />
-      <span>{label}</span>
+      <span className={cn(disabled && !checked && "text-muted-foreground")}>
+        {label}
+      </span>
     </label>
   )
 }
@@ -280,13 +333,14 @@ function MenuTreeItem({
           id={inputId}
           checked={checked}
           disabled={disabled}
+          className="data-checked:disabled:opacity-100"
           onCheckedChange={(value) => onToggleNode(node, value === true)}
         />
         <label
           htmlFor={inputId}
           className={cn(
             "flex min-w-0 flex-1 cursor-pointer items-center gap-2 py-1",
-            disabled && "cursor-not-allowed opacity-50"
+            disabled && "cursor-not-allowed text-muted-foreground"
           )}
         >
           <span className="truncate">{node.menu.menu_name}</span>
@@ -388,6 +442,14 @@ function collectNodeIds(node: MenuTreeNode): number[] {
     node.menu.menu_id,
     ...node.children.flatMap((child) => collectNodeIds(child)),
   ]
+}
+
+function normalizeMenuIds(ids: number[]) {
+  return Array.from(new Set(ids)).sort((left, right) => left - right)
+}
+
+function createMenuIdsKey(ids: number[]) {
+  return normalizeMenuIds(ids).join(",")
 }
 
 function getAncestorIds(

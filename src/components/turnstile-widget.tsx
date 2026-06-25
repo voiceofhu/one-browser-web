@@ -14,6 +14,7 @@ type TurnstileRenderOptions = {
   action?: string
   theme?: "auto" | "light" | "dark"
   size?: "normal" | "flexible" | "compact"
+  appearance?: "always" | "execute" | "interaction-only"
   callback?: (token: string) => void
   "expired-callback"?: () => void
   "error-callback"?: () => void
@@ -38,13 +39,18 @@ export type TurnstileWidgetHandle = {
   reset: () => void
 }
 
+export type TurnstileWidgetStatus = "loading" | "ready" | "error"
+
 type TurnstileWidgetProps = {
   siteKey: string
   action?: string
+  appearance?: TurnstileRenderOptions["appearance"]
   className?: string
   size?: TurnstileRenderOptions["size"]
+  loadingLabel?: string
   onTokenChange: (token: string) => void
   onError?: () => void
+  onStatusChange?: (status: TurnstileWidgetStatus) => void
 }
 
 let turnstileScriptPromise: Promise<void> | null = null
@@ -57,19 +63,20 @@ export const TurnstileWidget = forwardRef<
   {
     siteKey,
     action = "login",
+    appearance = "always",
     className,
     size = "normal",
+    loadingLabel,
     onTokenChange,
     onError,
+    onStatusChange,
   },
   ref
 ) {
   const containerRef = useRef<HTMLDivElement>(null)
   const widgetIdRef = useRef<string | null>(null)
   const [scriptReady, setScriptReady] = useState(false)
-  const [loadState, setLoadState] = useState<"loading" | "ready" | "error">(
-    "loading"
-  )
+  const [loadState, setLoadState] = useState<TurnstileWidgetStatus>("loading")
 
   useImperativeHandle(ref, () => ({
     reset() {
@@ -83,6 +90,10 @@ export const TurnstileWidget = forwardRef<
       onTokenChange("")
     },
   }))
+
+  useEffect(() => {
+    onStatusChange?.(loadState)
+  }, [loadState, onStatusChange])
 
   useEffect(() => {
     let active = true
@@ -107,53 +118,92 @@ export const TurnstileWidget = forwardRef<
   }, [onError])
 
   useEffect(() => {
-    if (
-      !scriptReady ||
-      loadState === "error" ||
-      !window.turnstile ||
-      !containerRef.current
-    ) {
+    if (!scriptReady || !window.turnstile || !containerRef.current) {
       return
     }
 
-    const widgetId = window.turnstile.render(containerRef.current, {
-      sitekey: siteKey,
-      action,
-      theme: "auto",
-      size,
-      callback: onTokenChange,
-      "expired-callback": () => onTokenChange(""),
-      "error-callback": () => {
+    let active = true
+    let cleanupFrameWatcher: (() => void) | undefined
+    const container = containerRef.current
+
+    try {
+      setLoadState("loading")
+      const widgetId = window.turnstile.render(container, {
+        sitekey: siteKey,
+        action,
+        appearance,
+        theme: "auto",
+        size,
+        callback: (token) => {
+          setLoadState("ready")
+          onTokenChange(token)
+        },
+        "expired-callback": () => {
+          setLoadState("ready")
+          onTokenChange("")
+        },
+        "error-callback": () => {
+          setLoadState("error")
+          onTokenChange("")
+          onError?.()
+        },
+      })
+      widgetIdRef.current = widgetId
+      cleanupFrameWatcher = watchTurnstileFrame(container, () => {
+        if (active) {
+          setLoadState("ready")
+        }
+      })
+    } catch {
+      if (active) {
         setLoadState("error")
         onTokenChange("")
         onError?.()
-      },
-    })
-    widgetIdRef.current = widgetId
-    setLoadState("ready")
+      }
+    }
 
     return () => {
+      active = false
+      cleanupFrameWatcher?.()
       if (window.turnstile && widgetIdRef.current) {
         window.turnstile.remove(widgetIdRef.current)
       }
       widgetIdRef.current = null
       onTokenChange("")
     }
-  }, [action, loadState, onError, onTokenChange, scriptReady, siteKey, size])
+  }, [action, appearance, onError, onTokenChange, scriptReady, siteKey, size])
 
   if (loadState === "error") {
     return null
   }
 
+  const reserveWidgetSpace = loadState === "loading" || appearance === "always"
+
   return (
     <div
       className={cn(
-        "relative mx-auto flex min-h-[65px] w-full max-w-[300px] items-center justify-center",
+        "relative mx-auto flex w-full max-w-[300px] items-center justify-center",
+        reserveWidgetSpace ? "min-h-[65px]" : "min-h-0",
         className
       )}
     >
       {loadState === "loading" ? (
-        <Skeleton className="absolute inset-0 rounded-md" />
+        <div
+          className="absolute inset-0 z-10 rounded-md border border-border bg-background/60 p-3"
+          role="status"
+          aria-live="polite"
+        >
+          <div className="flex h-full items-center gap-3">
+            <Skeleton className="size-9 rounded-full" />
+            <div className="flex flex-1 flex-col gap-2">
+              <Skeleton className="h-3 w-24" />
+              <Skeleton className="h-3 w-36" />
+            </div>
+          </div>
+          {loadingLabel ? (
+            <span className="sr-only">{loadingLabel}</span>
+          ) : null}
+        </div>
       ) : null}
       <div
         ref={containerRef}
@@ -167,6 +217,44 @@ export const TurnstileWidget = forwardRef<
     </div>
   )
 })
+
+function watchTurnstileFrame(container: HTMLElement, onReady: () => void) {
+  let frame: HTMLIFrameElement | null = null
+  let observer: MutationObserver | null = null
+
+  function cleanup() {
+    observer?.disconnect()
+    frame?.removeEventListener("load", handleReady)
+  }
+
+  function handleReady() {
+    cleanup()
+    onReady()
+  }
+
+  function attachFrameListener() {
+    const nextFrame = container.querySelector("iframe")
+    if (!(nextFrame instanceof HTMLIFrameElement)) {
+      return false
+    }
+
+    frame = nextFrame
+    frame.addEventListener("load", handleReady, { once: true })
+    return true
+  }
+
+  observer = new MutationObserver(() => {
+    if (attachFrameListener()) {
+      observer?.disconnect()
+    }
+  })
+
+  if (!attachFrameListener()) {
+    observer.observe(container, { childList: true, subtree: true })
+  }
+
+  return cleanup
+}
 
 function loadTurnstileScript() {
   if (typeof window === "undefined") {

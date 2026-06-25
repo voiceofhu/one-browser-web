@@ -51,6 +51,13 @@ export interface LoginResponse {
   expires_in: number
 }
 
+export interface TeamInvite {
+  team_id: number
+  team_key: string
+  team_name: string
+  expires_at: string
+}
+
 export interface HealthResponse {
   status: string
   service: string

@@ -2,6 +2,7 @@ export const authQueryKeys = {
   all: ["auth"] as const,
   currentUser: ["auth", "current-user"] as const,
   permissions: ["auth", "permissions"] as const,
+  teamInvite: (token: string) => ["auth", "team-invite", token] as const,
 }
 
 export const monitorQueryKeys = {

@@ -14,9 +14,7 @@ export function InteractiveGridBackground({
   const targetPointerRef = useRef({ x: 0, y: 0 })
   const isMobile = useMediaQuery("(max-width: 767px)")
   const isCoarsePointer = useMediaQuery("(pointer: coarse)")
-  const prefersReducedMotion = useMediaQuery(
-    "(prefers-reduced-motion: reduce)"
-  )
+  const prefersReducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)")
   const shouldSimplify = isMobile || isCoarsePointer || prefersReducedMotion
 
   const syncPointer = useCallback((x: number, y: number) => {
@@ -57,13 +55,16 @@ export function InteractiveGridBackground({
     [schedulePointerSync, syncPointer]
   )
 
-  const centerPointer = useCallback((immediate = false) => {
-    const anchorY = shouldSimplify
-      ? window.innerHeight * 0.28
-      : window.innerHeight / 2
+  const centerPointer = useCallback(
+    (immediate = false) => {
+      const anchorY = shouldSimplify
+        ? window.innerHeight * 0.28
+        : window.innerHeight / 2
 
-    setPointerTarget(window.innerWidth / 2, anchorY, immediate)
-  }, [setPointerTarget, shouldSimplify])
+      setPointerTarget(window.innerWidth / 2, anchorY, immediate)
+    },
+    [setPointerTarget, shouldSimplify]
+  )
 
   const movePointer = useCallback(
     (clientX: number, clientY: number) => {
@@ -137,6 +138,10 @@ export function InteractiveGridBackground({
           --dot-active: color-mix(in oklch, var(--primary) 48%, transparent);
           --base-opacity: 0.56;
           --active-opacity: 0.36;
+          --mask-core-alpha: 72%;
+          --mask-near-alpha: 58%;
+          --mask-mid-alpha: 32%;
+          --mask-edge-alpha: 10%;
           --mask-will-change: mask-image;
         }
 
@@ -153,17 +158,39 @@ export function InteractiveGridBackground({
         }
 
         .dark .interactive-grid-background {
-          --dot-base: color-mix(in oklch, var(--foreground) 10%, transparent);
-          --dot-active: color-mix(in oklch, var(--primary) 52%, transparent);
-          --base-opacity: 0.5;
-          --active-opacity: 0.36;
+          --dot-size: 0.94px;
+          --active-dot-size: 1.5px;
+          --mask-size: clamp(220px, 26vw, 380px);
+          --dot-base: color-mix(in oklch, var(--foreground) 18%, transparent);
+          --dot-active: color-mix(
+            in oklch,
+            var(--primary) 72%,
+            var(--foreground) 28%
+          );
+          --base-opacity: 0.74;
+          --active-opacity: 0.88;
+          --mask-core-alpha: 100%;
+          --mask-near-alpha: 86%;
+          --mask-mid-alpha: 56%;
+          --mask-edge-alpha: 22%;
         }
 
         .dark .interactive-grid-background.is-simplified {
-          --dot-base: color-mix(in oklch, var(--foreground) 8%, transparent);
-          --dot-active: color-mix(in oklch, var(--primary) 38%, transparent);
-          --base-opacity: 0.4;
-          --active-opacity: 0.22;
+          --dot-size: 0.82px;
+          --active-dot-size: 1.12px;
+          --mask-size: clamp(120px, 28vw, 180px);
+          --dot-base: color-mix(in oklch, var(--foreground) 14%, transparent);
+          --dot-active: color-mix(
+            in oklch,
+            var(--primary) 66%,
+            var(--foreground) 34%
+          );
+          --base-opacity: 0.58;
+          --active-opacity: 0.58;
+          --mask-core-alpha: 92%;
+          --mask-near-alpha: 72%;
+          --mask-mid-alpha: 42%;
+          --mask-edge-alpha: 16%;
         }
 
         .interactive-grid-background__layer {
@@ -197,18 +224,18 @@ export function InteractiveGridBackground({
           opacity: var(--active-opacity);
           -webkit-mask-image: radial-gradient(
             circle var(--mask-size) at var(--mx) var(--my),
-            rgb(0 0 0 / 72%) 0%,
-            rgb(0 0 0 / 58%) 24%,
-            rgb(0 0 0 / 32%) 46%,
-            rgb(0 0 0 / 10%) 64%,
+            rgb(0 0 0 / var(--mask-core-alpha)) 0%,
+            rgb(0 0 0 / var(--mask-near-alpha)) 24%,
+            rgb(0 0 0 / var(--mask-mid-alpha)) 46%,
+            rgb(0 0 0 / var(--mask-edge-alpha)) 64%,
             transparent 100%
           );
           mask-image: radial-gradient(
             circle var(--mask-size) at var(--mx) var(--my),
-            rgb(0 0 0 / 72%) 0%,
-            rgb(0 0 0 / 58%) 24%,
-            rgb(0 0 0 / 32%) 46%,
-            rgb(0 0 0 / 10%) 64%,
+            rgb(0 0 0 / var(--mask-core-alpha)) 0%,
+            rgb(0 0 0 / var(--mask-near-alpha)) 24%,
+            rgb(0 0 0 / var(--mask-mid-alpha)) 46%,
+            rgb(0 0 0 / var(--mask-edge-alpha)) 64%,
             transparent 100%
           );
         }

@@ -30,6 +30,7 @@ import { APP_NAME } from "@/app"
 
 const AppLayout = lazy(() => import("@/layout"))
 const LoginPage = lazy(() => import("@/views/login"))
+const InvitePage = lazy(() => import("@/views/invite"))
 const OAuthCallbackPage = lazy(() => import("@/views/login/oauth"))
 const TermsPage = lazy(() => import("@/views/legal/terms"))
 const PrivacyPage = lazy(() => import("@/views/legal/privacy"))
@@ -75,11 +76,13 @@ function AppRouteTree() {
   return (
     <Routes>
       <Route path="/login" element={<LocaleRedirect to="login" />} />
+      <Route path="/invite" element={<LocaleRedirect to="invite" />} />
       <Route path="/terms" element={<LocaleRedirect to="terms" />} />
       <Route path="/privacy" element={<LocaleRedirect to="privacy" />} />
       <Route path="/oauth" element={<OAuthCallbackPage />} />
       <Route path="/:locale/oauth" element={<OAuthCallbackPage />} />
       <Route path="/:locale/login" element={<LoginPage />} />
+      <Route path="/:locale/invite" element={<InvitePage />} />
       <Route path="/:locale/terms" element={<TermsPage />} />
       <Route path="/:locale/privacy" element={<PrivacyPage />} />
       <Route
@@ -183,7 +186,7 @@ function isPublicAppPath(pathname: string) {
 
 function RouteLoading() {
   return (
-    <div className="fixed inset-0 z-50 flex min-h-svh items-center justify-center bg-primary/90 text-muted">
+    <div className="fixed inset-0 z-50 flex min-h-svh items-center justify-center bg-black text-white">
       <div className="text-center text-[12vmin] font-semibold tracking-normal select-none sm:text-[15vmin] md:text-[15vmin] lg:text-[17vim]">
         {APP_NAME}
       </div>

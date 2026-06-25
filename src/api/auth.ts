@@ -1,10 +1,11 @@
-import { http } from "@/lib/request"
+import { buildApiUrl, http } from "@/lib/request"
 
 import type {
   AuthPermissions,
   CurrentUserEnvelope,
   LoginResponse,
   SexFlag,
+  TeamInvite,
 } from "@/types/admin"
 
 export type UpdateCurrentUserProfilePayload = {
@@ -32,6 +33,7 @@ export type GoogleOAuthCallbackResponse = LoginResponse & {
 const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 const GOOGLE_OAUTH_SCOPES = "openid email profile"
 const GOOGLE_OAUTH_STATE_KEY = "one-browser:google-oauth-state"
+const APP_AUTHORIZE_PATH = "/auth/app/authorize"
 
 export async function getCurrentUser() {
   const response = await http.get<CurrentUserEnvelope>("/auth/me")
@@ -73,6 +75,24 @@ export function login(payload: {
   turnstile_token?: string
 }) {
   return http.post<LoginResponse>("/auth/login", payload)
+}
+
+export function previewTeamInvite(token: string) {
+  return http.get<TeamInvite>(`/auth/team-invites/${encodeURIComponent(token)}`)
+}
+
+export function joinTeamInvite(token: string) {
+  return http.post<TeamInvite>(
+    `/auth/team-invites/${encodeURIComponent(token)}/join`
+  )
+}
+
+export function buildAppAuthorizeUrl() {
+  return buildApiUrl(APP_AUTHORIZE_PATH)
+}
+
+export function buildAppAuthorizePath() {
+  return buildApiUrl(APP_AUTHORIZE_PATH, "/api")
 }
 
 export function buildGoogleLoginUrl(redirect: string) {

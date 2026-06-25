@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import {
   Navigate,
   useLocation,
@@ -11,6 +11,8 @@ import { useLanguage } from "@/components/providers/language-context"
 import { Spinner } from "@/components/ui/spinner"
 import { authQueryKeys } from "@/hooks/use-auth"
 import { localizedPublicPath } from "@/local"
+import { isAppRedirect } from "@/lib/app-redirect"
+import { AppAuthorizationSuccess } from "./app-authorization-success"
 import { useQueryClient } from "@tanstack/react-query"
 
 function buildLoginPath(locale: string, redirect?: string | null) {
@@ -31,6 +33,9 @@ export default function OAuthCallbackPage() {
   const code = searchParams.get("code")
   const state = searchParams.get("state")
   const error = searchParams.get("error")
+  const [appAuthorizationUrl, setAppAuthorizationUrl] = useState<string | null>(
+    null
+  )
 
   useEffect(() => {
     let cancelled = false
@@ -65,7 +70,18 @@ export default function OAuthCallbackPage() {
         await queryClient.invalidateQueries({
           queryKey: authQueryKeys.permissions,
         })
-        navigate(response.redirect || redirect, { replace: true })
+        const nextRedirect = response.redirect || redirect
+        if (isAppRedirect(nextRedirect)) {
+          setAppAuthorizationUrl(nextRedirect)
+          return
+        }
+
+        if (shouldUseDocumentRedirect(nextRedirect)) {
+          window.location.assign(nextRedirect)
+          return
+        }
+
+        navigate(nextRedirect, { replace: true })
       } catch {
         if (!cancelled) {
           navigate(buildLoginPath(locale, redirect), { replace: true })
@@ -80,6 +96,10 @@ export default function OAuthCallbackPage() {
     }
   }, [code, error, locale, location.pathname, navigate, queryClient, state])
 
+  if (appAuthorizationUrl) {
+    return <AppAuthorizationSuccess appUrl={appAuthorizationUrl} />
+  }
+
   if (!code && !error) {
     return <Navigate to={buildLoginPath(locale)} replace />
   }
@@ -89,4 +109,8 @@ export default function OAuthCallbackPage() {
       <Spinner />
     </main>
   )
+}
+
+function shouldUseDocumentRedirect(value: string) {
+  return value.startsWith("/api/") || /^[a-z][a-z0-9+.-]*:/i.test(value)
 }

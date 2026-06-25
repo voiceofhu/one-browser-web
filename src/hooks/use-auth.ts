@@ -1,7 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
-import { getAuthPermissions, getCurrentUser, login, logout } from "@/api/auth"
-import { authQueryKeys, systemQueryKeys } from "@/lib/query-keys"
+import {
+  getAuthPermissions,
+  getCurrentUser,
+  joinTeamInvite,
+  login,
+  logout,
+  previewTeamInvite,
+} from "@/api/auth"
+import {
+  authQueryKeys,
+  browserQueryKeys,
+  systemQueryKeys,
+} from "@/lib/query-keys"
 import { HttpError } from "@/lib/request"
 
 export { authQueryKeys } from "@/lib/query-keys"
@@ -39,6 +50,32 @@ export function useLoginMutation() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: authQueryKeys.currentUser })
       queryClient.invalidateQueries({ queryKey: authQueryKeys.permissions })
+    },
+  })
+}
+
+export function useTeamInviteQuery(token: string) {
+  return useQuery({
+    queryKey: authQueryKeys.teamInvite(token),
+    queryFn: () => previewTeamInvite(token),
+    enabled: Boolean(token),
+    retry: false,
+  })
+}
+
+export function useJoinTeamInviteMutation() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: joinTeamInvite,
+    onSuccess: (_team, token) => {
+      queryClient.invalidateQueries({ queryKey: authQueryKeys.currentUser })
+      queryClient.invalidateQueries({ queryKey: authQueryKeys.permissions })
+      queryClient.invalidateQueries({
+        queryKey: authQueryKeys.teamInvite(token),
+      })
+      queryClient.invalidateQueries({ queryKey: browserQueryKeys.all })
+      queryClient.invalidateQueries({ queryKey: systemQueryKeys.all })
     },
   })
 }

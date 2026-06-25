@@ -45,6 +45,7 @@ import { MenuIconSelect } from "./menu-icon-select"
 import { MenuParentSelect } from "./menu-parent-select"
 import { PostMultiSelect, RoleMultiSelect } from "./role-multi-select"
 import { RoleMenuPermissionTree } from "./role-menu-permission-tree"
+import { isSuperAdminRoleKey } from "./protected-records"
 
 type ResourceFieldControlProps = {
   field: ResourceField
@@ -440,9 +441,11 @@ function renderControl({
 
   if (field.type === "menu-permission-tree") {
     const value = watch(field.name)
+    const roleKey = watch("role_key")
     const menuIds = Array.isArray(value)
       ? value.filter((item): item is number => typeof item === "number")
       : []
+    const forceAllSelected = isSuperAdminRoleKey(roleKey)
 
     return (
       <RoleMenuPermissionTree
@@ -450,6 +453,7 @@ function renderControl({
         roleId={mode === "edit" ? recordId : undefined}
         disabled={isDisabled}
         invalid={invalid}
+        forceAllSelected={forceAllSelected}
         onChange={(nextValue) =>
           setValue(field.name, nextValue, {
             shouldDirty: true,

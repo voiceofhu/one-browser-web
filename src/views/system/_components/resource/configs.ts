@@ -110,6 +110,7 @@ import type {
 } from "@/types/admin"
 import type { ResourceStatusFilterOption } from "./status-filter-tabs"
 import type { ResourceTreeConfig } from "./tree"
+import { isSuperAdminRole } from "./protected-records"
 
 export type DashboardResourceConfig<TData, TDetail extends TData = TData> = {
   queryKey: readonly unknown[]
@@ -237,6 +238,7 @@ export const RESOURCE_CONFIGS = {
       return role
     },
     remove: (record) => deleteRole(record.role_id),
+    isProtected: isSuperAdminRole,
   },
   menus: {
     queryKey: systemQueryKeys.menus,
