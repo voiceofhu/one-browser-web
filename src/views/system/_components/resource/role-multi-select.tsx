@@ -4,7 +4,6 @@ import type { ReactNode } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { ChevronsUpDownIcon } from "lucide-react"
 
-import { listPosts } from "@/api/system/post"
 import { listRoles } from "@/api/system/role"
 import { useTranslation } from "@/components/providers/language-context"
 import { Button } from "@/components/ui/button"
@@ -57,42 +56,6 @@ export function RoleMultiSelect({
         label: role.role_name,
       }))}
       optionIdPrefix="role"
-      onChange={onChange}
-    />
-  )
-}
-
-export function PostMultiSelect({
-  value,
-  disabled = false,
-  invalid = false,
-  onChange,
-}: BindingMultiSelectProps) {
-  const { locale } = useTranslation()
-  const postsQuery = useQuery({
-    queryKey: [...systemQueryKeys.posts, "selector"],
-    queryFn: () => listPosts({ page: 1, page_size: 100 }),
-    staleTime: 30_000,
-  })
-  const posts = (postsQuery.data?.list ?? []).filter(
-    (post) => post.status === "0"
-  )
-
-  return (
-    <BindingMultiSelect
-      value={value}
-      disabled={disabled}
-      invalid={invalid}
-      loading={postsQuery.isLoading}
-      error={postsQuery.isError}
-      loadingLabel={translateAdminText(locale, "正在加载岗位...")}
-      emptyLabel={translateAdminText(locale, "请选择岗位")}
-      errorLabel={translateAdminText(locale, "岗位加载失败，请稍后重试。")}
-      items={posts.map((post) => ({
-        id: post.post_id,
-        label: post.post_name,
-      }))}
-      optionIdPrefix="post"
       onChange={onChange}
     />
   )

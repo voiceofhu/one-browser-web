@@ -27,7 +27,7 @@ import {
 import { FieldGroup } from "@/components/ui/field"
 import { Spinner } from "@/components/ui/spinner"
 
-import { getUserPostIds, getUserRoleIds } from "@/api/system/user"
+import { getUserRoleIds } from "@/api/system/user"
 import { formatResourceActionText, translateText } from "@/local"
 import { systemQueryKeys } from "@/lib/query-keys"
 import { cn } from "@/lib/utils"
@@ -74,18 +74,10 @@ export function ResourceEditorDialog({
   const hasRoleField = fields.some(
     (field) => field.type === "role-multi-select"
   )
-  const hasPostField = fields.some(
-    (field) => field.type === "post-multi-select"
-  )
   const roleIdsQuery = useQuery({
     queryKey: [...systemQueryKeys.users, "roles", recordId],
     queryFn: () => getUserRoleIds(recordId ?? 0),
     enabled: open && mode === "edit" && hasRoleField && recordId != null,
-  })
-  const postIdsQuery = useQuery({
-    queryKey: [...systemQueryKeys.users, "posts", recordId],
-    queryFn: () => getUserPostIds(recordId ?? 0),
-    enabled: open && mode === "edit" && hasPostField && recordId != null,
   })
 
   React.useEffect(() => {
@@ -93,10 +85,9 @@ export function ResourceEditorDialog({
       reset({
         ...values,
         ...(roleIdsQuery.data ? { role_ids: roleIdsQuery.data.ids } : {}),
-        ...(postIdsQuery.data ? { post_ids: postIdsQuery.data.ids } : {}),
       })
     }
-  }, [open, postIdsQuery.data, reset, roleIdsQuery.data, values])
+  }, [open, reset, roleIdsQuery.data, values])
 
   const visibleFields = fields.filter(
     (field) =>
@@ -123,15 +114,11 @@ export function ResourceEditorDialog({
   const translatedNoun = translateText(locale, noun)
   const isLoadingRoleBinding =
     mode === "edit" && hasRoleField && roleIdsQuery.isLoading
-  const isLoadingPostBinding =
-    mode === "edit" && hasPostField && postIdsQuery.isLoading
-  const isLoadingBinding = isLoadingRoleBinding || isLoadingPostBinding
+  const isLoadingBinding = isLoadingRoleBinding
   const isCompactForm =
     visibleFields.length <= 3 &&
     !visibleFields.some((field) =>
-      ["dept-combobox", "post-multi-select", "role-multi-select"].includes(
-        field.type
-      )
+      ["role-multi-select"].includes(field.type)
     )
 
   return (

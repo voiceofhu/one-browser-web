@@ -5,12 +5,8 @@ import type {
   BrowserEnvironmentActionPayload,
   BrowserEnvironmentPayload,
   BrowserEnvironmentResource,
-  BrowserIdListPayload,
   BrowserListParams,
-  BrowserMemberPayload,
   BrowserMemberResource,
-  BrowserProxyCheckPayload,
-  BrowserProxyCheckResult,
   BrowserProxyPayload,
   BrowserProxyResource,
   BrowserStatusFlag,
@@ -113,83 +109,9 @@ export function deleteBrowserProxy(proxyId: number) {
   return http.del<void>(`${BROWSER_PROXY_PATH}/${proxyId}`)
 }
 
-export function setBrowserProxyStatus(
-  proxyId: number,
-  status: BrowserStatusFlag
-) {
-  const payload: BrowserStatusPayload = { status }
-  return http.put<BrowserProxyResource>(
-    `${BROWSER_PROXY_PATH}/${proxyId}/status`,
-    payload
-  )
-}
-
-export function checkBrowserProxy(
-  proxyId: number,
-  payload?: BrowserProxyCheckPayload
-) {
-  return http.post<BrowserProxyCheckResult>(
-    `${BROWSER_PROXY_PATH}/${proxyId}/check`,
-    payload
-  )
-}
-
 export function listBrowserMembers(params?: BrowserListParams) {
   return http.get<PageResponse<BrowserMemberResource>>(
     buildQueryPath(BROWSER_MEMBER_PATH, params)
-  )
-}
-
-export function createBrowserMember(payload: BrowserMemberPayload) {
-  return http.post<ResourceMutationResult>(BROWSER_MEMBER_PATH, payload)
-}
-
-export function getBrowserMember(memberId: number) {
-  return http.get<BrowserMemberResource>(`${BROWSER_MEMBER_PATH}/${memberId}`)
-}
-
-export function updateBrowserMember(
-  memberId: number,
-  payload: BrowserMemberPayload
-) {
-  return http.put<BrowserMemberResource>(
-    `${BROWSER_MEMBER_PATH}/${memberId}`,
-    payload
-  )
-}
-
-export function deleteBrowserMember(memberId: number) {
-  return http.del<void>(`${BROWSER_MEMBER_PATH}/${memberId}`)
-}
-
-export function setBrowserMemberStatus(
-  memberId: number,
-  status: BrowserStatusFlag
-) {
-  const payload: BrowserStatusPayload = { status }
-  return http.put<BrowserMemberResource>(
-    `${BROWSER_MEMBER_PATH}/${memberId}/status`,
-    payload
-  )
-}
-
-export function getBrowserMemberRoleIds(memberId: number, teamId?: number) {
-  return http.get<BrowserIdListPayload>(
-    buildQueryPath(`${BROWSER_MEMBER_PATH}/${memberId}/roles`, {
-      team_id: teamId,
-    })
-  )
-}
-
-export function setBrowserMemberRoleIds(
-  memberId: number,
-  roleIds: number[],
-  teamId?: number
-) {
-  const payload: BrowserIdListPayload = { ids: roleIds, team_id: teamId }
-  return http.put<BrowserIdListPayload>(
-    `${BROWSER_MEMBER_PATH}/${memberId}/roles`,
-    payload
   )
 }
 
@@ -201,30 +123,4 @@ export function listBrowserTeams(params?: BrowserListParams) {
 
 export function createBrowserTeam(payload: BrowserTeamPayload) {
   return http.post<ResourceMutationResult>(BROWSER_TEAM_PATH, payload)
-}
-
-export function getBrowserTeam(teamId: number) {
-  return http.get<BrowserTeamResource>(`${BROWSER_TEAM_PATH}/${teamId}`)
-}
-
-export function updateBrowserTeam(teamId: number, payload: BrowserTeamPayload) {
-  return http.put<BrowserTeamResource>(
-    `${BROWSER_TEAM_PATH}/${teamId}`,
-    payload
-  )
-}
-
-export function deleteBrowserTeam(teamId: number) {
-  return http.del<void>(`${BROWSER_TEAM_PATH}/${teamId}`)
-}
-
-export function setBrowserTeamStatus(
-  teamId: number,
-  status: BrowserStatusFlag
-) {
-  const payload: BrowserStatusPayload = { status }
-  return http.put<BrowserTeamResource>(
-    `${BROWSER_TEAM_PATH}/${teamId}/status`,
-    payload
-  )
 }

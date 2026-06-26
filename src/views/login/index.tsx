@@ -1,19 +1,23 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Navigate, useNavigate, useSearchParams } from "react-router"
 import { toast } from "sonner"
 
 import {
   buildAppAuthorizePath,
-  buildAppAuthorizeUrl,
   buildGoogleLoginUrl,
 } from "@/api/auth"
 import { LoginForm } from "@/components/login-form"
 import { useTranslation } from "@/components/providers/language-context"
+import { Spinner } from "@/components/ui/spinner"
 import { ThemeToggleButton } from "@/components/theme/theme-toggle-button"
 import { LanguageSwitcher } from "@/layout/components/language-switcher"
 import { isLoginPath } from "@/local"
 import { consumeAuthExpiredNotice } from "@/lib/request"
-import { useCurrentUser, useLoginMutation } from "@/hooks/use-auth"
+import {
+  useAppAuthorizeMutation,
+  useCurrentUser,
+  useLoginMutation,
+} from "@/hooks/use-auth"
 import { AppAuthorizationSuccess } from "./app-authorization-success"
 import { InteractiveGridBackground } from "./interactive-grid-background"
 
@@ -39,7 +43,7 @@ export default function LoginPage() {
   const [appAuthorizationUrl, setAppAuthorizationUrl] = useState<string | null>(
     null
   )
-  const appAuthorizeUrl = useMemo(() => buildAppAuthorizeUrl(), [])
+  const appAuthorizationRequested = useRef(false)
   const googleLoginUrl = useMemo(
     () =>
       buildGoogleLoginUrl(isAppLogin ? buildAppAuthorizePath() : redirectTo),
@@ -47,22 +51,54 @@ export default function LoginPage() {
   )
   const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY || undefined
   const loginMutation = useLoginMutation()
+  const appAuthorizeMutation = useAppAuthorizeMutation()
   const currentUser = useCurrentUser()
   const { t } = useTranslation()
 
   useEffect(() => {
-    if (consumeAuthExpiredNotice()) {
+    const authNotice = consumeAuthExpiredNotice()
+    if (authNotice !== null) {
       toast.warning(t("auth.expired.title"), {
-        description: t("auth.expired.description"),
+        description: authNotice || t("auth.expired.description"),
       })
     }
   }, [t])
 
-  if (appAuthorizationUrl || (isAppLogin && currentUser.isSuccess)) {
+  useEffect(() => {
+    if (
+      !isAppLogin ||
+      !currentUser.isSuccess ||
+      appAuthorizationUrl ||
+      appAuthorizationRequested.current ||
+      appAuthorizeMutation.isPending
+    ) {
+      return
+    }
+
+    appAuthorizationRequested.current = true
+    appAuthorizeMutation.mutate(undefined, {
+      onSuccess: setAppAuthorizationUrl,
+      onError: (error) =>
+        toast.error(getErrorMessage(error, t("layout.actionFailed"))),
+    })
+  }, [
+    appAuthorizationUrl,
+    appAuthorizeMutation,
+    currentUser.isSuccess,
+    isAppLogin,
+    t,
+  ])
+
+  if (appAuthorizationUrl) {
+    return <AppAuthorizationSuccess appUrl={appAuthorizationUrl} />
+  }
+
+  if (isAppLogin && currentUser.isSuccess) {
     return (
-      <AppAuthorizationSuccess
-        appUrl={appAuthorizationUrl ?? appAuthorizeUrl}
-      />
+      <main className="grid min-h-svh place-items-center bg-background text-muted-foreground">
+        <InteractiveGridBackground />
+        <Spinner className="relative z-10" />
+      </main>
     )
   }
 
@@ -90,7 +126,8 @@ export default function LoginPage() {
           onSubmit={async (values) => {
             await loginMutation.mutateAsync(values)
             if (isAppLogin) {
-              setAppAuthorizationUrl(appAuthorizeUrl)
+              const callbackUrl = await appAuthorizeMutation.mutateAsync()
+              setAppAuthorizationUrl(callbackUrl)
               return
             }
             navigate(redirectTo, { replace: true })
@@ -99,4 +136,16 @@ export default function LoginPage() {
       </section>
     </main>
   )
+}
+
+function getErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof Error) {
+    return error.message
+  }
+
+  if (typeof error === "string") {
+    return error
+  }
+
+  return fallback
 }

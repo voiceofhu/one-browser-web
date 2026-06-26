@@ -334,10 +334,6 @@ function getRefreshQueryKeys(routeId: AppRouteMeta["id"]) {
       return [systemQueryKeys.roles]
     case "menus":
       return [systemQueryKeys.menus]
-    case "depts":
-      return [systemQueryKeys.depts]
-    case "posts":
-      return [systemQueryKeys.posts]
     case "dict":
       return [systemQueryKeys.dictTypes, systemQueryKeys.dictData]
     case "notices":

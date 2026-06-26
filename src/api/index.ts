@@ -18,8 +18,6 @@ export interface IndexOverviewResources {
   users: IndexOverviewCount
   roles: IndexOverviewCount
   menus: IndexOverviewCount
-  depts: IndexOverviewCount
-  posts: IndexOverviewCount
   dict_types: IndexOverviewCount
   dict_data: IndexOverviewCount
   notices: IndexOverviewCount

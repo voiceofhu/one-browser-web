@@ -1,6 +1,6 @@
 export type StatusFlag = "0" | "1"
 export type SexFlag = "0" | "1" | "2"
-export type DataScopeFlag = "1" | "2" | "3" | "4" | "5"
+export type DataScopeFlag = "1" | "5"
 export type MenuTypeFlag = "M" | "C" | "F"
 export type VisibleFlag = "0" | "1"
 export type YesNoFlag = "Y" | "N"
@@ -46,9 +46,16 @@ export interface AuthRouteMeta {
   icon: string
 }
 
-export interface LoginResponse {
-  user: CurrentUser
+export interface AuthTokenResponse {
+  access_token: string
+  refresh_token: string
+  token_type: string
   expires_in: number
+  refresh_expires_in: number
+}
+
+export interface LoginResponse extends AuthTokenResponse {
+  user: CurrentUser
 }
 
 export interface TeamInvite {
@@ -156,7 +163,6 @@ export interface PageResponse<T> {
 export interface UserResource {
   user_id: number
   is_super_admin: boolean
-  dept_id: number | null
   user_name: string
   nick_name: string
   user_type: string
@@ -200,31 +206,6 @@ export interface MenuResource {
   remark: string
 }
 
-export interface DeptResource {
-  dept_id: number
-  parent_id: number | null
-  ancestors: string
-  dept_name: string
-  order_num: number
-  leader: string | null
-  phone: string | null
-  email: string | null
-  status: StatusFlag
-  created_at: string
-  updated_at: string | null
-}
-
-export interface PostResource {
-  post_id: number
-  post_code: string
-  post_name: string
-  post_sort: number
-  status: StatusFlag
-  created_at: string
-  updated_at: string | null
-  remark: string | null
-}
-
 export interface DictTypeResource {
   dict_id: number
   dict_name: string
@@ -266,6 +247,7 @@ export interface OnlineUserResource {
   token_id: string
   user_id: number
   user_name: string
+  credential_type: "web" | "desktop_app"
   ip_addr: string
   browser: string
   os: string
@@ -331,7 +313,6 @@ export interface OperationLogSummaryResource {
 export interface OperationLogResource extends OperationLogSummaryResource {
   method: string
   operator_type: number
-  dept_name: string
   oper_location: string
   oper_param: string
   json_result: string

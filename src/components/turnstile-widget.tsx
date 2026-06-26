@@ -6,7 +6,6 @@ import {
   useState,
 } from "react"
 
-import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 
 type TurnstileRenderOptions = {
@@ -177,7 +176,7 @@ export const TurnstileWidget = forwardRef<
     return null
   }
 
-  const reserveWidgetSpace = loadState === "loading" || appearance === "always"
+  const reserveWidgetSpace = appearance === "always"
 
   return (
     <div
@@ -187,23 +186,10 @@ export const TurnstileWidget = forwardRef<
         className
       )}
     >
-      {loadState === "loading" ? (
-        <div
-          className="absolute inset-0 z-10 rounded-md border border-border bg-background/60 p-3"
-          role="status"
-          aria-live="polite"
-        >
-          <div className="flex h-full items-center gap-3">
-            <Skeleton className="size-9 rounded-full" />
-            <div className="flex flex-1 flex-col gap-2">
-              <Skeleton className="h-3 w-24" />
-              <Skeleton className="h-3 w-36" />
-            </div>
-          </div>
-          {loadingLabel ? (
-            <span className="sr-only">{loadingLabel}</span>
-          ) : null}
-        </div>
+      {loadState === "loading" && loadingLabel ? (
+        <span className="sr-only" role="status" aria-live="polite">
+          {loadingLabel}
+        </span>
       ) : null}
       <div
         ref={containerRef}

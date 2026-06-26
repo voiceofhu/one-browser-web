@@ -26,6 +26,21 @@ export function createOnlineUserColumns(
       monitorText(locale, "online.columns.loginAccount"),
       "w-40"
     ),
+    {
+      accessorKey: "credential_type",
+      header: ({ column }) =>
+        tableHeader(
+          column,
+          monitorText(locale, "online.columns.credentialType")
+        ),
+      cell: ({ row }) => (
+        <CredentialTypeBadge value={row.original.credential_type} />
+      ),
+      meta: {
+        label: monitorText(locale, "online.columns.credentialType"),
+        cellClassName: "w-36",
+      },
+    },
     textColumn(
       "ip_addr",
       monitorText(locale, "online.columns.ipAddress"),
@@ -96,6 +111,24 @@ function TextCell({ value }: { value: unknown }) {
   }
 
   return <OverflowTooltipText text={text} />
+}
+
+function CredentialTypeBadge({
+  value,
+}: {
+  value: OnlineUserResource["credential_type"]
+}) {
+  const { locale } = useTranslation()
+  const isDesktopApp = value === "desktop_app"
+
+  return (
+    <Badge variant={isDesktopApp ? "secondary" : "outline"}>
+      {monitorText(
+        locale,
+        isDesktopApp ? "online.credential.desktopApp" : "online.credential.web"
+      )}
+    </Badge>
+  )
 }
 
 function DateTimeCell({ value }: { value: string }) {

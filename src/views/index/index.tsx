@@ -3,10 +3,8 @@ import { NavLink } from "react-router"
 import {
   ArrowRightIcon,
   DatabaseIcon,
-  FileTextIcon,
   HeartPulseIcon,
   KeyRoundIcon,
-  LayoutDashboardIcon,
   MegaphoneIcon,
   ShieldIcon,
   UsersIcon,
@@ -80,22 +78,6 @@ export default function IndexPage() {
       resources?.menus,
       overview.isLoading,
       KeyRoundIcon,
-      overviewErrorMessage
-    ),
-    resourceSummary(
-      "部门",
-      "组织部门",
-      resources?.depts,
-      overview.isLoading,
-      LayoutDashboardIcon,
-      overviewErrorMessage
-    ),
-    resourceSummary(
-      "岗位",
-      "组织岗位",
-      resources?.posts,
-      overview.isLoading,
-      FileTextIcon,
       overviewErrorMessage
     ),
     resourceSummary(

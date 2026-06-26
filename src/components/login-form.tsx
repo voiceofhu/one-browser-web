@@ -90,10 +90,12 @@ export function LoginForm({
   })
 
   const disabled = isSubmitting || form.formState.isSubmitting
-  const waitingForTurnstile = turnstileEnabled && !turnstileToken
-  const showSubmitButton =
-    !turnstileEnabled || (turnstileStatus === "ready" && !turnstileError)
-  const submitDisabled = disabled || waitingForTurnstile
+  const missingTurnstileToken = turnstileEnabled && !turnstileToken
+  const waitingForTurnstile = missingTurnstileToken && !turnstileError
+  const loadingTurnstile =
+    waitingForTurnstile && turnstileStatus === "loading"
+  const submitBusy = disabled || loadingTurnstile
+  const submitDisabled = disabled || missingTurnstileToken
   const displayError =
     error || (turnstileError ? new Error(turnstileError) : null)
   const turnstileDescription =
@@ -144,7 +146,7 @@ export function LoginForm({
   }, [])
 
   useEffect(() => {
-    if (!showSubmitButton || shouldReduceMotion()) {
+    if (shouldReduceMotion()) {
       return
     }
 
@@ -168,7 +170,7 @@ export function LoginForm({
         y: 0,
       }
     )
-  }, [showSubmitButton])
+  }, [])
 
   useEffect(() => {
     if (!passwordAnimationReadyRef.current) {
@@ -370,20 +372,18 @@ export function LoginForm({
                 </Alert>
               ) : null}
 
-              {showSubmitButton ? (
-                <Field data-login-submit>
-                  <Button type="submit" disabled={submitDisabled}>
-                    {disabled ? (
-                      <Spinner data-icon="inline-start" />
-                    ) : (
-                      <LogInIcon data-icon="inline-start" />
-                    )}
-                    {waitingForTurnstile
-                      ? t("login.waitingForTurnstile")
-                      : t("login.submit")}
-                  </Button>
-                </Field>
-              ) : null}
+              <Field data-login-submit>
+                <Button type="submit" disabled={submitDisabled}>
+                  {submitBusy ? (
+                    <Spinner data-icon="inline-start" />
+                  ) : (
+                    <LogInIcon data-icon="inline-start" />
+                  )}
+                  {waitingForTurnstile
+                    ? t("login.waitingForTurnstile")
+                    : t("login.submit")}
+                </Button>
+              </Field>
 
               {googleLoginUrl ? (
                 <>

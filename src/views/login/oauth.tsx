@@ -6,11 +6,16 @@ import {
   useSearchParams,
 } from "react-router"
 
-import { completeGoogleLogin, consumeGoogleOAuthState } from "@/api/auth"
+import {
+  authorizeApp,
+  completeGoogleLogin,
+  consumeGoogleOAuthState,
+} from "@/api/auth"
 import { useLanguage } from "@/components/providers/language-context"
 import { Spinner } from "@/components/ui/spinner"
 import { authQueryKeys } from "@/hooks/use-auth"
 import { localizedPublicPath } from "@/local"
+import { saveAuthTokens } from "@/lib/auth-tokens"
 import { isAppRedirect } from "@/lib/app-redirect"
 import { AppAuthorizationSuccess } from "./app-authorization-success"
 import { useQueryClient } from "@tanstack/react-query"
@@ -59,6 +64,7 @@ export default function OAuthCallbackPage() {
           state,
           redirect_uri: redirectUri,
         })
+        saveAuthTokens(response)
 
         if (cancelled) {
           return
@@ -72,7 +78,10 @@ export default function OAuthCallbackPage() {
         })
         const nextRedirect = response.redirect || redirect
         if (isAppRedirect(nextRedirect)) {
-          setAppAuthorizationUrl(nextRedirect)
+          const callbackUrl = await authorizeApp()
+          if (!cancelled) {
+            setAppAuthorizationUrl(callbackUrl)
+          }
           return
         }
 

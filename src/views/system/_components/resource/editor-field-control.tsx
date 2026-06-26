@@ -34,16 +34,15 @@ import type { Locale } from "@/local"
 import { translate } from "@/local"
 import { translateText } from "@/local"
 import { cn } from "@/lib/utils"
-import type { DeptResource, MenuTypeFlag } from "@/types/admin"
+import type { MenuTypeFlag } from "@/types/admin"
 import type {
   ResourceField,
   ResourceFormMode,
   ResourceFormValues,
 } from "./form"
-import { DeptParentSelect } from "./dept-parent-select"
 import { MenuIconSelect } from "./menu-icon-select"
 import { MenuParentSelect } from "./menu-parent-select"
-import { PostMultiSelect, RoleMultiSelect } from "./role-multi-select"
+import { RoleMultiSelect } from "./role-multi-select"
 import { RoleMenuPermissionTree } from "./role-menu-permission-tree"
 import { isSuperAdminRoleKey } from "./protected-records"
 
@@ -85,9 +84,7 @@ export function ResourceFieldControl({
   const fieldClassName = cn(
     useMultiColumn &&
       (field.type === "textarea" || field.colSpan === "full") &&
-      "md:col-span-2",
-    field.type === "dept-parent-select" &&
-      "has-[>[data-dept-parent-empty=true]]:hidden"
+      "md:col-span-2"
   )
 
   if (field.type === "switch" || field.type === "status-switch") {
@@ -345,57 +342,6 @@ function renderControl({
     )
   }
 
-  if (field.type === "dept-combobox") {
-    return (
-      <DeptParentSelect
-        controlId={controlId}
-        value={watch(field.name)}
-        invalid={invalid}
-        disabled={isDisabled}
-        placeholder={
-          field.placeholder
-            ? translateText(locale, field.placeholder)
-            : translate(locale, "resource.selectDept")
-        }
-        title={translate(locale, "resource.selectDept")}
-        onChange={(dept) =>
-          setValue(field.name, dept?.dept_id ?? null, {
-            shouldDirty: true,
-            shouldValidate: true,
-          })
-        }
-      />
-    )
-  }
-
-  if (field.type === "dept-parent-select") {
-    return (
-      <DeptParentSelect
-        controlId={controlId}
-        value={watch(field.name)}
-        currentDeptId={recordId}
-        invalid={invalid}
-        disabled={isDisabled}
-        placeholder={
-          field.placeholder
-            ? translateText(locale, field.placeholder)
-            : translate(locale, "resource.selectParentDept")
-        }
-        hideWhenEmpty
-        onChange={(dept) => {
-          setValue(field.name, dept?.dept_id ?? null, {
-            shouldDirty: true,
-            shouldValidate: true,
-          })
-          setValue("ancestors", getDeptAncestors(dept), {
-            shouldDirty: true,
-            shouldValidate: true,
-          })
-        }}
-      />
-    )
-  }
-
   if (field.type === "menu-parent-select") {
     const menuType = normalizeMenuType(watch("menu_type"))
 
@@ -485,27 +431,6 @@ function renderControl({
     )
   }
 
-  if (field.type === "post-multi-select") {
-    const value = watch(field.name)
-    const postIds = Array.isArray(value)
-      ? value.filter((item): item is number => typeof item === "number")
-      : []
-
-    return (
-      <PostMultiSelect
-        value={postIds}
-        disabled={isDisabled}
-        invalid={invalid}
-        onChange={(nextValue) =>
-          setValue(field.name, nextValue, {
-            shouldDirty: true,
-            shouldValidate: true,
-          })
-        }
-      />
-    )
-  }
-
   if (field.type === "textarea") {
     return (
       <Textarea
@@ -580,17 +505,6 @@ function RequiredFieldLabel({
       ) : null}
     </div>
   )
-}
-
-function getDeptAncestors(parentDept: DeptResource | null) {
-  if (!parentDept) {
-    return "0"
-  }
-
-  const parentAncestors = parentDept.ancestors.trim()
-  return parentAncestors
-    ? `${parentAncestors},${parentDept.dept_id}`
-    : `0,${parentDept.dept_id}`
 }
 
 function getRadioFallbackValue(

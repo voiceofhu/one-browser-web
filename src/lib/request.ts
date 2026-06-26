@@ -1,12 +1,17 @@
-import { toast } from "sonner"
-
 import {
   getAcceptLanguageHeader,
   getCurrentLocale,
   isLoginPath,
   localizedPublicPath,
-  translate,
 } from "@/local"
+import {
+  clearAuthTokens,
+  getAccessToken,
+  getRefreshToken,
+  isAccessTokenStale,
+  saveAuthTokens,
+  type AuthTokenPayload,
+} from "@/lib/auth-tokens"
 
 export class HttpError extends Error {
   readonly status: number
@@ -43,6 +48,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || "/api"
 const APP_BASE_URL = import.meta.env.VITE_BASE_URL || "/"
 const AUTH_EXPIRED_NOTICE_KEY = "one-browser:auth-expired-notice"
 let isRedirectingToLogin = false
+let refreshPromise: Promise<AuthTokenPayload> | null = null
 
 export function isUnauthorizedError(error: unknown): error is HttpError {
   return error instanceof HttpError && error.status === 401
@@ -50,17 +56,35 @@ export function isUnauthorizedError(error: unknown): error is HttpError {
 
 export function consumeAuthExpiredNotice() {
   if (typeof window === "undefined") {
-    return false
+    return null
   }
 
   try {
-    const shouldNotify =
-      window.sessionStorage.getItem(AUTH_EXPIRED_NOTICE_KEY) === "1"
+    const notice = window.sessionStorage.getItem(AUTH_EXPIRED_NOTICE_KEY)
     window.sessionStorage.removeItem(AUTH_EXPIRED_NOTICE_KEY)
-    return shouldNotify
+    return notice
   } catch {
-    return false
+    return null
   }
+}
+
+export async function ensureFreshAccessToken(options?: { force?: boolean }) {
+  if (!options?.force && !isAccessTokenStale()) {
+    return getAccessToken()
+  }
+
+  try {
+    await refreshAuthTokens()
+  } catch (error) {
+    if (isUnauthorizedError(error)) {
+      clearAuthTokens()
+      redirectToLogin("", error)
+    }
+
+    throw error
+  }
+
+  return getAccessToken()
 }
 
 function getAppBasePath() {
@@ -90,11 +114,11 @@ function buildLoginUrl() {
   return `${basePath}${loginPath}?redirect=${encodeURIComponent(redirect)}`
 }
 
-function redirectToLogin(path: string) {
+function redirectToLogin(path: string, error: HttpError) {
   if (
     typeof window === "undefined" ||
     isRedirectingToLogin ||
-    path.includes("/auth/login")
+    shouldSkipAuthRedirect(path)
   ) {
     return
   }
@@ -105,17 +129,17 @@ function redirectToLogin(path: string) {
   }
 
   isRedirectingToLogin = true
-  markAuthExpiredNotice()
-  const locale = getCurrentLocale()
-  toast.warning(translate(locale, "auth.expired.title"), {
-    description: translate(locale, "auth.expired.description"),
-  })
+  markAuthExpiredNotice(error.message)
   window.location.assign(loginUrl)
 }
 
-function markAuthExpiredNotice() {
+function shouldSkipAuthRedirect(path: string) {
+  return path.includes("/auth/login") || path.includes("/auth/google/callback")
+}
+
+function markAuthExpiredNotice(message: string) {
   try {
-    window.sessionStorage.setItem(AUTH_EXPIRED_NOTICE_KEY, "1")
+    window.sessionStorage.setItem(AUTH_EXPIRED_NOTICE_KEY, message)
   } catch {
     // Redirect should still happen if browser storage is unavailable.
   }
@@ -154,10 +178,17 @@ export function buildQueryPath(path: string, params?: object) {
   return `${path}${path.includes("?") ? "&" : "?"}${query}`
 }
 
-function buildHeaders(init: RequestInit) {
+function buildHeaders(init: RequestInit, options?: { auth?: boolean }) {
   const headers = new Headers(init.headers)
   if (!headers.has("Accept-Language")) {
     headers.set("Accept-Language", getAcceptLanguageHeader())
+  }
+
+  if (options?.auth !== false && !headers.has("Authorization")) {
+    const accessToken = getAccessToken()
+    if (accessToken) {
+      headers.set("Authorization", `Bearer ${accessToken}`)
+    }
   }
 
   if (init.body instanceof FormData) {
@@ -196,21 +227,134 @@ async function request<T>(
   init: RequestInit = {},
   baseUrl = API_BASE_URL
 ) {
-  const response = await fetch(buildUrl(path, baseUrl), {
-    ...init,
-    credentials: "include",
-    headers: buildHeaders(init),
-  })
+  const response = await sendRequest(path, init, baseUrl)
 
   if (!response.ok) {
     const error = await parseError(response)
     if (isUnauthorizedError(error)) {
-      redirectToLogin(path)
+      const refreshed = await refreshAndRetry<T>(path, init, baseUrl)
+      if (refreshed.ok) {
+        return refreshed.data
+      }
+
+      if (
+        "refreshError" in refreshed &&
+        isUnauthorizedError(refreshed.refreshError)
+      ) {
+        clearAuthTokens()
+        redirectToLogin(path, refreshed.refreshError)
+      }
+
+      if ("refreshError" in refreshed && refreshed.refreshError instanceof Error) {
+        throw refreshed.refreshError
+      }
+
+      if ("retryError" in refreshed && refreshed.retryError instanceof Error) {
+        throw refreshed.retryError
+      }
     }
 
     throw error
   }
 
+  if (response.status === 204) {
+    return undefined as T
+  }
+
+  const body: unknown = await response.json()
+  if (!isApiResponse<T>(body)) {
+    throw new HttpError(
+      response.status,
+      "INVALID_API_RESPONSE",
+      "Invalid API response"
+    )
+  }
+
+  if (body.code !== 0) {
+    throw new HttpError(
+      response.status,
+      String(body.code),
+      body.message || "Request failed",
+      getResponseDetails(body)
+    )
+  }
+
+  return body.data
+}
+
+async function sendRequest(path: string, init: RequestInit, baseUrl: string) {
+  return fetch(buildUrl(path, baseUrl), {
+    ...init,
+    credentials: "omit",
+    headers: buildHeaders(init),
+  })
+}
+
+async function refreshAndRetry<T>(
+  path: string,
+  init: RequestInit,
+  baseUrl: string
+) {
+  if (!shouldRefreshAuth(path)) {
+    return { ok: false as const }
+  }
+
+  try {
+    await refreshAuthTokens()
+  } catch (refreshError) {
+    return { ok: false as const, refreshError }
+  }
+
+  const response = await sendRequest(path, init, baseUrl)
+  if (!response.ok) {
+    return { ok: false as const, retryError: await parseError(response) }
+  }
+
+  return { ok: true as const, data: await parseResponseData<T>(response) }
+}
+
+function shouldRefreshAuth(path: string) {
+  return !(
+    path.includes("/auth/login") ||
+    path.includes("/auth/google/callback") ||
+    path.includes("/auth/refresh")
+  )
+}
+
+async function refreshAuthTokens() {
+  const refreshToken = getRefreshToken()
+  if (!refreshToken) {
+    throw new HttpError(401, "MISSING_REFRESH_TOKEN", "登录信息已过期")
+  }
+
+  refreshPromise ??= fetchRefreshToken(refreshToken).finally(() => {
+    refreshPromise = null
+  })
+
+  return refreshPromise
+}
+
+async function fetchRefreshToken(refreshToken: string) {
+  const init: RequestInit = {
+    method: "POST",
+    body: JSON.stringify({ refresh_token: refreshToken }),
+  }
+  const response = await fetch(buildUrl("/auth/refresh"), {
+    ...init,
+    credentials: "omit",
+    headers: buildHeaders(init, { auth: false }),
+  })
+
+  if (!response.ok) {
+    throw await parseError(response)
+  }
+
+  const tokens = await parseResponseData<AuthTokenPayload>(response)
+  saveAuthTokens(tokens)
+  return tokens
+}
+
+async function parseResponseData<T>(response: Response) {
   if (response.status === 204) {
     return undefined as T
   }

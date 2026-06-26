@@ -1,4 +1,5 @@
-import { buildApiUrl, http } from "@/lib/request"
+import { http } from "@/lib/request"
+import { clearAuthTokens } from "@/lib/auth-tokens"
 
 import type {
   AuthPermissions,
@@ -30,10 +31,16 @@ export type GoogleOAuthCallbackResponse = LoginResponse & {
   redirect: string
 }
 
+type AppAuthorizationResponse = {
+  callback_url?: string
+  callbackUrl?: string
+  redirect?: string
+}
+
 const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 const GOOGLE_OAUTH_SCOPES = "openid email profile"
 const GOOGLE_OAUTH_STATE_KEY = "one-browser:google-oauth-state"
-const APP_AUTHORIZE_PATH = "/auth/app/authorize"
+export const APP_AUTHORIZE_PATH = "/auth/app/authorize"
 
 export async function getCurrentUser() {
   const response = await http.get<CurrentUserEnvelope>("/auth/me")
@@ -87,12 +94,20 @@ export function joinTeamInvite(token: string) {
   )
 }
 
-export function buildAppAuthorizeUrl() {
-  return buildApiUrl(APP_AUTHORIZE_PATH)
+export function buildAppAuthorizePath() {
+  return APP_AUTHORIZE_PATH
 }
 
-export function buildAppAuthorizePath() {
-  return buildApiUrl(APP_AUTHORIZE_PATH, "/api")
+export async function authorizeApp() {
+  const response = await http.post<AppAuthorizationResponse>(APP_AUTHORIZE_PATH)
+  const callbackUrl =
+    response.callback_url ?? response.callbackUrl ?? response.redirect
+
+  if (!callbackUrl) {
+    throw new Error("Missing app authorization callback URL")
+  }
+
+  return callbackUrl
 }
 
 export function buildGoogleLoginUrl(redirect: string) {
@@ -139,8 +154,9 @@ export function consumeGoogleOAuthState(state: string) {
   return parsed.redirect
 }
 
-export function logout() {
-  return http.post<void>("/auth/logout")
+export async function logout() {
+  await http.post<void>("/auth/logout")
+  clearAuthTokens()
 }
 
 function createGoogleOAuthState(redirect: string) {

@@ -18,8 +18,6 @@ const BrowserMemberPage = lazy(() => import("@/views/browser/member"))
 const UserPage = lazy(() => import("@/views/system/user"))
 const RolePage = lazy(() => import("@/views/system/role"))
 const MenuPage = lazy(() => import("@/views/system/menu"))
-const DeptPage = lazy(() => import("@/views/system/dept"))
-const PostPage = lazy(() => import("@/views/system/post"))
 const DictTypePage = lazy(() => import("@/views/system/dict/type"))
 const NoticePage = lazy(() => import("@/views/system/notice"))
 const OperationLogPage = lazy(() => import("@/views/system/log/operation"))
@@ -43,8 +41,6 @@ const APP_ROUTE_ELEMENTS: Record<AppRouteId, ReactNode> = {
   users: <UserPage />,
   roles: <RolePage />,
   menus: <MenuPage />,
-  depts: <DeptPage />,
-  posts: <PostPage />,
   dict: <DictTypePage />,
   notices: <NoticePage />,
   "browser-teams": <BrowserTeamPage />,

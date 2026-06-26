@@ -3,11 +3,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   getAuthPermissions,
   getCurrentUser,
+  authorizeApp,
   joinTeamInvite,
   login,
   logout,
   previewTeamInvite,
 } from "@/api/auth"
+import { clearAuthTokens, saveAuthTokens } from "@/lib/auth-tokens"
 import {
   authQueryKeys,
   browserQueryKeys,
@@ -47,10 +49,18 @@ export function useLoginMutation() {
 
   return useMutation({
     mutationFn: login,
-    onSuccess: () => {
+    onSuccess: (response) => {
+      saveAuthTokens(response)
+      queryClient.setQueryData(authQueryKeys.currentUser, response.user)
       queryClient.invalidateQueries({ queryKey: authQueryKeys.currentUser })
       queryClient.invalidateQueries({ queryKey: authQueryKeys.permissions })
     },
+  })
+}
+
+export function useAppAuthorizeMutation() {
+  return useMutation({
+    mutationFn: authorizeApp,
   })
 }
 
@@ -85,6 +95,11 @@ export function useLogoutMutation() {
 
   return useMutation({
     mutationFn: logout,
+    onSettled: () => {
+      clearAuthTokens()
+      queryClient.removeQueries({ queryKey: authQueryKeys.all })
+      queryClient.removeQueries({ queryKey: systemQueryKeys.all })
+    },
     onSuccess: () => {
       queryClient.removeQueries({ queryKey: authQueryKeys.all })
       queryClient.removeQueries({ queryKey: systemQueryKeys.all })

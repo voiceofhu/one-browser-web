@@ -42,14 +42,6 @@ export function setUserRoleIds(userId: number, roleIds: number[]) {
   return http.put<void>(`${USER_PATH}/${userId}/roles`, { ids: roleIds })
 }
 
-export function getUserPostIds(userId: number) {
-  return http.get<IdsPayload>(`${USER_PATH}/${userId}/posts`)
-}
-
-export function setUserPostIds(userId: number, postIds: number[]) {
-  return http.put<void>(`${USER_PATH}/${userId}/posts`, { ids: postIds })
-}
-
 export function setUserStatus(userId: number, status: "0" | "1") {
   return http.put<UserResource>(`${USER_PATH}/${userId}/status`, { status })
 }

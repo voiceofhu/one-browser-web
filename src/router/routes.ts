@@ -5,8 +5,6 @@ export type AppRouteId =
   | "users"
   | "roles"
   | "menus"
-  | "depts"
-  | "posts"
   | "dict"
   | "notices"
   | "browser-teams"
@@ -63,22 +61,6 @@ export const APP_ROUTES: AppRouteMeta[] = [
     title: "权限管理",
     description: "管理目录、菜单路由和按钮权限标识。",
     path: "/system/menu",
-  },
-  {
-    id: "depts",
-    labelKey: "route.depts",
-    label: "部门管理",
-    title: "部门管理",
-    description: "管理当前数据范围内的组织部门。",
-    path: "/system/dept",
-  },
-  {
-    id: "posts",
-    labelKey: "route.posts",
-    label: "岗位管理",
-    title: "岗位管理",
-    description: "管理组织岗位编码、排序和状态。",
-    path: "/system/post",
   },
   {
     id: "dict",
@@ -189,7 +171,7 @@ export const APP_ROUTE_GROUPS = [
     id: "system",
     labelKey: "routeGroup.system",
     label: "系统管理",
-    routes: ["users", "roles", "menus", "depts", "posts", "dict", "notices"],
+    routes: ["users", "roles", "menus", "dict", "notices"],
   },
   {
     id: "browser",
@@ -245,10 +227,6 @@ export const LEGACY_ROUTE_REDIRECTS: Record<string, string> = {
   "/dashboard/system/roles": "/system/role",
   "/dashboard/menus": "/system/menu",
   "/dashboard/system/menus": "/system/menu",
-  "/dashboard/depts": "/system/dept",
-  "/dashboard/system/depts": "/system/dept",
-  "/dashboard/posts": "/system/post",
-  "/dashboard/system/posts": "/system/post",
   "/dashboard/dict-types": "/system/dict",
   "/dashboard/system/dict-types": "/system/dict",
   "/dashboard/dict-data": "/system/dict",
@@ -290,9 +268,6 @@ export const SEX_LABELS = {
 
 export const DATA_SCOPE_LABELS = {
   "1": "全部数据",
-  "2": "本部门数据",
-  "3": "本部门及以下",
-  "4": "自定义数据",
   "5": "仅本人数据",
 } as const
 

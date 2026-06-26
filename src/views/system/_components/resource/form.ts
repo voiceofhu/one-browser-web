@@ -29,13 +29,10 @@ export type ResourceField = {
     | "textarea"
     | "select"
     | "radio"
-    | "dept-combobox"
-    | "dept-parent-select"
     | "menu-icon-select"
     | "menu-parent-select"
     | "menu-type-tabs"
     | "menu-permission-tree"
-    | "post-multi-select"
     | "role-multi-select"
     | "status-switch"
     | "switch"
@@ -104,11 +101,9 @@ export const noticeTypeOptions = options<NoticeTypeFlag>({
 })
 
 const userBaseSchema = z.object({
-  dept_id: optionalNullableNumber,
   user_name: requiredText("用户名").max(64, "用户名不能超过 64 个字符"),
   nick_name: requiredText("昵称").max(64, "昵称不能超过 64 个字符"),
   user_type: optionalText,
-  post_ids: z.array(z.number().int()),
   role_ids: z.array(z.number().int()).min(1, "至少选择一个角色"),
   email: z
     .string()
@@ -182,28 +177,6 @@ export const menuSchema = z
     }
   })
 
-export const deptSchema = z.object({
-  parent_id: optionalNullableNumber,
-  ancestors: optionalText.default("0"),
-  dept_name: requiredText("部门名称").max(64, "部门名称不能超过 64 个字符"),
-  order_num: requiredNumber.optional().default(0),
-  leader: optionalText,
-  phone: optionalText,
-  email: z
-    .string()
-    .trim()
-    .refine((value) => !value || z.email().safeParse(value).success, {
-      message: "邮箱格式不正确",
-    }),
-  status: status.optional().default("0"),
-})
-
-export const postSchema = z.object({
-  post_name: requiredText("岗位名称").max(64, "岗位名称不能超过 64 个字符"),
-  status: status.optional().default("0"),
-  remark: optionalText,
-})
-
 export const dictTypeSchema = z.object({
   dict_name: requiredText("字典类型").max(64, "字典类型不能超过 64 个字符"),
   dict_type: requiredText("字典代码").max(128, "字典代码不能超过 128 个字符"),
@@ -237,14 +210,12 @@ export const noticeSchema = z.object({
 export const resourceFields = {
   users: [
     textField("nick_name", "用户昵称", "请输入用户昵称", true),
-    deptComboboxField("dept_id", "归属部门"),
     textField("phone_number", "手机号码", "请输入手机号码"),
     emailField("email", "邮箱"),
     textField("user_name", "用户名称", "请输入登录用户名", true),
     passwordField("password", "用户密码", undefined, true, true),
     radioField("sex", "用户性别", sexOptions),
     statusSwitchField("status", "状态", { hiddenOnCreate: true }),
-    postMultiSelectField("post_ids", "岗位"),
     roleMultiSelectField("role_ids", "角色", true),
     textareaField("remark", "备注"),
   ],
@@ -290,17 +261,6 @@ export const resourceFields = {
     ),
     textareaField("remark", "备注"),
   ],
-  depts: [
-    deptParentSelectField("parent_id", "上级部门"),
-    textField("dept_name", "部门名称", "请输入部门名称", true),
-    textField("leader", "负责人", "请输入负责人"),
-    textField("phone", "联系电话", "请输入联系电话"),
-    emailField("email", "邮箱", "请输入邮箱"),
-  ],
-  posts: [
-    textField("post_name", "岗位名称", undefined, true),
-    textareaField("remark", "备注"),
-  ],
   dictTypes: [
     textField("dict_name", "字典类型", undefined, true),
     textField("dict_type", "字典代码", undefined, true),
@@ -324,12 +284,10 @@ export const resourceFields = {
 
 export const defaultValues = {
   users: {
-    dept_id: null,
     user_name: "",
     nick_name: "",
     password: "",
     user_type: "system",
-    post_ids: [],
     role_ids: [],
     email: "",
     phone_number: "",
@@ -357,21 +315,6 @@ export const defaultValues = {
     status: "0" satisfies StatusFlag,
     perms: "",
     icon: "#",
-    remark: "",
-  },
-  depts: {
-    parent_id: null,
-    ancestors: "0",
-    dept_name: "",
-    order_num: 0,
-    leader: "",
-    phone: "",
-    email: "",
-    status: "0" satisfies StatusFlag,
-  },
-  posts: {
-    post_name: "",
-    status: "0" satisfies StatusFlag,
     remark: "",
   },
   dictTypes: {
@@ -514,24 +457,6 @@ function radioField(
   return { name, label, type: "radio", options }
 }
 
-function deptComboboxField(
-  name: string,
-  label: string,
-  description?: string
-): ResourceField {
-  return { name, label, type: "dept-combobox", description }
-}
-
-function deptParentSelectField(name: string, label: string): ResourceField {
-  return {
-    name,
-    label,
-    type: "dept-parent-select",
-    placeholder: "选择上级部门",
-    colSpan: "full",
-  }
-}
-
 function menuParentSelectField(
   name: string,
   label: string,
@@ -560,10 +485,6 @@ function roleMultiSelectField(
   required?: boolean
 ): ResourceField {
   return { name, label, type: "role-multi-select", required }
-}
-
-function postMultiSelectField(name: string, label: string): ResourceField {
-  return { name, label, type: "post-multi-select" }
 }
 
 function statusSwitchField(

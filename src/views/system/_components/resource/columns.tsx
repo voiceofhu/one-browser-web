@@ -10,10 +10,8 @@ import {
   setDictDataStatus,
   setDictTypeStatus,
 } from "@/api/system/dict"
-import { setDeptStatus } from "@/api/system/dept"
 import { setMenuStatus } from "@/api/system/menu"
 import { setNoticeStatus } from "@/api/system/notice"
-import { setPostStatus } from "@/api/system/post"
 import { setRoleStatus } from "@/api/system/role"
 import { setUserStatus } from "@/api/system/user"
 import { Badge } from "@/components/ui/badge"
@@ -35,14 +33,12 @@ import {
   VISIBLE_LABELS,
 } from "@/router/routes"
 import type {
-  DeptResource,
   DictDataResource,
   DictTypeResource,
   HealthResponse,
   MenuResource,
   NoticeSummaryResource,
   PageResponse,
-  PostResource,
   RoleResource,
   StatusFlag,
   UserResource,
@@ -119,34 +115,6 @@ export const menuColumns: ColumnDef<MenuResource>[] = [
     meta: { label: "状态" },
   },
   dateColumn("created_at", "创建时间"),
-]
-
-export const deptColumns: ColumnDef<DeptResource>[] = [
-  textColumn("dept_name", "部门名称", "min-w-72 max-w-96"),
-  textColumn("leader", "负责人"),
-  textColumn("phone", "电话"),
-  textColumn("email", "邮箱"),
-  {
-    accessorKey: "status",
-    header: ({ column }) => tableHeader(column, "状态"),
-    cell: ({ row }) => <DeptStatusSwitch dept={row.original} />,
-    meta: { label: "状态" },
-  },
-  dateColumn("created_at", "创建时间"),
-]
-
-export const postColumns: ColumnDef<PostResource>[] = [
-  textColumn("post_name", "岗位名称"),
-  textColumn("post_code", "岗位编码"),
-  numberColumn("post_sort", "排序"),
-  {
-    accessorKey: "status",
-    header: ({ column }) => tableHeader(column, "状态"),
-    cell: ({ row }) => <PostStatusSwitch post={row.original} />,
-    meta: { label: "状态" },
-  },
-  dateColumn("created_at", "创建时间"),
-  textColumn("remark", "备注", "max-w-64", "-"),
 ]
 
 export const dictTypeColumns: ColumnDef<DictTypeResource>[] = [
@@ -461,76 +429,6 @@ function MenuStatusSwitch({ menu }: { menu: MenuResource }) {
       checked={enabled}
       disabled={!canChangeStatus || mutation.isPending}
       label={getStatusSwitchLabel(locale, enabled, "权限", menu.menu_name)}
-      onCheckedChange={(checked) => mutation.mutate(checked ? "0" : "1")}
-    />
-  )
-}
-
-function DeptStatusSwitch({ dept }: { dept: DeptResource }) {
-  const queryClient = useQueryClient()
-  const authPermissions = useAuthPermissions()
-  const { locale } = useTranslation()
-  const mutation = useMutation({
-    mutationFn: (status: StatusFlag) => setDeptStatus(dept, status),
-    onSuccess: async (updatedDept) => {
-      await queryClient.invalidateQueries({ queryKey: systemQueryKeys.depts })
-      showStatusSuccess(
-        updatedDept.dept_name,
-        "部门",
-        updatedDept.status,
-        locale
-      )
-    },
-    onError: (error) => showResourceError(error, locale),
-  })
-  const enabled = mutation.isPending
-    ? mutation.variables === "0"
-    : dept.status === "0"
-  const canChangeStatus = hasPermission(
-    authPermissions.data,
-    "system:dept:status"
-  )
-
-  return (
-    <ResourceStatusSwitch
-      checked={enabled}
-      disabled={!canChangeStatus || mutation.isPending}
-      label={getStatusSwitchLabel(locale, enabled, "部门", dept.dept_name)}
-      onCheckedChange={(checked) => mutation.mutate(checked ? "0" : "1")}
-    />
-  )
-}
-
-function PostStatusSwitch({ post }: { post: PostResource }) {
-  const queryClient = useQueryClient()
-  const authPermissions = useAuthPermissions()
-  const { locale } = useTranslation()
-  const mutation = useMutation({
-    mutationFn: (status: StatusFlag) => setPostStatus(post, status),
-    onSuccess: async (updatedPost) => {
-      await queryClient.invalidateQueries({ queryKey: systemQueryKeys.posts })
-      showStatusSuccess(
-        updatedPost.post_name,
-        "岗位",
-        updatedPost.status,
-        locale
-      )
-    },
-    onError: (error) => showResourceError(error, locale),
-  })
-  const enabled = mutation.isPending
-    ? mutation.variables === "0"
-    : post.status === "0"
-  const canChangeStatus = hasPermission(
-    authPermissions.data,
-    "system:post:status"
-  )
-
-  return (
-    <ResourceStatusSwitch
-      checked={enabled}
-      disabled={!canChangeStatus || mutation.isPending}
-      label={getStatusSwitchLabel(locale, enabled, "岗位", post.post_name)}
       onCheckedChange={(checked) => mutation.mutate(checked ? "0" : "1")}
     />
   )

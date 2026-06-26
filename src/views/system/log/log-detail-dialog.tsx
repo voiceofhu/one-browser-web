@@ -123,7 +123,6 @@ export function OperationLogDetailDialog({
                     label: tt("操作人员"),
                     value: detail.oper_name || tt("系统"),
                   },
-                  { label: tt("所属部门"), value: detail.dept_name },
                   {
                     label: tt("操作地址"),
                     value: (
