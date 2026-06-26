@@ -19,10 +19,9 @@ This is a Vite + React + TypeScript app using Tailwind CSS v4 and shadcn/ui.
 
 Use `pnpm`.
 
-- `pnpm dev` starts the Vite dev server.
-- `pnpm dev:development`, `pnpm dev:stage`, `pnpm dev:production` run Vite with the matching mode.
-- `pnpm build` runs TypeScript checks and creates a production bundle.
-- `pnpm build:development`, `pnpm build:stage`, `pnpm build:production` build with mode-specific env files.
+- `pnpm dev` starts the Vite dev server with `.env.development`.
+- `pnpm build` runs TypeScript checks and creates a production bundle from `.env.production`.
+- `pnpm build:stage` builds with `.env.stage`.
 - `pnpm preview` serves the built `dist/` output locally.
 - `pnpm typecheck` runs TypeScript without emitting files.
 - `pnpm lint` runs ESLint.
