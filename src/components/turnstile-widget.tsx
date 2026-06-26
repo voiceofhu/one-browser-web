@@ -177,6 +177,7 @@ export const TurnstileWidget = forwardRef<
   }
 
   const reserveWidgetSpace = appearance === "always"
+  const revealWidget = reserveWidgetSpace || loadState === "ready"
 
   return (
     <div
@@ -195,7 +196,7 @@ export const TurnstileWidget = forwardRef<
         ref={containerRef}
         className={cn(
           "transition-opacity duration-200",
-          loadState === "ready"
+          revealWidget
             ? "opacity-100"
             : "pointer-events-none opacity-0"
         )}

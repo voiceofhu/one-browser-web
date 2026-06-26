@@ -45,6 +45,10 @@ type LoginFormValues = {
   turnstile_token?: string
 }
 
+type TurnstileMode = "auto" | "manual"
+
+const TURNSTILE_MANUAL_FALLBACK_MS = 3500
+
 type LoginFormProps = Omit<React.ComponentProps<"div">, "onSubmit"> & {
   isSubmitting?: boolean
   error?: unknown
@@ -68,10 +72,13 @@ export function LoginForm({
   const [turnstileError, setTurnstileError] = useState("")
   const [turnstileStatus, setTurnstileStatus] =
     useState<TurnstileWidgetStatus>("loading")
+  const [turnstileMode, setTurnstileMode] = useState<TurnstileMode>("auto")
   const rootRef = useRef<HTMLDivElement>(null)
   const passwordIconRef = useRef<HTMLSpanElement>(null)
   const passwordAnimationReadyRef = useRef(false)
   const turnstileRef = useRef<TurnstileWidgetHandle>(null)
+  const turnstileTokenRef = useRef("")
+  const turnstileErrorRef = useRef("")
   const turnstileEnabled = Boolean(turnstileSiteKey)
   const loginSchema = useMemo(
     () =>
@@ -94,6 +101,8 @@ export function LoginForm({
   const waitingForTurnstile = missingTurnstileToken && !turnstileError
   const loadingTurnstile =
     waitingForTurnstile && turnstileStatus === "loading"
+  const showManualTurnstile =
+    turnstileMode === "manual" && missingTurnstileToken
   const submitBusy = disabled || loadingTurnstile
   const submitDisabled = disabled || missingTurnstileToken
   const displayError =
@@ -102,12 +111,15 @@ export function LoginForm({
     !turnstileEnabled ||
     turnstileError ||
     turnstileStatus === "loading" ||
-    turnstileToken
+    turnstileToken ||
+    !showManualTurnstile
       ? ""
       : t("login.turnstilePending")
   const handleTurnstileTokenChange = useCallback((token: string) => {
+    turnstileTokenRef.current = token
     setTurnstileToken(token)
     if (token) {
+      turnstileErrorRef.current = ""
       setTurnstileError("")
     }
   }, [])
@@ -118,8 +130,29 @@ export function LoginForm({
     []
   )
   const handleTurnstileError = useCallback(() => {
-    setTurnstileError(t("login.turnstileLoadFailed"))
+    const message = t("login.turnstileLoadFailed")
+    turnstileErrorRef.current = message
+    setTurnstileError(message)
   }, [t])
+
+  useEffect(() => {
+    if (
+      !turnstileEnabled ||
+      turnstileToken ||
+      turnstileError ||
+      turnstileMode === "manual"
+    ) {
+      return
+    }
+
+    const fallbackTimer = window.setTimeout(() => {
+      if (!turnstileTokenRef.current && !turnstileErrorRef.current) {
+        setTurnstileMode("manual")
+      }
+    }, TURNSTILE_MANUAL_FALLBACK_MS)
+
+    return () => window.clearTimeout(fallbackTimer)
+  }, [turnstileEnabled, turnstileError, turnstileMode, turnstileToken])
 
   useEffect(() => {
     if (shouldReduceMotion() || !rootRef.current) {
@@ -230,14 +263,15 @@ export function LoginForm({
       className={cn("mx-auto flex flex-col gap-5", className)}
       {...props}
     >
-      <Card className="relative isolate overflow-hidden border border-white/50 bg-card/70 p-0 shadow-2xl shadow-foreground/10 backdrop-blur-2xl before:pointer-events-none before:absolute before:inset-0 before:z-0 before:bg-[linear-gradient(135deg,rgb(255_255_255/0.44),rgb(255_255_255/0.12)_38%,rgb(255_255_255/0.03)_68%,transparent)] before:opacity-80 after:pointer-events-none after:absolute after:inset-px after:z-0 after:rounded-[calc(var(--radius-xl)-1px)] after:shadow-[inset_0_1px_0_rgb(255_255_255/0.56),inset_0_-1px_0_rgb(255_255_255/0.12)] supports-backdrop-filter:bg-card/55 dark:border-white/15 dark:bg-card/50 dark:shadow-black/35 dark:before:bg-[linear-gradient(135deg,rgb(255_255_255/0.18),rgb(255_255_255/0.06)_42%,transparent_72%)] dark:after:shadow-[inset_0_1px_0_rgb(255_255_255/0.18),inset_0_-1px_0_rgb(255_255_255/0.05)] dark:supports-backdrop-filter:bg-card/42">
-        <CardContent className="relative z-10 p-5 sm:p-7">
+      <Card className="relative isolate overflow-hidden border border-white/50 bg-card/70 p-0 shadow-xl shadow-foreground/10 backdrop-blur-2xl before:pointer-events-none before:absolute before:inset-0 before:z-0 before:bg-[linear-gradient(135deg,rgb(255_255_255/0.44),rgb(255_255_255/0.12)_38%,rgb(255_255_255/0.03)_68%,transparent)] before:opacity-80 after:pointer-events-none after:absolute after:inset-px after:z-0 after:rounded-[calc(var(--radius-xl)-1px)] after:shadow-[inset_0_1px_0_rgb(255_255_255/0.56),inset_0_-1px_0_rgb(255_255_255/0.12)] supports-backdrop-filter:bg-card/55 dark:border-white/15 dark:bg-card/50 dark:shadow-black/30 dark:before:bg-[linear-gradient(135deg,rgb(255_255_255/0.18),rgb(255_255_255/0.06)_42%,transparent_72%)] dark:after:shadow-[inset_0_1px_0_rgb(255_255_255/0.18),inset_0_-1px_0_rgb(255_255_255/0.05)] dark:supports-backdrop-filter:bg-card/42">
+        <CardContent className="relative z-10 px-5 py-6 sm:px-7 sm:py-7">
           <form
             aria-label={`${t("login.title")} ${APP_NAME}`}
             className="flex flex-col justify-center"
             onSubmit={form.handleSubmit(async (values) => {
               if (turnstileEnabled && !turnstileToken) {
-                setTurnstileError(t("login.turnstileRequired"))
+                const message = t("login.turnstileRequired")
+                setTurnstileError(message)
                 return
               }
 
@@ -254,13 +288,13 @@ export function LoginForm({
               }
             })}
           >
-            <FieldGroup className="gap-3.5">
+            <FieldGroup className="gap-3">
               <div
                 data-login-reveal
-                className="mb-1.5 flex flex-col items-center gap-2.5 text-center"
+                className="mb-2 flex flex-col items-center gap-2 text-center"
               >
-                <img src="/pwa-512x512.png" alt="" className="size-18" />
-                <h1 className="text-2xl leading-tight font-semibold">
+                <img src="/pwa-512x512.png" alt="" className="size-14" />
+                <h1 className="text-[1.55rem] leading-tight font-semibold">
                   {t("login.title")} {APP_NAME}
                 </h1>
               </div>
@@ -273,7 +307,7 @@ export function LoginForm({
                 <FieldLabel className="sr-only" htmlFor="username">
                   {t("login.username")}
                 </FieldLabel>
-                <InputGroup>
+                <InputGroup className="h-9">
                   <InputGroupAddon>
                     <InputGroupText>
                       <UserIcon />
@@ -299,7 +333,7 @@ export function LoginForm({
                 <FieldLabel className="sr-only" htmlFor="password">
                   {t("login.password")}
                 </FieldLabel>
-                <InputGroup data-password-group>
+                <InputGroup data-password-group className="h-9">
                   <InputGroupAddon>
                     <InputGroupText>
                       <LockKeyholeIcon />
@@ -346,7 +380,9 @@ export function LoginForm({
                   <TurnstileWidget
                     ref={turnstileRef}
                     siteKey={turnstileSiteKey}
-                    appearance="interaction-only"
+                    appearance={
+                      turnstileMode === "manual" ? "always" : "interaction-only"
+                    }
                     className="mt-1"
                     loadingLabel={t("login.turnstileLoading")}
                     onTokenChange={handleTurnstileTokenChange}
@@ -373,7 +409,7 @@ export function LoginForm({
               ) : null}
 
               <Field data-login-submit>
-                <Button type="submit" disabled={submitDisabled}>
+                <Button type="submit" size="lg" disabled={submitDisabled}>
                   {submitBusy ? (
                     <Spinner data-icon="inline-start" />
                   ) : (
@@ -396,7 +432,12 @@ export function LoginForm({
                   </div>
 
                   <Field data-login-reveal>
-                    <Button asChild variant="outline" data-provider="google">
+                    <Button
+                      asChild
+                      variant="outline"
+                      size="lg"
+                      data-provider="google"
+                    >
                       <a href={googleLoginUrl}>
                         <GoogleLogo data-icon="inline-start" />
                         {t("login.google")}

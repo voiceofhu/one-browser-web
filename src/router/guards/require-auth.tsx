@@ -16,6 +16,7 @@ import { localizedPublicPath } from "@/local"
 import { isUnauthorizedError } from "@/lib/request"
 import { useAuthPermissions, useCurrentUser } from "@/hooks/use-auth"
 import { getFirstAuthorizedPath, isAuthorizedPath } from "@/router/access"
+import { RouteLoading } from "@/router/route-loading"
 
 export function RequireAuth({ children }: React.PropsWithChildren) {
   const location = useLocation()
@@ -30,11 +31,7 @@ export function RequireAuth({ children }: React.PropsWithChildren) {
   }
 
   if (currentUser.isLoading || authPermissions.isLoading) {
-    return (
-      <div className="flex min-h-svh items-center justify-center bg-background text-muted-foreground">
-        <Spinner />
-      </div>
-    )
+    return <RouteLoading />
   }
 
   if (

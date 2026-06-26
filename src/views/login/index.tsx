@@ -115,7 +115,7 @@ export default function LoginPage() {
       </header>
       <section className="relative z-10 grid flex-1 place-items-center py-6 sm:py-8 lg:py-10">
         <LoginForm
-          className="w-full max-w-md"
+          className="w-full max-w-[25rem]"
           isSubmitting={loginMutation.isPending}
           error={
             loginMutation.error ||

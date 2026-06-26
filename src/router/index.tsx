@@ -10,6 +10,7 @@ import {
 import { useLanguage } from "@/components/providers/language-context"
 import { useAuthPermissions } from "@/hooks/use-auth"
 import { RouteProgressBar } from "@/layout/components/route-progress-bar"
+import { RouteLoading } from "@/router/route-loading"
 import {
   getAuthorizedDynamicRouteElements,
   getAuthorizedDynamicRouteRedirects,
@@ -26,7 +27,6 @@ import {
   type PublicLocaleRoute,
 } from "@/local"
 import type { AuthPermissions } from "@/types/admin"
-import { APP_NAME } from "@/app"
 
 const AppLayout = lazy(() => import("@/layout"))
 const LoginPage = lazy(() => import("@/views/login"))
@@ -181,15 +181,5 @@ function isPublicAppPath(pathname: string) {
     route === "oauth" ||
     (route !== undefined &&
       PUBLIC_LOCALE_ROUTES.some((publicRoute) => publicRoute === route))
-  )
-}
-
-function RouteLoading() {
-  return (
-    <div className="fixed inset-0 z-50 flex min-h-svh items-center justify-center bg-black text-white">
-      <div className="text-center text-[12vmin] font-semibold tracking-normal select-none sm:text-[15vmin] md:text-[15vmin] lg:text-[17vim]">
-        {APP_NAME}
-      </div>
-    </div>
   )
 }
