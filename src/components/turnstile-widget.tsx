@@ -6,6 +6,7 @@ import {
   useState,
 } from "react"
 
+import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 
 type TurnstileRenderOptions = {
@@ -123,10 +124,10 @@ export const TurnstileWidget = forwardRef<
 
     let active = true
     let cleanupFrameWatcher: (() => void) | undefined
+    let renderErrorTimer: number | undefined
     const container = containerRef.current
 
     try {
-      setLoadState("loading")
       const widgetId = window.turnstile.render(container, {
         sitekey: siteKey,
         action,
@@ -154,15 +155,20 @@ export const TurnstileWidget = forwardRef<
         }
       })
     } catch {
-      if (active) {
-        setLoadState("error")
-        onTokenChange("")
-        onError?.()
-      }
+      renderErrorTimer = window.setTimeout(() => {
+        if (active) {
+          setLoadState("error")
+          onTokenChange("")
+          onError?.()
+        }
+      }, 0)
     }
 
     return () => {
       active = false
+      if (renderErrorTimer !== undefined) {
+        window.clearTimeout(renderErrorTimer)
+      }
       cleanupFrameWatcher?.()
       if (window.turnstile && widgetIdRef.current) {
         window.turnstile.remove(widgetIdRef.current)
@@ -177,7 +183,8 @@ export const TurnstileWidget = forwardRef<
   }
 
   const reserveWidgetSpace = appearance === "always"
-  const revealWidget = reserveWidgetSpace || loadState === "ready"
+  const showSkeleton = reserveWidgetSpace && loadState === "loading"
+  const revealWidget = loadState === "ready"
 
   return (
     <div
@@ -192,6 +199,7 @@ export const TurnstileWidget = forwardRef<
           {loadingLabel}
         </span>
       ) : null}
+      {showSkeleton ? <TurnstileSkeleton /> : null}
       <div
         ref={containerRef}
         className={cn(
@@ -204,6 +212,19 @@ export const TurnstileWidget = forwardRef<
     </div>
   )
 })
+
+function TurnstileSkeleton() {
+  return (
+    <div className="pointer-events-none absolute inset-0 flex items-center rounded-md border border-border bg-background/70 px-3">
+      <Skeleton className="size-8 rounded-md" />
+      <div className="ml-3 flex min-w-0 flex-1 flex-col gap-2">
+        <Skeleton className="h-3.5 w-28" />
+        <Skeleton className="h-3 w-20" />
+      </div>
+      <Skeleton className="ml-3 size-6 rounded-full" />
+    </div>
+  )
+}
 
 function watchTurnstileFrame(container: HTMLElement, onReady: () => void) {
   let frame: HTMLIFrameElement | null = null

@@ -108,7 +108,7 @@ export default function IndexPage() {
   const recentItems = buildRecentItems(overviewData?.recent)
 
   return (
-    <div className="flex flex-col gap-3 px-4 pt-4 lg:px-6">
+    <div className="flex flex-col gap-3 px-3 pt-3 lg:px-4">
       {overview.error ? (
         <Alert variant="destructive">
           <AlertTitle>{translateText(locale, "首页数据加载失败")}</AlertTitle>
@@ -123,25 +123,14 @@ export default function IndexPage() {
         health={overviewData?.health}
       />
 
-      <div className="grid grid-cols-1 gap-3 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
-        {resourceCards.slice(0, 4).map((card, index) => (
-          <ResourceSummaryCard key={card.title} card={card} index={index} />
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 items-start gap-3 xl:grid-cols-[minmax(0,1fr)_21rem]">
+      <div className="grid grid-cols-1 items-start gap-3 xl:grid-cols-[minmax(0,1fr)_19rem]">
         <div className="grid content-start gap-3">
           <ResourceOverview cards={resourceCards} />
           <RecentResources items={recentItems} />
         </div>
-        <div className="grid content-start gap-3">
+        <div className="grid content-start gap-3 md:grid-cols-2 xl:grid-cols-1">
           <QuickActions />
-          <HealthCard
-            health={overviewData?.health}
-            isLoading={overview.isLoading}
-            error={overview.error}
-          />
-          <DependencyHealthCard
+          <HealthSummary
             health={overviewData?.health}
             isLoading={overview.isLoading}
             error={overview.error}
@@ -161,11 +150,12 @@ function StatusStrip({
 }) {
   const environment = health?.data?.environment ?? "unknown"
   const serviceStatus = health?.data?.status ?? "unknown"
+  const dependencyStatus = getDependencyStatus(health?.data)
   const { locale, t } = useTranslation()
 
   return (
-    <Card size="sm" className="bg-muted/40 shadow-none ring-0">
-      <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <Card size="sm" className="bg-muted/25 shadow-none ring-0">
+      <CardContent className="grid gap-2 p-2 sm:grid-cols-2 xl:grid-cols-4">
         <StatusItem
           label={translateText(locale, "当前用户")}
           value={user?.nick_name || user?.user_name || t("nav.guestName")}
@@ -176,11 +166,11 @@ function StatusStrip({
         />
         <StatusItem
           label={translateText(locale, "服务状态")}
-          value={serviceStatus}
+          value={translateText(locale, serviceStatus)}
         />
         <StatusItem
           label={translateText(locale, "依赖状态")}
-          value={serviceStatus}
+          value={translateText(locale, dependencyStatus)}
         />
       </CardContent>
     </Card>
@@ -189,14 +179,34 @@ function StatusStrip({
 
 function StatusItem({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex min-w-0 flex-col gap-1">
-      <span className="text-xs text-muted-foreground">{label}</span>
-      <span className="truncate text-sm font-medium">{value}</span>
+    <div className="flex min-w-0 items-center justify-between gap-3 rounded-lg bg-background/70 px-3 py-2">
+      <span className="shrink-0 text-xs text-muted-foreground">{label}</span>
+      <span className="min-w-0 truncate text-sm font-semibold tabular-nums">
+        {value}
+      </span>
     </div>
   )
 }
 
-function ResourceSummaryCard({
+function ResourceOverview({ cards }: { cards: ResourceSummary[] }) {
+  const { locale } = useTranslation()
+
+  return (
+    <Card size="sm" className="bg-muted/25 shadow-none ring-0">
+      <CardHeader className="pb-1">
+        <CardDescription>{translateText(locale, "核心资源")}</CardDescription>
+        <CardTitle>{translateText(locale, "系统管理总览")}</CardTitle>
+      </CardHeader>
+      <CardContent className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6">
+        {cards.map((card, index) => (
+          <ResourceMetricTile key={card.title} card={card} index={index} />
+        ))}
+      </CardContent>
+    </Card>
+  )
+}
+
+function ResourceMetricTile({
   card,
   index,
 }: {
@@ -207,64 +217,35 @@ function ResourceSummaryCard({
   const { locale } = useTranslation()
 
   return (
-    <Card
-      size="sm"
+    <div
       className={cn(
-        "shadow-none ring-0",
-        panelToneClass(index, Boolean(card.errorMessage))
+        "flex min-h-20 flex-col justify-between gap-3 rounded-lg border bg-background/70 p-3",
+        index === 0 ? "bg-primary/5" : null,
+        card.errorMessage ? "border-destructive/30 bg-destructive/5" : null
       )}
     >
-      <CardHeader className="gap-1">
-        <CardDescription>
-          {translateText(locale, card.description)}
-        </CardDescription>
-        <CardTitle className="flex items-center gap-2 text-xl font-semibold tabular-nums">
+      <div className="flex min-w-0 items-start justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2">
           <Icon className="text-muted-foreground" />
-          {card.isLoading ? <Skeleton className="h-8 w-16" /> : card.value}
-        </CardTitle>
-        <CardAction>
+          <span className="truncate text-sm font-medium">
+            {translateText(locale, card.title)}
+          </span>
+        </div>
+        {card.errorMessage || card.isLoading ? (
           <Badge variant={card.variant}>
             {translateText(locale, card.badge)}
           </Badge>
-        </CardAction>
-      </CardHeader>
-    </Card>
-  )
-}
-
-function ResourceOverview({ cards }: { cards: ResourceSummary[] }) {
-  const { locale } = useTranslation()
-
-  return (
-    <Card size="sm" className="bg-muted/35 shadow-none ring-0">
-      <CardHeader>
-        <CardDescription>{translateText(locale, "核心资源")}</CardDescription>
-        <CardTitle>{translateText(locale, "系统管理总览")}</CardTitle>
-      </CardHeader>
-      <CardContent className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-        {cards.map((card, index) => (
-          <div
-            key={card.title}
-            className={cn(
-              "flex items-center justify-between gap-3 rounded-lg px-3 py-2.5 transition-colors",
-              overviewToneClass(index, Boolean(card.errorMessage))
-            )}
-          >
-            <div className="min-w-0">
-              <div className="truncate text-sm font-medium">
-                {translateText(locale, card.title)}
-              </div>
-              <div className="truncate text-xs text-muted-foreground">
-                {card.errorMessage ?? translateText(locale, card.description)}
-              </div>
-            </div>
-            <Badge variant={card.variant}>
-              {card.isLoading ? "..." : card.value}
-            </Badge>
-          </div>
-        ))}
-      </CardContent>
-    </Card>
+        ) : null}
+      </div>
+      <div className="flex min-w-0 items-end justify-between gap-3">
+        <span className="min-w-0 truncate text-xs text-muted-foreground">
+          {card.errorMessage ?? translateText(locale, card.description)}
+        </span>
+        <span className="text-2xl leading-none font-semibold tabular-nums">
+          {card.isLoading ? <Skeleton className="h-7 w-12" /> : card.value}
+        </span>
+      </div>
+    </div>
   )
 }
 
@@ -272,21 +253,22 @@ function QuickActions() {
   const { locale } = useTranslation()
 
   return (
-    <Card size="sm" className="bg-muted/35 shadow-none ring-0">
-      <CardHeader>
+    <Card size="sm" className="bg-muted/25 shadow-none ring-0">
+      <CardHeader className="pb-1">
         <CardDescription>{translateText(locale, "常用入口")}</CardDescription>
         <CardTitle>{translateText(locale, "快捷操作")}</CardTitle>
       </CardHeader>
-      <CardContent className="grid gap-2">
-        {quickActions.map((action, index) => {
+      <CardContent className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+        {quickActions.map((action) => {
           const Icon = action.icon
 
           return (
             <Button
               key={action.routeId}
               asChild
-              variant="ghost"
-              className={cn("justify-between", overviewToneClass(index, false))}
+              size="sm"
+              variant="outline"
+              className="justify-between bg-background/70"
             >
               <NavLink to={APP_ROUTE_BY_ID[action.routeId].path}>
                 <span className="flex items-center gap-2">
@@ -303,52 +285,25 @@ function QuickActions() {
   )
 }
 
-const overviewTones = [
-  "bg-primary/5 hover:bg-primary/10",
-  "bg-muted/60 hover:bg-muted",
-  "bg-accent/45 hover:bg-accent/70",
-  "bg-secondary/60 hover:bg-secondary/80",
-] as const
-
-const panelTones = [
-  "bg-primary/5",
-  "bg-muted/45",
-  "bg-accent/35",
-  "bg-secondary/55",
-] as const
-
-function overviewToneClass(index: number, isError: boolean) {
-  return isError
-    ? "bg-destructive/5 hover:bg-destructive/10"
-    : overviewTones[index % overviewTones.length]
-}
-
-function panelToneClass(index: number, isError: boolean) {
-  return isError ? "bg-destructive/5" : panelTones[index % panelTones.length]
-}
-
 function RecentResources({ items }: { items: RecentItem[] }) {
   const { locale } = useTranslation()
 
   return (
-    <Card size="sm" className="bg-muted/35 shadow-none ring-0">
-      <CardHeader>
+    <Card size="sm" className="bg-muted/25 shadow-none ring-0">
+      <CardHeader className="pb-1">
         <CardDescription>{translateText(locale, "近期数据")}</CardDescription>
         <CardTitle>{translateText(locale, "最近创建的资源")}</CardTitle>
       </CardHeader>
       <CardContent className="grid gap-2 sm:grid-cols-2 2xl:grid-cols-3">
         {items.length === 0 ? (
-          <div className="text-sm text-muted-foreground">
+          <div className="col-span-full text-sm text-muted-foreground">
             {translateText(locale, "暂无可展示的近期资源。")}
           </div>
         ) : (
           items.map((item, index) => (
             <div
               key={`${item.kind}-${item.name}-${index}`}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2.5",
-                overviewToneClass(index, false)
-              )}
+              className="flex min-h-12 items-center gap-3 rounded-lg border bg-background/70 px-3 py-2"
             >
               <Badge variant="outline" className="h-fit">
                 {translateText(locale, item.kind)}
@@ -370,7 +325,7 @@ function RecentResources({ items }: { items: RecentItem[] }) {
   )
 }
 
-function HealthCard({
+function HealthSummary({
   health,
   isLoading,
   error,
@@ -380,7 +335,7 @@ function HealthCard({
   error?: unknown
 }) {
   const status = health?.data?.status ?? "unknown"
-  const isOk = status === "ok"
+  const dependencyStatus = getDependencyStatus(health?.data)
   const { locale, t } = useTranslation()
   const errorMessage = getSectionError(
     health,
@@ -389,87 +344,132 @@ function HealthCard({
   )
 
   return (
-    <Card size="sm" className="bg-muted/35 shadow-none ring-0">
-      <CardHeader>
-        <CardDescription>{translateText(locale, "服务健康")}</CardDescription>
+    <Card size="sm" className="bg-muted/25 shadow-none ring-0">
+      <CardHeader className="pb-1">
+        <CardDescription>{translateText(locale, "运行状态")}</CardDescription>
         <CardTitle>
           {isLoading
             ? translateText(locale, "检查中")
             : translateText(locale, status)}
         </CardTitle>
         <CardAction>
-          <Badge variant={errorMessage || !isOk ? "destructive" : "secondary"}>
+          <Badge variant={statusBadgeVariant(status, errorMessage)}>
             {translateText(
               locale,
-              errorMessage ? "错误" : isOk ? "健康" : "注意"
+              errorMessage ? "错误" : isOkStatus(status) ? "健康" : "注意"
             )}
           </Badge>
         </CardAction>
       </CardHeader>
-      <CardContent className="text-sm text-muted-foreground">
-        {errorMessage
-          ? errorMessage
-          : health?.data
-            ? `${health.data.service} / ${health.data.environment}`
-            : translateText(locale, "等待健康检查返回。")}
+      <CardContent className="grid gap-2">
+        {errorMessage ? (
+          <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+            {errorMessage}
+          </div>
+        ) : health?.data ? (
+          <>
+            <HealthStatusLine
+              label={translateText(locale, "服务健康")}
+              status={status}
+              detail={`${health.data.service} / ${health.data.environment}`}
+            />
+            <div className="rounded-lg border bg-background/70 px-3 py-2">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm font-medium">
+                  {translateText(locale, "依赖健康")}
+                </span>
+                <Badge variant={statusBadgeVariant(dependencyStatus)}>
+                  {translateText(
+                    locale,
+                    isOkStatus(dependencyStatus) ? "健康" : "降级"
+                  )}
+                </Badge>
+              </div>
+              <div className="mt-2 grid gap-1.5 text-sm text-muted-foreground">
+                <DependencyStatusRow
+                  label="Postgres"
+                  value={health.data.postgres}
+                />
+                <Separator />
+                <DependencyStatusRow
+                  label="SeaORM"
+                  value={health.data.sea_orm}
+                />
+                <Separator />
+                <DependencyStatusRow label="Redis" value={health.data.redis} />
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="text-sm text-muted-foreground">
+            {translateText(locale, "等待健康检查返回。")}
+          </div>
+        )}
       </CardContent>
     </Card>
   )
 }
 
-function DependencyHealthCard({
-  health,
-  isLoading,
-  error,
+function HealthStatusLine({
+  label,
+  status,
+  detail,
 }: {
-  health?: OverviewSection<HealthResponse>
-  isLoading: boolean
-  error?: unknown
+  label: string
+  status: string
+  detail: string
 }) {
-  const status = health?.data?.status ?? "unknown"
-  const isOk = status === "ok"
-  const { locale, t } = useTranslation()
-  const errorMessage = getSectionError(
-    health,
-    error,
-    t("common.unknownServerError")
-  )
+  const { locale } = useTranslation()
 
   return (
-    <Card size="sm" className="bg-muted/35 shadow-none ring-0">
-      <CardHeader>
-        <CardDescription>{translateText(locale, "依赖健康")}</CardDescription>
-        <CardTitle>
-          {isLoading
-            ? translateText(locale, "检查中")
-            : translateText(locale, status)}
-        </CardTitle>
-        <CardAction>
-          <Badge variant={errorMessage || !isOk ? "destructive" : "secondary"}>
-            {translateText(
-              locale,
-              errorMessage ? "错误" : isOk ? "健康" : "降级"
-            )}
-          </Badge>
-        </CardAction>
-      </CardHeader>
-      <CardContent className="grid gap-2 text-sm text-muted-foreground">
-        {errorMessage ? (
-          errorMessage
-        ) : health?.data ? (
-          <>
-            <div>Postgres：{health.data.postgres}</div>
-            <Separator />
-            <div>SeaORM：{health.data.sea_orm}</div>
-            <Separator />
-            <div>Redis：{health.data.redis}</div>
-          </>
-        ) : (
-          translateText(locale, "等待健康检查返回。")
-        )}
-      </CardContent>
-    </Card>
+    <div className="rounded-lg border bg-background/70 px-3 py-2">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-sm font-medium">{label}</span>
+        <Badge variant={statusBadgeVariant(status)}>
+          {translateText(locale, isOkStatus(status) ? "健康" : "注意")}
+        </Badge>
+      </div>
+      <div className="mt-1 truncate text-sm text-muted-foreground">
+        {detail}
+      </div>
+    </div>
   )
+}
+
+function DependencyStatusRow({
+  label,
+  value,
+}: {
+  label: string
+  value: string
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span>{label}</span>
+      <span className="truncate font-medium text-foreground">{value}</span>
+    </div>
+  )
+}
+
+function getDependencyStatus(health?: HealthResponse | null) {
+  if (!health) {
+    return "unknown"
+  }
+
+  const statuses = [health.postgres, health.sea_orm, health.redis]
+  if (statuses.every(isOkStatus)) {
+    return "ok"
+  }
+
+  return "degraded"
+}
+
+function isOkStatus(status?: string | null) {
+  return status?.toLowerCase() === "ok" || status?.toLowerCase() === "healthy"
+}
+
+function statusBadgeVariant(status: string, errorMessage?: string | null) {
+  return errorMessage || !isOkStatus(status) ? "destructive" : "secondary"
 }
 
 function resourceSummary(

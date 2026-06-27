@@ -216,6 +216,7 @@ export const enUSTextMessages: Record<string, string> = {
   最近创建的资源: "Recently created resources",
   服务健康: "Service health",
   依赖健康: "Dependency health",
+  运行状态: "Runtime status",
   服务器与版本: "Server and version",
   "服务器级别的信息（区别于进程运行时），最近更新：":
     "Server-level information (separate from process runtime), last updated: ",

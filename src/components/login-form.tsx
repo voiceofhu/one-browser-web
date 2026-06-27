@@ -16,14 +16,12 @@ import { useTranslation } from "@/components/providers/language-context"
 import {
   TurnstileWidget,
   type TurnstileWidgetHandle,
-  type TurnstileWidgetStatus,
 } from "@/components/turnstile-widget"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import {
   Field,
-  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
@@ -44,10 +42,6 @@ type LoginFormValues = {
   password: string
   turnstile_token?: string
 }
-
-type TurnstileMode = "auto" | "manual"
-
-const TURNSTILE_MANUAL_FALLBACK_MS = 3500
 
 type LoginFormProps = Omit<React.ComponentProps<"div">, "onSubmit"> & {
   isSubmitting?: boolean
@@ -70,15 +64,10 @@ export function LoginForm({
   const [showPassword, setShowPassword] = useState(false)
   const [turnstileToken, setTurnstileToken] = useState("")
   const [turnstileError, setTurnstileError] = useState("")
-  const [turnstileStatus, setTurnstileStatus] =
-    useState<TurnstileWidgetStatus>("loading")
-  const [turnstileMode, setTurnstileMode] = useState<TurnstileMode>("auto")
   const rootRef = useRef<HTMLDivElement>(null)
   const passwordIconRef = useRef<HTMLSpanElement>(null)
   const passwordAnimationReadyRef = useRef(false)
   const turnstileRef = useRef<TurnstileWidgetHandle>(null)
-  const turnstileTokenRef = useRef("")
-  const turnstileErrorRef = useRef("")
   const turnstileEnabled = Boolean(turnstileSiteKey)
   const loginSchema = useMemo(
     () =>
@@ -98,61 +87,20 @@ export function LoginForm({
 
   const disabled = isSubmitting || form.formState.isSubmitting
   const missingTurnstileToken = turnstileEnabled && !turnstileToken
-  const waitingForTurnstile = missingTurnstileToken && !turnstileError
-  const loadingTurnstile =
-    waitingForTurnstile && turnstileStatus === "loading"
-  const showManualTurnstile =
-    turnstileMode === "manual" && missingTurnstileToken
-  const submitBusy = disabled || loadingTurnstile
+  const submitBusy = disabled
   const submitDisabled = disabled || missingTurnstileToken
   const displayError =
     error || (turnstileError ? new Error(turnstileError) : null)
-  const turnstileDescription =
-    !turnstileEnabled ||
-    turnstileError ||
-    turnstileStatus === "loading" ||
-    turnstileToken ||
-    !showManualTurnstile
-      ? ""
-      : t("login.turnstilePending")
   const handleTurnstileTokenChange = useCallback((token: string) => {
-    turnstileTokenRef.current = token
     setTurnstileToken(token)
     if (token) {
-      turnstileErrorRef.current = ""
       setTurnstileError("")
     }
   }, [])
-  const handleTurnstileStatusChange = useCallback(
-    (status: TurnstileWidgetStatus) => {
-      setTurnstileStatus(status)
-    },
-    []
-  )
   const handleTurnstileError = useCallback(() => {
     const message = t("login.turnstileLoadFailed")
-    turnstileErrorRef.current = message
     setTurnstileError(message)
   }, [t])
-
-  useEffect(() => {
-    if (
-      !turnstileEnabled ||
-      turnstileToken ||
-      turnstileError ||
-      turnstileMode === "manual"
-    ) {
-      return
-    }
-
-    const fallbackTimer = window.setTimeout(() => {
-      if (!turnstileTokenRef.current && !turnstileErrorRef.current) {
-        setTurnstileMode("manual")
-      }
-    }, TURNSTILE_MANUAL_FALLBACK_MS)
-
-    return () => window.clearTimeout(fallbackTimer)
-  }, [turnstileEnabled, turnstileError, turnstileMode, turnstileToken])
 
   useEffect(() => {
     if (shouldReduceMotion() || !rootRef.current) {
@@ -380,23 +328,12 @@ export function LoginForm({
                   <TurnstileWidget
                     ref={turnstileRef}
                     siteKey={turnstileSiteKey}
-                    appearance={
-                      turnstileMode === "manual" ? "always" : "interaction-only"
-                    }
+                    appearance="always"
                     className="mt-1"
                     loadingLabel={t("login.turnstileLoading")}
                     onTokenChange={handleTurnstileTokenChange}
                     onError={handleTurnstileError}
-                    onStatusChange={handleTurnstileStatusChange}
                   />
-                  {turnstileDescription ? (
-                    <FieldDescription
-                      className="text-center"
-                      aria-live="polite"
-                    >
-                      {turnstileDescription}
-                    </FieldDescription>
-                  ) : null}
                 </Field>
               ) : null}
 
@@ -415,9 +352,7 @@ export function LoginForm({
                   ) : (
                     <LogInIcon data-icon="inline-start" />
                   )}
-                  {waitingForTurnstile
-                    ? t("login.waitingForTurnstile")
-                    : t("login.submit")}
+                  {t("login.submit")}
                 </Button>
               </Field>
 
