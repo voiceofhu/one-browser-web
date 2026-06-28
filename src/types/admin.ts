@@ -62,7 +62,7 @@ export interface TeamInvite {
   team_id: number
   team_key: string
   team_name: string
-  expires_at: string
+  expires_at?: string | null
 }
 
 export interface HealthResponse {

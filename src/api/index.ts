@@ -6,6 +6,7 @@ export interface IndexOverviewResponse {
   current_user: CurrentUser
   health: OverviewSection<HealthResponse>
   resources: IndexOverviewResources
+  resource_groups?: IndexOverviewResourceGroup[]
   recent: IndexOverviewRecentResource[]
 }
 
@@ -26,6 +27,18 @@ export interface IndexOverviewResources {
 export interface IndexOverviewCount {
   total: number
   error: string | null
+}
+
+export interface IndexOverviewResourceGroup {
+  key: string
+  title: string
+  items: IndexOverviewResourceItem[]
+}
+
+export interface IndexOverviewResourceItem extends IndexOverviewCount {
+  key: string
+  title: string
+  description: string
 }
 
 export interface IndexOverviewRecentResource {

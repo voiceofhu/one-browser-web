@@ -103,15 +103,6 @@ export default function BrowserTeamPage() {
 
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col bg-background">
-      <div className="flex shrink-0 flex-col gap-3 px-4 pt-4 pb-3 lg:px-6">
-        <header className="flex min-w-0 flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-normal">团队管理</h1>
-          <p className="text-sm text-muted-foreground">
-            管理浏览器团队、负责人和资源规模。
-          </p>
-        </header>
-      </div>
-
       <div className="min-h-0 flex-1">
         <ResourceTable
           data={query.data?.list ?? []}

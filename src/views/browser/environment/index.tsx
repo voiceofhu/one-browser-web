@@ -3,13 +3,12 @@
 import * as React from "react"
 import { useQuery } from "@tanstack/react-query"
 import type { Column, ColumnDef } from "@tanstack/react-table"
-import { CopyPlusIcon, LaptopIcon, PlusIcon } from "lucide-react"
+import { LaptopIcon } from "lucide-react"
 
 import { listBrowserEnvironments } from "@/api/browser"
 import { OverflowTooltipText } from "@/components/overflow-tooltip-text"
 import { AnimatedSegmentedTabs } from "@/components/ui/animated-segmented-tabs"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { formatAbsoluteDateTime, formatRelativeTime } from "@/lib/datetime"
 import { browserQueryKeys } from "@/lib/query-keys"
 import type {
@@ -118,27 +117,6 @@ export default function EnvironmentPage() {
 
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col bg-background">
-      <div className="flex shrink-0 flex-col gap-3 px-4 pt-4 pb-3 lg:px-6">
-        <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div className="min-w-0">
-            <h1 className="text-2xl font-semibold tracking-normal">环境管理</h1>
-            <p className="text-sm text-muted-foreground">
-              统一查看团队浏览器环境、代理绑定和最近使用情况。
-            </p>
-          </div>
-          <div className="flex shrink-0 flex-wrap items-center gap-2">
-            <Button type="button" variant="outline" size="sm" disabled>
-              <CopyPlusIcon data-icon="inline-start" />
-              批量导入
-            </Button>
-            <Button type="button" size="sm" disabled>
-              <PlusIcon data-icon="inline-start" />
-              新增环境
-            </Button>
-          </div>
-        </header>
-      </div>
-
       <div className="min-h-0 flex-1">
         <ResourceTable
           data={query.data?.list ?? []}

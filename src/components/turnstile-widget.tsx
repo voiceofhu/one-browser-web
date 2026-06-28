@@ -6,7 +6,6 @@ import {
   useState,
 } from "react"
 
-import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 
 type TurnstileRenderOptions = {
@@ -55,6 +54,7 @@ type TurnstileWidgetProps = {
 
 let turnstileScriptPromise: Promise<void> | null = null
 const TURNSTILE_SCRIPT_ID = "cloudflare-turnstile"
+const TURNSTILE_RENDER_TIMEOUT_MS = 8000
 
 export const TurnstileWidget = forwardRef<
   TurnstileWidgetHandle,
@@ -125,6 +125,7 @@ export const TurnstileWidget = forwardRef<
     let active = true
     let cleanupFrameWatcher: (() => void) | undefined
     let renderErrorTimer: number | undefined
+    let renderTimeoutTimer: number | undefined
     const container = containerRef.current
 
     try {
@@ -154,6 +155,15 @@ export const TurnstileWidget = forwardRef<
           setLoadState("ready")
         }
       })
+      renderTimeoutTimer = window.setTimeout(() => {
+        if (!active || container.querySelector("iframe")) {
+          return
+        }
+
+        setLoadState("error")
+        onTokenChange("")
+        onError?.()
+      }, TURNSTILE_RENDER_TIMEOUT_MS)
     } catch {
       renderErrorTimer = window.setTimeout(() => {
         if (active) {
@@ -169,6 +179,9 @@ export const TurnstileWidget = forwardRef<
       if (renderErrorTimer !== undefined) {
         window.clearTimeout(renderErrorTimer)
       }
+      if (renderTimeoutTimer !== undefined) {
+        window.clearTimeout(renderTimeoutTimer)
+      }
       cleanupFrameWatcher?.()
       if (window.turnstile && widgetIdRef.current) {
         window.turnstile.remove(widgetIdRef.current)
@@ -183,7 +196,6 @@ export const TurnstileWidget = forwardRef<
   }
 
   const reserveWidgetSpace = appearance === "always"
-  const showSkeleton = reserveWidgetSpace && loadState === "loading"
   const revealWidget = loadState === "ready"
 
   return (
@@ -199,43 +211,39 @@ export const TurnstileWidget = forwardRef<
           {loadingLabel}
         </span>
       ) : null}
-      {showSkeleton ? <TurnstileSkeleton /> : null}
       <div
         ref={containerRef}
         className={cn(
-          "transition-opacity duration-200",
+          "w-full",
           revealWidget
-            ? "opacity-100"
-            : "pointer-events-none opacity-0"
+            ? "relative"
+            : "pointer-events-none absolute top-0 left-0 -translate-x-[calc(100vw+320px)]"
         )}
       />
     </div>
   )
 })
 
-function TurnstileSkeleton() {
-  return (
-    <div className="pointer-events-none absolute inset-0 flex items-center rounded-md border border-border bg-background/70 px-3">
-      <Skeleton className="size-8 rounded-md" />
-      <div className="ml-3 flex min-w-0 flex-1 flex-col gap-2">
-        <Skeleton className="h-3.5 w-28" />
-        <Skeleton className="h-3 w-20" />
-      </div>
-      <Skeleton className="ml-3 size-6 rounded-full" />
-    </div>
-  )
-}
-
 function watchTurnstileFrame(container: HTMLElement, onReady: () => void) {
   let frame: HTMLIFrameElement | null = null
   let observer: MutationObserver | null = null
+  let readyTimer: number | undefined
+  let ready = false
 
   function cleanup() {
     observer?.disconnect()
     frame?.removeEventListener("load", handleReady)
+    if (readyTimer !== undefined) {
+      window.clearTimeout(readyTimer)
+    }
   }
 
   function handleReady() {
+    if (ready) {
+      return
+    }
+
+    ready = true
     cleanup()
     onReady()
   }
@@ -248,6 +256,7 @@ function watchTurnstileFrame(container: HTMLElement, onReady: () => void) {
 
     frame = nextFrame
     frame.addEventListener("load", handleReady, { once: true })
+    readyTimer = window.setTimeout(handleReady, 120)
     return true
   }
 

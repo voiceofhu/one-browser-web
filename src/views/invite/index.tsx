@@ -115,14 +115,16 @@ export default function InvitePage() {
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <CalendarClockIcon />
-                  <span>
-                    {t("invite.expiresAt", {
-                      time: formatDateTime(inviteQuery.data.expires_at),
-                    })}
-                  </span>
-                </div>
+                {inviteQuery.data.expires_at ? (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <CalendarClockIcon />
+                    <span>
+                      {t("invite.expiresAt", {
+                        time: formatDateTime(inviteQuery.data.expires_at),
+                      })}
+                    </span>
+                  </div>
+                ) : null}
               </div>
             ) : null}
           </CardContent>
