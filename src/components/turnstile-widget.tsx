@@ -127,6 +127,38 @@ export const TurnstileWidget = forwardRef<
     let renderErrorTimer: number | undefined
     let renderTimeoutTimer: number | undefined
     const container = containerRef.current
+    const clearRenderTimers = () => {
+      if (renderErrorTimer !== undefined) {
+        window.clearTimeout(renderErrorTimer)
+        renderErrorTimer = undefined
+      }
+      if (renderTimeoutTimer !== undefined) {
+        window.clearTimeout(renderTimeoutTimer)
+        renderTimeoutTimer = undefined
+      }
+    }
+    const removeRenderedWidget = () => {
+      const widgetId = widgetIdRef.current
+      widgetIdRef.current = null
+
+      if (!widgetId || !window.turnstile) {
+        return
+      }
+
+      try {
+        window.turnstile.remove(widgetId)
+      } catch {
+        // Turnstile may already have detached a failed widget.
+      }
+    }
+    const failWidget = () => {
+      cleanupFrameWatcher?.()
+      clearRenderTimers()
+      removeRenderedWidget()
+      setLoadState("error")
+      onTokenChange("")
+      onError?.()
+    }
 
     try {
       const widgetId = window.turnstile.render(container, {
@@ -136,17 +168,27 @@ export const TurnstileWidget = forwardRef<
         theme: "auto",
         size,
         callback: (token) => {
+          if (!active) {
+            return
+          }
+
           setLoadState("ready")
           onTokenChange(token)
         },
         "expired-callback": () => {
+          if (!active) {
+            return
+          }
+
           setLoadState("ready")
           onTokenChange("")
         },
         "error-callback": () => {
-          setLoadState("error")
-          onTokenChange("")
-          onError?.()
+          if (!active) {
+            return
+          }
+
+          failWidget()
         },
       })
       widgetIdRef.current = widgetId
@@ -160,33 +202,21 @@ export const TurnstileWidget = forwardRef<
           return
         }
 
-        setLoadState("error")
-        onTokenChange("")
-        onError?.()
+        failWidget()
       }, TURNSTILE_RENDER_TIMEOUT_MS)
     } catch {
       renderErrorTimer = window.setTimeout(() => {
         if (active) {
-          setLoadState("error")
-          onTokenChange("")
-          onError?.()
+          failWidget()
         }
       }, 0)
     }
 
     return () => {
       active = false
-      if (renderErrorTimer !== undefined) {
-        window.clearTimeout(renderErrorTimer)
-      }
-      if (renderTimeoutTimer !== undefined) {
-        window.clearTimeout(renderTimeoutTimer)
-      }
+      clearRenderTimers()
       cleanupFrameWatcher?.()
-      if (window.turnstile && widgetIdRef.current) {
-        window.turnstile.remove(widgetIdRef.current)
-      }
-      widgetIdRef.current = null
+      removeRenderedWidget()
       onTokenChange("")
     }
   }, [action, appearance, onError, onTokenChange, scriptReady, siteKey, size])
