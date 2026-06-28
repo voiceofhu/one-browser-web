@@ -56,7 +56,6 @@ type TurnstileWidgetProps = {
 
 let turnstileScriptPromise: Promise<void> | null = null
 const TURNSTILE_SCRIPT_ID = "cloudflare-turnstile"
-const TURNSTILE_LOG_PREFIX = "[TurnstileWidget]"
 
 export const TurnstileWidget = forwardRef<
   TurnstileWidgetHandle,
@@ -84,44 +83,31 @@ export const TurnstileWidget = forwardRef<
     reset() {
       const widgetId = widgetIdRef.current
       if (!widgetId || !window.turnstile) {
-        logTurnstileDebug("reset skipped", {
-          hasWidgetId: Boolean(widgetId),
-          hasApi: Boolean(window.turnstile),
-        })
         onTokenChange("")
         return
       }
 
-      logTurnstileDebug("reset", { widgetId })
       window.turnstile.reset(widgetId)
       onTokenChange("")
     },
   }))
 
   useEffect(() => {
-    logTurnstileDebug("status change", { loadState })
     onStatusChange?.(loadState)
   }, [loadState, onStatusChange])
 
   useEffect(() => {
     let active = true
 
-    logTurnstileDebug("script load requested", {
-      hasApi: typeof window !== "undefined" ? Boolean(window.turnstile) : false,
-    })
     loadTurnstileScript()
       .then(() => {
         if (active) {
-          logTurnstileDebug("script ready")
           setScriptReady(true)
           setLoadState("loading")
         }
       })
-      .catch((error) => {
+      .catch(() => {
         if (active) {
-          logTurnstileWarn("script load failed", {
-            error: describeError(error),
-          })
           setLoadState("error")
           onError?.()
         }
@@ -144,32 +130,17 @@ export const TurnstileWidget = forwardRef<
       widgetIdRef.current = null
 
       if (!widgetId || !window.turnstile) {
-        logTurnstileDebug("remove skipped", {
-          hasWidgetId: Boolean(widgetId),
-          hasApi: Boolean(window.turnstile),
-        })
         return
       }
 
       try {
-        logTurnstileDebug("remove", { widgetId })
         window.turnstile.remove(widgetId)
-      } catch (error) {
-        logTurnstileWarn("remove failed", {
-          widgetId,
-          error: describeError(error),
-        })
+      } catch {
         // Turnstile may already have detached a failed widget.
       }
     }
 
     try {
-      logTurnstileDebug("render start", {
-        action,
-        appearance,
-        size,
-        siteKey: maskValue(siteKey),
-      })
       const widgetId = window.turnstile.render(container, {
         sitekey: siteKey,
         action,
@@ -178,82 +149,49 @@ export const TurnstileWidget = forwardRef<
         size,
         callback: (token) => {
           if (!active) {
-            logTurnstileDebug("token callback ignored after cleanup")
             return
           }
 
-          logTurnstileDebug("token callback", {
-            widgetId: widgetIdRef.current,
-            tokenLength: token.length,
-          })
           setLoadState("ready")
           onTokenChange(token)
         },
         "expired-callback": () => {
           if (!active) {
-            logTurnstileDebug("expired callback ignored after cleanup")
             return
           }
 
-          logTurnstileWarn("expired callback", {
-            widgetId: widgetIdRef.current,
-          })
           setLoadState("ready")
           onTokenChange("")
         },
-        "error-callback": (errorCode) => {
+        "error-callback": () => {
           if (!active) {
-            logTurnstileDebug("error callback ignored after cleanup", {
-              errorCode,
-            })
             return
           }
 
-          logTurnstileWarn("error callback", {
-            widgetId: widgetIdRef.current,
-            errorCode,
-            ...snapshotContainer(container),
-          })
           setLoadState("ready")
           onTokenChange("")
         },
         "timeout-callback": () => {
           if (!active) {
-            logTurnstileDebug("timeout callback ignored after cleanup")
             return
           }
 
-          logTurnstileWarn("timeout callback", {
-            widgetId: widgetIdRef.current,
-            ...snapshotContainer(container),
-          })
           setLoadState("ready")
           onTokenChange("")
         },
         "unsupported-callback": () => {
           if (!active) {
-            logTurnstileDebug("unsupported callback ignored after cleanup")
             return
           }
 
-          logTurnstileWarn("unsupported callback", {
-            widgetId: widgetIdRef.current,
-            ...snapshotContainer(container),
-          })
-          setLoadState("ready")
+          setLoadState("error")
           onTokenChange("")
+          onError?.()
         },
       })
       widgetIdRef.current = widgetId
-      logTurnstileDebug("render success", {
-        widgetId,
-        ...snapshotContainer(container),
-      })
       setLoadState("ready")
-    } catch (error) {
-      logTurnstileWarn("render threw", {
-        error: describeError(error),
-      })
+    } catch {
       setLoadState("error")
       onTokenChange("")
       onError?.()
@@ -261,10 +199,6 @@ export const TurnstileWidget = forwardRef<
 
     return () => {
       active = false
-      logTurnstileDebug("cleanup", {
-        widgetId: widgetIdRef.current,
-        ...snapshotContainer(container),
-      })
       removeRenderedWidget()
       onTokenChange("")
     }
@@ -294,63 +228,16 @@ export const TurnstileWidget = forwardRef<
   )
 })
 
-function logTurnstileDebug(message: string, details?: Record<string, unknown>) {
-  console.info(TURNSTILE_LOG_PREFIX, message, details ?? {})
-}
-
-function logTurnstileWarn(message: string, details?: Record<string, unknown>) {
-  console.warn(TURNSTILE_LOG_PREFIX, message, details ?? {})
-}
-
-function snapshotContainer(container: HTMLElement) {
-  const iframe = container.querySelector("iframe")
-
-  return {
-    childCount: container.childElementCount,
-    hasIframe: Boolean(iframe),
-    iframeOrigin: iframe?.src ? getUrlOrigin(iframe.src) : null,
-  }
-}
-
-function describeError(error: unknown) {
-  if (error instanceof Error) {
-    return {
-      message: error.message,
-      name: error.name,
-    }
-  }
-
-  return String(error)
-}
-
-function maskValue(value: string) {
-  if (value.length <= 8) {
-    return "***"
-  }
-
-  return `${value.slice(0, 4)}...${value.slice(-4)}`
-}
-
-function getUrlOrigin(value: string) {
-  try {
-    return new URL(value).origin
-  } catch {
-    return "invalid-url"
-  }
-}
-
 function loadTurnstileScript() {
   if (typeof window === "undefined") {
     return Promise.reject(new Error("Turnstile requires a browser"))
   }
 
   if (window.turnstile) {
-    logTurnstileDebug("script already available")
     return Promise.resolve()
   }
 
   if (turnstileScriptPromise) {
-    logTurnstileDebug("reuse pending script promise")
     return turnstileScriptPromise
   }
 
@@ -360,17 +247,14 @@ function loadTurnstileScript() {
     ) as HTMLScriptElement | null
     if (existing) {
       if (existing.dataset.loaded === "true") {
-        logTurnstileDebug("existing script loaded")
         waitForTurnstile(resolve, reject)
         return
       }
 
-      logTurnstileDebug("wait for existing script")
       existing.addEventListener(
         "load",
         () => {
           existing.dataset.loaded = "true"
-          logTurnstileDebug("existing script load event")
           waitForTurnstile(resolve, reject)
         },
         { once: true }
@@ -379,7 +263,6 @@ function loadTurnstileScript() {
         "error",
         () => {
           turnstileScriptPromise = null
-          logTurnstileWarn("existing script error event")
           reject(new Error("failed to load Turnstile script"))
         },
         { once: true }
@@ -393,12 +276,10 @@ function loadTurnstileScript() {
       "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
     script.async = true
     script.defer = true
-    logTurnstileDebug("append script", { src: getUrlOrigin(script.src) })
     script.addEventListener(
       "load",
       () => {
         script.dataset.loaded = "true"
-        logTurnstileDebug("script load event")
         waitForTurnstile(resolve, reject)
       },
       { once: true }
@@ -408,7 +289,6 @@ function loadTurnstileScript() {
       () => {
         turnstileScriptPromise = null
         script.remove()
-        logTurnstileWarn("script error event")
         reject(new Error("failed to load Turnstile script"))
       },
       { once: true }
@@ -425,14 +305,12 @@ function waitForTurnstile(
   attempt = 0
 ) {
   if (window.turnstile) {
-    logTurnstileDebug("api ready", { attempt })
     resolve()
     return
   }
 
   if (attempt >= 50) {
     turnstileScriptPromise = null
-    logTurnstileWarn("api wait timeout", { attempt })
     reject(new Error("Turnstile API was not ready after loading"))
     return
   }
