@@ -56,7 +56,6 @@ type TurnstileWidgetProps = {
 
 let turnstileScriptPromise: Promise<void> | null = null
 const TURNSTILE_SCRIPT_ID = "cloudflare-turnstile"
-const TURNSTILE_RENDER_TIMEOUT_MS = 8000
 const TURNSTILE_LOG_PREFIX = "[TurnstileWidget]"
 
 export const TurnstileWidget = forwardRef<
@@ -139,19 +138,7 @@ export const TurnstileWidget = forwardRef<
     }
 
     let active = true
-    let renderErrorTimer: number | undefined
-    let renderTimeoutTimer: number | undefined
     const container = containerRef.current
-    const clearRenderTimers = () => {
-      if (renderErrorTimer !== undefined) {
-        window.clearTimeout(renderErrorTimer)
-        renderErrorTimer = undefined
-      }
-      if (renderTimeoutTimer !== undefined) {
-        window.clearTimeout(renderTimeoutTimer)
-        renderTimeoutTimer = undefined
-      }
-    }
     const removeRenderedWidget = () => {
       const widgetId = widgetIdRef.current
       widgetIdRef.current = null
@@ -174,14 +161,6 @@ export const TurnstileWidget = forwardRef<
         })
         // Turnstile may already have detached a failed widget.
       }
-    }
-    const failWidget = () => {
-      logTurnstileWarn("fail widget", snapshotContainer(container))
-      clearRenderTimers()
-      removeRenderedWidget()
-      setLoadState("error")
-      onTokenChange("")
-      onError?.()
     }
 
     try {
@@ -271,26 +250,13 @@ export const TurnstileWidget = forwardRef<
         ...snapshotContainer(container),
       })
       setLoadState("ready")
-      renderTimeoutTimer = window.setTimeout(() => {
-        if (!active || container.querySelector("iframe")) {
-          return
-        }
-
-        logTurnstileWarn("render timeout without iframe", {
-          widgetId,
-          ...snapshotContainer(container),
-        })
-        failWidget()
-      }, TURNSTILE_RENDER_TIMEOUT_MS)
     } catch (error) {
       logTurnstileWarn("render threw", {
         error: describeError(error),
       })
-      renderErrorTimer = window.setTimeout(() => {
-        if (active) {
-          failWidget()
-        }
-      }, 0)
+      setLoadState("error")
+      onTokenChange("")
+      onError?.()
     }
 
     return () => {
@@ -299,7 +265,6 @@ export const TurnstileWidget = forwardRef<
         widgetId: widgetIdRef.current,
         ...snapshotContainer(container),
       })
-      clearRenderTimers()
       removeRenderedWidget()
       onTokenChange("")
     }
