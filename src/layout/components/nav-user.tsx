@@ -24,6 +24,7 @@ import {
 } from "lucide-react"
 
 import { useTranslation } from "@/components/providers/language-context"
+import { localizedPath } from "@/local"
 
 export function NavUser({
   user,
@@ -33,7 +34,7 @@ export function NavUser({
   onLogout?: () => void
 }) {
   const { isMobile } = useSidebar()
-  const { t } = useTranslation()
+  const { locale, t } = useTranslation()
   const displayName = user?.nick_name || user?.user_name || t("nav.guestName")
   const email = user?.email || t("nav.loginRequired")
   const avatar = user?.avatar || ""
@@ -88,7 +89,7 @@ export function NavUser({
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem asChild>
-                <NavLink to="/account/profile">
+                <NavLink to={localizedPath(locale, "/account/profile")}>
                   <CircleUserRoundIcon />
                   {t("nav.accountSettings")}
                 </NavLink>

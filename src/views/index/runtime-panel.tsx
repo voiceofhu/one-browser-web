@@ -22,7 +22,7 @@ import { Separator } from "@/components/ui/separator"
 
 import type { OverviewSection } from "@/api/index"
 import { APP_ROUTE_BY_ID } from "@/router/routes"
-import { translateText } from "@/local"
+import { localizedPath, translateText } from "@/local"
 import type { CurrentUser, HealthResponse } from "@/types/admin"
 
 const quickActions = [
@@ -124,7 +124,12 @@ export function RuntimePanel({
                 variant="outline"
                 className="justify-between bg-background/75 px-2"
               >
-                <NavLink to={APP_ROUTE_BY_ID[action.routeId].path}>
+                <NavLink
+                  to={localizedPath(
+                    locale,
+                    APP_ROUTE_BY_ID[action.routeId].path
+                  )}
+                >
                   <span className="flex min-w-0 items-center gap-1.5">
                     <Icon data-icon="inline-start" />
                     <span className="truncate">

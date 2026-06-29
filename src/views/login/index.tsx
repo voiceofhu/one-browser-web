@@ -2,16 +2,13 @@ import { useEffect, useMemo, useRef, useState } from "react"
 import { Navigate, useNavigate, useSearchParams } from "react-router"
 import { toast } from "sonner"
 
-import {
-  buildAppAuthorizePath,
-  buildGoogleLoginUrl,
-} from "@/api/auth"
+import { buildAppAuthorizePath, buildGoogleLoginUrl } from "@/api/auth"
 import { LoginForm } from "@/components/login-form"
 import { useTranslation } from "@/components/providers/language-context"
 import { Spinner } from "@/components/ui/spinner"
 import { ThemeToggleButton } from "@/components/theme/theme-toggle-button"
 import { LanguageSwitcher } from "@/layout/components/language-switcher"
-import { isLoginPath } from "@/local"
+import { isLoginPath, localizedPath, type Locale } from "@/local"
 import { consumeAuthExpiredNotice } from "@/lib/request"
 import {
   useAppAuthorizeMutation,
@@ -21,39 +18,42 @@ import {
 import { AppAuthorizationSuccess } from "./app-authorization-success"
 import { InteractiveGridBackground } from "./interactive-grid-background"
 
-function normalizeRedirect(value: string | null) {
+function normalizeRedirect(value: string | null, locale: Locale) {
   if (!value || !value.startsWith("/") || value.startsWith("//")) {
-    return "/index"
+    return localizedPath(locale, "/index")
   }
 
   const redirectPathname = value.split(/[?#]/)[0]
   if (isLoginPath(redirectPathname)) {
-    return "/index"
+    return localizedPath(locale, "/index")
   }
 
-  return value
+  return `${localizedPath(locale, redirectPathname)}${value.slice(redirectPathname.length)}`
 }
 
 export default function LoginPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const isAppLogin = searchParams.get("from") === "app"
-  const redirectTo = normalizeRedirect(searchParams.get("redirect"))
   const oauthError = searchParams.get("oauth_error")
+  const { locale, t } = useTranslation()
+  const redirectTo = normalizeRedirect(searchParams.get("redirect"), locale)
   const [appAuthorizationUrl, setAppAuthorizationUrl] = useState<string | null>(
     null
   )
   const appAuthorizationRequested = useRef(false)
   const googleLoginUrl = useMemo(
     () =>
-      buildGoogleLoginUrl(isAppLogin ? buildAppAuthorizePath() : redirectTo),
-    [isAppLogin, redirectTo]
+      buildGoogleLoginUrl(
+        isAppLogin ? buildAppAuthorizePath() : redirectTo,
+        locale
+      ),
+    [isAppLogin, locale, redirectTo]
   )
   const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY || undefined
   const loginMutation = useLoginMutation()
   const appAuthorizeMutation = useAppAuthorizeMutation()
   const currentUser = useCurrentUser()
-  const { t } = useTranslation()
 
   useEffect(() => {
     const authNotice = consumeAuthExpiredNotice()

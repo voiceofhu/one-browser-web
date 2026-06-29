@@ -35,7 +35,7 @@ import {
   systemQueryKeys,
 } from "@/lib/query-keys"
 import { useTranslation } from "@/components/providers/language-context"
-import { localizedPublicPath } from "@/local"
+import { localizedPath, localizedPublicPath } from "@/local"
 import { AppSidebar } from "@/layout/components/app-sidebar"
 import { PageTransition } from "@/layout/components/page-transition"
 import { SiteHeader } from "@/layout/components/site-header"
@@ -106,7 +106,7 @@ export default function AppLayout() {
 
   function handleSelectTag(route: AppRouteMeta) {
     if (route.path !== routeMeta.path) {
-      navigate(route.path)
+      navigate(localizedPath(locale, route.path))
     }
   }
 
@@ -128,7 +128,7 @@ export default function AppLayout() {
         visibleNextTagIds[index] ??
         firstAuthorizedRoute.id
       const fallback = APP_ROUTE_BY_ID[fallbackTagId]
-      navigate(fallback.path)
+      navigate(localizedPath(locale, fallback.path))
     }
   }
 
@@ -186,7 +186,7 @@ export default function AppLayout() {
   function handleCloseAll() {
     setVisitedTagIds([firstAuthorizedRoute.id])
     if (routeMeta.id !== firstAuthorizedRoute.id) {
-      navigate(firstAuthorizedRoute.path)
+      navigate(localizedPath(locale, firstAuthorizedRoute.path))
     }
   }
 

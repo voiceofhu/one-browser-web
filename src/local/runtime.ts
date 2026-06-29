@@ -54,29 +54,49 @@ export function normalizeLocale(value: string | null | undefined): Locale {
 }
 
 export function getLocaleFromPathname(pathname: string) {
-  return (
-    pathname
-      .split("/")
-      .filter(Boolean)
-      .find((segment): segment is Locale => isSupportedLocale(segment)) ?? null
-  )
+  const firstSegment = splitPathname(pathname)[0]
+
+  return firstSegment && isSupportedLocale(firstSegment) ? firstSegment : null
+}
+
+export function stripLocaleFromPathname(pathname: string) {
+  const segments = splitPathname(pathname)
+  const firstSegment = segments[0]
+  const routeSegments =
+    firstSegment && isSupportedLocale(firstSegment)
+      ? segments.slice(1)
+      : segments
+
+  return routeSegments.length > 0 ? `/${routeSegments.join("/")}` : "/"
+}
+
+export function localizedPath(
+  locale: Locale | string | null | undefined,
+  pathname: string
+) {
+  const normalizedLocale = normalizeLocale(locale)
+  const routePathname = stripLocaleFromPathname(pathname)
+
+  if (routePathname === "/") {
+    return `/${normalizedLocale}`
+  }
+
+  return `/${normalizedLocale}${routePathname}`
 }
 
 export function localizedPublicPath(
   locale: Locale | string | null | undefined,
   route: PublicLocaleRoute
 ) {
-  return `/${normalizeLocale(locale)}/${route}`
+  return localizedPath(locale, `/${route}`)
+}
+
+export function withLocaleInPath(pathname: string, locale: Locale) {
+  return localizedPath(locale, pathname)
 }
 
 export function withLocaleInPublicPath(pathname: string, locale: Locale) {
-  const segments = pathname.split("/").filter(Boolean)
-  const firstSegment = segments[0]
-  const hasLocalePrefix = Boolean(
-    firstSegment && isSupportedLocale(firstSegment)
-  )
-  const route = segments[hasLocalePrefix ? 1 : 0]
-
+  const route = splitPathname(stripLocaleFromPathname(pathname))[0]
   if (!isPublicLocaleRoute(route)) {
     return pathname
   }
@@ -85,19 +105,19 @@ export function withLocaleInPublicPath(pathname: string, locale: Locale) {
 }
 
 export function isLoginPath(pathname: string) {
-  const segments = pathname.split("/").filter(Boolean)
-  const firstSegment = segments[0]
-  const hasLocalePrefix = Boolean(
-    firstSegment && isSupportedLocale(firstSegment)
-  )
+  const segments = splitPathname(stripLocaleFromPathname(pathname))
 
-  return segments[hasLocalePrefix ? 1 : 0] === "login"
+  return segments[0] === "login"
 }
 
 function isPublicLocaleRoute(
   value: string | undefined
 ): value is PublicLocaleRoute {
   return PUBLIC_LOCALE_ROUTES.some((route) => route === value)
+}
+
+function splitPathname(pathname: string) {
+  return pathname.split("/").filter(Boolean)
 }
 
 export function getStoredLocale(): Locale {

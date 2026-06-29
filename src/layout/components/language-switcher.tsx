@@ -14,11 +14,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import {
-  LOCALE_OPTIONS,
-  normalizeLocale,
-  withLocaleInPublicPath,
-} from "@/local"
+import { LOCALE_OPTIONS, normalizeLocale, withLocaleInPath } from "@/local"
 
 export function LanguageSwitcher() {
   const { locale, setLocale, t } = useLanguage()
@@ -29,7 +25,7 @@ export function LanguageSwitcher() {
     const nextLocale = normalizeLocale(value)
     setLocale(nextLocale)
 
-    const nextPathname = withLocaleInPublicPath(location.pathname, nextLocale)
+    const nextPathname = withLocaleInPath(location.pathname, nextLocale)
     if (nextPathname !== location.pathname) {
       navigate(`${nextPathname}${location.search}${location.hash}`)
     }

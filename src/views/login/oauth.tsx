@@ -14,7 +14,7 @@ import {
 import { useLanguage } from "@/components/providers/language-context"
 import { Spinner } from "@/components/ui/spinner"
 import { authQueryKeys } from "@/hooks/use-auth"
-import { localizedPublicPath } from "@/local"
+import { localizedPath, localizedPublicPath } from "@/local"
 import { saveAuthTokens } from "@/lib/auth-tokens"
 import { isAppRedirect } from "@/lib/app-redirect"
 import { AppAuthorizationSuccess } from "./app-authorization-success"
@@ -90,7 +90,7 @@ export default function OAuthCallbackPage() {
           return
         }
 
-        navigate(nextRedirect, { replace: true })
+        navigate(localizedPath(locale, nextRedirect), { replace: true })
       } catch {
         if (!cancelled) {
           navigate(buildLoginPath(locale, redirect), { replace: true })

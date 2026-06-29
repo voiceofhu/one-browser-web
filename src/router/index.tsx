@@ -1,10 +1,11 @@
-import { lazy, Suspense, useEffect, useMemo } from "react"
+import { lazy, Suspense, useEffect, useMemo, type ReactNode } from "react"
 import {
   BrowserRouter,
   Navigate,
   Route,
   Routes,
   useLocation,
+  useParams,
 } from "react-router"
 
 import { useLanguage } from "@/components/providers/language-context"
@@ -17,15 +18,21 @@ import {
   getLocalAuthenticatedRouteElements,
 } from "@/router/dynamic-routes"
 import { RequireAuth } from "@/router/guards/require-auth"
-import { LEGACY_ROUTE_REDIRECTS } from "@/router/routes"
-import { getFirstAuthorizedPath } from "@/router/access"
+import { getFirstAuthorizedPath, getRouteAccessTarget } from "@/router/access"
 import {
+  localizedPath,
   getLocaleFromPathname,
   isSupportedLocale,
   localizedPublicPath,
   PUBLIC_LOCALE_ROUTES,
+  stripLocaleFromPathname,
   type PublicLocaleRoute,
 } from "@/local"
+import {
+  APP_ROUTE_BY_ID,
+  APP_ROUTE_BY_PATH,
+  DEFAULT_APP_ROUTE,
+} from "@/router/routes"
 import type { AuthPermissions } from "@/types/admin"
 
 const AppLayout = lazy(() => import("@/layout"))
@@ -50,6 +57,7 @@ export function AppRouter() {
 
 function AppRouteTree() {
   const location = useLocation()
+  const { locale } = useLanguage()
   const shouldLoadAuthorizedRoutes = !isPublicAppPath(location.pathname)
   const authPermissions = useAuthPermissions({
     enabled: shouldLoadAuthorizedRoutes,
@@ -80,17 +88,54 @@ function AppRouteTree() {
       <Route path="/terms" element={<LocaleRedirect to="terms" />} />
       <Route path="/privacy" element={<LocaleRedirect to="privacy" />} />
       <Route path="/oauth" element={<OAuthCallbackPage />} />
-      <Route path="/:locale/oauth" element={<OAuthCallbackPage />} />
-      <Route path="/:locale/login" element={<LoginPage />} />
-      <Route path="/:locale/invite" element={<InvitePage />} />
-      <Route path="/:locale/terms" element={<TermsPage />} />
-      <Route path="/:locale/privacy" element={<PrivacyPage />} />
       <Route
-        path="/"
+        path="/:locale/oauth"
         element={
-          <RequireAuth>
-            <AppLayout />
-          </RequireAuth>
+          <LocaleSegmentGuard>
+            <OAuthCallbackPage />
+          </LocaleSegmentGuard>
+        }
+      />
+      <Route
+        path="/:locale/login"
+        element={
+          <LocaleSegmentGuard>
+            <LoginPage />
+          </LocaleSegmentGuard>
+        }
+      />
+      <Route
+        path="/:locale/invite"
+        element={
+          <LocaleSegmentGuard>
+            <InvitePage />
+          </LocaleSegmentGuard>
+        }
+      />
+      <Route
+        path="/:locale/terms"
+        element={
+          <LocaleSegmentGuard>
+            <TermsPage />
+          </LocaleSegmentGuard>
+        }
+      />
+      <Route
+        path="/:locale/privacy"
+        element={
+          <LocaleSegmentGuard>
+            <PrivacyPage />
+          </LocaleSegmentGuard>
+        }
+      />
+      <Route
+        path="/:locale"
+        element={
+          <LocaleSegmentGuard>
+            <RequireAuth>
+              <AppLayout />
+            </RequireAuth>
+          </LocaleSegmentGuard>
         }
       >
         <Route
@@ -107,7 +152,9 @@ function AppRouteTree() {
           <Route
             key={redirect.key}
             path={redirect.path}
-            element={<Navigate to={redirect.to} replace />}
+            element={
+              <Navigate to={localizedPath(locale, redirect.to)} replace />
+            }
           />
         ))}
         <Route
@@ -115,14 +162,10 @@ function AppRouteTree() {
           element={<AuthorizedRouteFallback access={authPermissions.data} />}
         />
       </Route>
-      {Object.entries(LEGACY_ROUTE_REDIRECTS).map(([path, target]) => (
-        <Route
-          key={path}
-          path={path}
-          element={<Navigate to={target} replace />}
-        />
-      ))}
-      <Route path="*" element={<Navigate to="/index" replace />} />
+      <Route
+        path="*"
+        element={<LegacyLocalizedRedirect access={authPermissions.data} />}
+      />
     </Routes>
   )
 }
@@ -153,12 +196,35 @@ function LocaleRedirect({ to }: { to: PublicLocaleRoute }) {
   )
 }
 
+function LocaleSegmentGuard({ children }: { children: ReactNode }) {
+  const params = useParams()
+  const location = useLocation()
+  const { locale } = useLanguage()
+  const routeLocale = params.locale
+
+  if (!routeLocale || !isSupportedLocale(routeLocale)) {
+    const routePathname = pathnameWithoutFirstSegment(location.pathname)
+
+    return (
+      <Navigate
+        to={`${localizedPath(locale, routePathname)}${location.search}${location.hash}`}
+        replace
+      />
+    )
+  }
+
+  return children
+}
+
 function AuthorizedIndexRedirect({
   access,
 }: {
   access: AuthPermissions | undefined
 }) {
-  return <Navigate to={getFirstAuthorizedPath(access) ?? "/index"} replace />
+  const { locale } = useLanguage()
+  const target = getFirstAuthorizedPath(access) ?? "/index"
+
+  return <Navigate to={localizedPath(locale, target)} replace />
 }
 
 function AuthorizedRouteFallback({
@@ -166,20 +232,56 @@ function AuthorizedRouteFallback({
 }: {
   access: AuthPermissions | undefined
 }) {
-  return <Navigate to={getFirstAuthorizedPath(access) ?? "/index"} replace />
+  const location = useLocation()
+  const { locale } = useLanguage()
+  const accessTarget = getRouteFallbackTarget(location.pathname, access)
+
+  return <Navigate to={localizedPath(locale, accessTarget)} replace />
+}
+
+function LegacyLocalizedRedirect({
+  access,
+}: {
+  access: AuthPermissions | undefined
+}) {
+  const location = useLocation()
+  const { locale } = useLanguage()
+  const accessTarget = getRouteFallbackTarget(location.pathname, access)
+
+  return (
+    <Navigate
+      to={`${localizedPath(locale, accessTarget)}${location.search}${location.hash}`}
+      replace
+    />
+  )
+}
+
+function getRouteFallbackTarget(
+  pathname: string,
+  access: AuthPermissions | undefined
+) {
+  const routePath = getRouteAccessTarget(pathname)
+  if (APP_ROUTE_BY_PATH[routePath]) {
+    return routePath
+  }
+
+  return (
+    getFirstAuthorizedPath(access) ?? APP_ROUTE_BY_ID[DEFAULT_APP_ROUTE].path
+  )
 }
 
 function isPublicAppPath(pathname: string) {
-  const segments = pathname.split("/").filter(Boolean)
-  const firstSegment = segments[0]
-  const hasLocalePrefix = Boolean(
-    firstSegment && isSupportedLocale(firstSegment)
-  )
-  const route = segments[hasLocalePrefix ? 1 : 0]
+  const route = stripLocaleFromPathname(pathname).split("/").filter(Boolean)[0]
 
   return (
     route === "oauth" ||
     (route !== undefined &&
       PUBLIC_LOCALE_ROUTES.some((publicRoute) => publicRoute === route))
   )
+}
+
+function pathnameWithoutFirstSegment(pathname: string) {
+  const segments = pathname.split("/").filter(Boolean).slice(1)
+
+  return segments.length > 0 ? `/${segments.join("/")}` : "/"
 }

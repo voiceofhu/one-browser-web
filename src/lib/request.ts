@@ -2,6 +2,7 @@ import {
   getAcceptLanguageHeader,
   getCurrentLocale,
   isLoginPath,
+  localizedPath,
   localizedPublicPath,
 } from "@/local"
 import {
@@ -109,8 +110,9 @@ function buildLoginUrl() {
     return null
   }
 
-  const loginPath = localizedPublicPath(getCurrentLocale(), "login")
-  const redirect = `${currentPath}${window.location.search}${window.location.hash}`
+  const locale = getCurrentLocale()
+  const loginPath = localizedPublicPath(locale, "login")
+  const redirect = `${localizedPath(locale, currentPath)}${window.location.search}${window.location.hash}`
   return `${basePath}${loginPath}?redirect=${encodeURIComponent(redirect)}`
 }
 
@@ -245,7 +247,10 @@ async function request<T>(
         redirectToLogin(path, refreshed.refreshError)
       }
 
-      if ("refreshError" in refreshed && refreshed.refreshError instanceof Error) {
+      if (
+        "refreshError" in refreshed &&
+        refreshed.refreshError instanceof Error
+      ) {
         throw refreshed.refreshError
       }
 

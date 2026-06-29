@@ -1,4 +1,5 @@
 import type { AuthPermissions, AuthRoute } from "@/types/admin"
+import { stripLocaleFromPathname } from "@/local"
 
 import {
   APP_ROUTE_BY_ID,
@@ -83,10 +84,12 @@ export function getFirstAuthorizedPath(access: AuthPermissions | undefined) {
 }
 
 export function getRouteAccessTarget(pathname: string) {
+  const routePathname = stripLocaleFromPathname(pathname)
+
   return (
-    LOCAL_ROUTE_ALIASES[pathname] ??
-    LEGACY_ROUTE_REDIRECTS[pathname] ??
-    pathname
+    LOCAL_ROUTE_ALIASES[routePathname] ??
+    LEGACY_ROUTE_REDIRECTS[routePathname] ??
+    routePathname
   )
 }
 

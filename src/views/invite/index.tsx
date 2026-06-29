@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/card"
 import { Spinner } from "@/components/ui/spinner"
 import { LanguageSwitcher } from "@/layout/components/language-switcher"
-import { localizedPublicPath } from "@/local"
+import { localizedPath, localizedPublicPath, type Locale } from "@/local"
 import { HttpError } from "@/lib/request"
 import { useJoinTeamInviteMutation, useTeamInviteQuery } from "@/hooks/use-auth"
 import { InteractiveGridBackground } from "@/views/login/interactive-grid-background"
@@ -36,7 +36,7 @@ export default function InvitePage() {
   const [searchParams] = useSearchParams()
   const { locale, t } = useTranslation()
   const token = searchParams.get("token")?.trim() ?? ""
-  const redirectTo = normalizeRedirect(searchParams.get("redirect"))
+  const redirectTo = normalizeRedirect(searchParams.get("redirect"), locale)
   const inviteQuery = useTeamInviteQuery(token)
   const joinMutation = useJoinTeamInviteMutation()
   const currentInvitePath = `${location.pathname}${location.search}${location.hash}`
@@ -178,12 +178,14 @@ export default function InvitePage() {
   )
 }
 
-function normalizeRedirect(value: string | null) {
+function normalizeRedirect(value: string | null, locale: Locale) {
   if (!value || !value.startsWith("/") || value.startsWith("//")) {
-    return DEFAULT_TEAM_REDIRECT
+    return localizedPath(locale, DEFAULT_TEAM_REDIRECT)
   }
 
-  return value
+  const redirectPathname = value.split(/[?#]/)[0]
+
+  return `${localizedPath(locale, redirectPathname)}${value.slice(redirectPathname.length)}`
 }
 
 function formatDateTime(value: string) {

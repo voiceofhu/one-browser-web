@@ -1,5 +1,6 @@
 import { http } from "@/lib/request"
 import { clearAuthTokens } from "@/lib/auth-tokens"
+import { getCurrentLocale, localizedPath, type Locale } from "@/local"
 
 import type {
   AuthPermissions,
@@ -110,13 +111,13 @@ export async function authorizeApp() {
   return callbackUrl
 }
 
-export function buildGoogleLoginUrl(redirect: string) {
+export function buildGoogleLoginUrl(redirect: string, locale?: Locale) {
   const clientId = import.meta.env.VITE_GOOGLE_OAUTH_ID
   if (!clientId || typeof window === "undefined") {
     return null
   }
 
-  const callbackPath = "/oauth"
+  const callbackPath = localizedPath(locale ?? getCurrentLocale(), "/oauth")
   const redirectUri = `${window.location.origin}${callbackPath}`
   const state = createGoogleOAuthState(redirect)
   const params = new URLSearchParams({
@@ -161,7 +162,8 @@ export async function logout() {
 
 function createGoogleOAuthState(redirect: string) {
   const nonce = createNonce()
-  const normalizedRedirect = redirect || "/index"
+  const normalizedRedirect =
+    redirect || localizedPath(getCurrentLocale(), "/index")
   storeGoogleOAuthState({ nonce, redirect: normalizedRedirect })
   return `${nonce}.${encodeURIComponent(normalizedRedirect)}`
 }
