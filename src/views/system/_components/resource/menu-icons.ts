@@ -49,6 +49,7 @@ import {
   MonitorIcon,
   NetworkIcon,
   PackageIcon,
+  PackageOpenIcon,
   PanelLeftIcon,
   PlugIcon,
   ScrollTextIcon,
@@ -276,6 +277,12 @@ export const MENU_ICON_OPTIONS: MenuIconOption[] = [
   },
   { value: "archive", label: "归档", category: "content", Icon: ArchiveIcon },
   { value: "package", label: "包", category: "content", Icon: PackageIcon },
+  {
+    value: "package-open",
+    label: "安装包",
+    category: "content",
+    Icon: PackageOpenIcon,
+  },
   { value: "box", label: "盒子", category: "content", Icon: BoxIcon },
   { value: "boxes", label: "资源包", category: "content", Icon: BoxesIcon },
   {

@@ -17,6 +17,7 @@ import {
   getAuthorizedDynamicRouteRedirects,
   getLocalAuthenticatedRouteElements,
 } from "@/router/dynamic-routes"
+import { LoginSourceGate } from "@/router/guards/login-source-gate"
 import { RequireAuth } from "@/router/guards/require-auth"
 import { getFirstAuthorizedPath, getRouteAccessTarget } from "@/router/access"
 import {
@@ -49,7 +50,9 @@ export function AppRouter() {
       <RouteProgressBar />
       {/* <RouteLoading /> */}
       <Suspense fallback={<RouteLoading />}>
-        <AppRouteTree />
+        <LoginSourceGate>
+          <AppRouteTree />
+        </LoginSourceGate>
       </Suspense>
     </BrowserRouter>
   )

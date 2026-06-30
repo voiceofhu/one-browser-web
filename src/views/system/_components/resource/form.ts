@@ -231,7 +231,6 @@ export const resourceFields = {
     numberField("role_sort", "角色顺序", undefined, true, {
       hiddenOnCreate: true,
     }),
-    statusSwitchField("status", "状态", { hiddenOnCreate: true }),
     menuPermissionTreeField("menu_ids", "权限范围"),
     textareaField("remark", "备注"),
   ],

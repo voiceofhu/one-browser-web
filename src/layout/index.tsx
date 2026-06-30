@@ -346,6 +346,8 @@ function getRefreshQueryKeys(routeId: AppRouteMeta["id"]) {
       return [browserQueryKeys.proxies]
     case "browser-members":
       return [browserQueryKeys.members]
+    case "browser-assets":
+      return [browserQueryKeys.assets]
     case "operation-logs":
       return [systemQueryKeys.operationLogs]
     case "login-logs":

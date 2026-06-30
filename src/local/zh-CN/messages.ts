@@ -103,6 +103,7 @@ export const zhCNMessages = {
   "route.browserEnvironments": "环境管理",
   "route.browserProxies": "代理管理",
   "route.browserMembers": "成员管理",
+  "route.browserAssets": "安装包管理",
   "route.operationLogs": "操作日志",
   "route.loginLogs": "登录日志",
   "route.health": "服务监控",

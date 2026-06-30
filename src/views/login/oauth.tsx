@@ -17,13 +17,20 @@ import { authQueryKeys } from "@/hooks/use-auth"
 import { localizedPath, localizedPublicPath } from "@/local"
 import { saveAuthTokens } from "@/lib/auth-tokens"
 import { isAppRedirect } from "@/lib/app-redirect"
+import { APP_LOGIN_SOURCE, shouldUseDocumentRedirect } from "@/lib/login-source"
 import { AppAuthorizationSuccess } from "./app-authorization-success"
 import { useQueryClient } from "@tanstack/react-query"
 
 function buildLoginPath(locale: string, redirect?: string | null) {
   const params = new URLSearchParams({ oauth_error: "google" })
   if (redirect) {
-    params.set("redirect", redirect)
+    if (isAppRedirect(redirect)) {
+      params.set("from", APP_LOGIN_SOURCE)
+    } else if (shouldUseDocumentRedirect(redirect)) {
+      params.set("from", redirect)
+    } else {
+      params.set("redirect", redirect)
+    }
   }
 
   return `${localizedPublicPath(locale, "login")}?${params.toString()}`
@@ -76,7 +83,10 @@ export default function OAuthCallbackPage() {
         await queryClient.invalidateQueries({
           queryKey: authQueryKeys.permissions,
         })
-        const nextRedirect = response.redirect || redirect
+        const nextRedirect =
+          isAppRedirect(redirect) || shouldUseDocumentRedirect(redirect)
+            ? redirect
+            : response.redirect || redirect
         if (isAppRedirect(nextRedirect)) {
           const callbackUrl = await authorizeApp()
           if (!cancelled) {
@@ -118,8 +128,4 @@ export default function OAuthCallbackPage() {
       <Spinner />
     </main>
   )
-}
-
-function shouldUseDocumentRedirect(value: string) {
-  return value.startsWith("/api/") || /^[a-z][a-z0-9+.-]*:/i.test(value)
 }

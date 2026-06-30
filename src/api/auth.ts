@@ -169,7 +169,13 @@ function createGoogleOAuthState(redirect: string) {
 }
 
 function parseGoogleOAuthState(state: string): GoogleOAuthState | null {
-  const [nonce, redirect] = state.split(".", 2)
+  const separatorIndex = state.indexOf(".")
+  if (separatorIndex <= 0) {
+    return null
+  }
+
+  const nonce = state.slice(0, separatorIndex)
+  const redirect = state.slice(separatorIndex + 1)
   if (!nonce || !redirect) {
     return null
   }

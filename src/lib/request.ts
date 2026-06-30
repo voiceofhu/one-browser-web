@@ -275,7 +275,7 @@ async function request<T>(
     )
   }
 
-  if (body.code !== 0) {
+  if (!isSuccessCode(body.code)) {
     throw new HttpError(
       response.status,
       String(body.code),
@@ -373,7 +373,7 @@ async function parseResponseData<T>(response: Response) {
     )
   }
 
-  if (body.code !== 0) {
+  if (!isSuccessCode(body.code)) {
     throw new HttpError(
       response.status,
       String(body.code),
@@ -396,6 +396,10 @@ function isApiResponse<T>(value: unknown): value is ApiResponse<T> {
     typeof value.message === "string" &&
     "data" in value
   )
+}
+
+function isSuccessCode(code: number) {
+  return code === 0 || code === 200 || code === 201
 }
 
 function isApiErrorResponse(value: unknown): value is ApiErrorResponse {

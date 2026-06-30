@@ -11,6 +11,7 @@ export type AppRouteId =
   | "browser-environments"
   | "browser-proxies"
   | "browser-members"
+  | "browser-assets"
   | "operation-logs"
   | "login-logs"
   | "health"
@@ -111,6 +112,14 @@ export const APP_ROUTES: AppRouteMeta[] = [
     path: "/browser/member",
   },
   {
+    id: "browser-assets",
+    labelKey: "route.browserAssets",
+    label: "安装包管理",
+    title: "安装包管理",
+    description: "上传和管理浏览器安装包的当前下载版本。",
+    path: "/browser/assets",
+  },
+  {
     id: "operation-logs",
     labelKey: "route.operationLogs",
     label: "操作日志",
@@ -182,6 +191,7 @@ export const APP_ROUTE_GROUPS = [
       "browser-environments",
       "browser-proxies",
       "browser-members",
+      "browser-assets",
     ],
   },
   {
@@ -243,6 +253,8 @@ export const LEGACY_ROUTE_REDIRECTS: Record<string, string> = {
   "/dashboard/browser/proxy": "/browser/proxy",
   "/dashboard/browser/members": "/browser/member",
   "/dashboard/browser/member": "/browser/member",
+  "/dashboard/browser/assets": "/browser/assets",
+  "/dashboard/browser/asset": "/browser/assets",
   "/dashboard/operation-logs": "/system/log/operation",
   "/dashboard/system/operation-logs": "/system/log/operation",
   "/dashboard/system/log/operation": "/system/log/operation",

@@ -1,13 +1,34 @@
 "use client"
 
 import * as React from "react"
-import { useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import type { Column, ColumnDef } from "@tanstack/react-table"
+import { MoreHorizontalIcon, UserMinusIcon } from "lucide-react"
+import { toast } from "sonner"
 
-import { listBrowserTeams } from "@/api/browser"
+import { leaveBrowserTeam, listBrowserTeams } from "@/api/browser"
 import { OverflowTooltipText } from "@/components/overflow-tooltip-text"
 import { AnimatedSegmentedTabs } from "@/components/ui/animated-segmented-tabs"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogMedia,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { formatAbsoluteDateTime, formatRelativeTime } from "@/lib/datetime"
 import { browserQueryKeys } from "@/lib/query-keys"
 import type { BrowserListParams, BrowserTeamResource } from "@/types/browser"
@@ -16,6 +37,7 @@ import {
   ResourceTable,
   ResourceTableColumnHeader,
 } from "@/views/system/_components/resource/table"
+import { showResourceError } from "@/views/system/_components/resource/toast"
 
 type TeamStatusFilter = "all" | "0" | "1"
 
@@ -26,12 +48,15 @@ const TEAM_FILTERS = [
 ] as const
 
 export default function BrowserTeamPage() {
+  const queryClient = useQueryClient()
   const [search, setSearch] = React.useState("")
   const debouncedSearch = useDebouncedValue(search, 300)
   const [statusFilter, setStatusFilter] =
     React.useState<TeamStatusFilter>("all")
   const [pageIndex, setPageIndex] = React.useState(0)
   const [pageSize, setPageSize] = React.useState(10)
+  const [leaveTarget, setLeaveTarget] =
+    React.useState<BrowserTeamResource | null>(null)
   const params = React.useMemo<BrowserListParams>(
     () => ({
       page: pageIndex + 1,
@@ -45,6 +70,16 @@ export default function BrowserTeamPage() {
     queryKey: [...browserQueryKeys.teams, params],
     queryFn: () => listBrowserTeams(params),
     placeholderData: (previousData) => previousData,
+  })
+  const leaveMutation = useMutation({
+    mutationFn: (record: BrowserTeamResource) =>
+      leaveBrowserTeam(record.team_id),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: browserQueryKeys.teams })
+      toast.success("已退出团队")
+      setLeaveTarget(null)
+    },
+    onError: showResourceError,
   })
   const columns = React.useMemo<ColumnDef<BrowserTeamResource>[]>(
     () => [
@@ -96,8 +131,20 @@ export default function BrowserTeamPage() {
         ),
         meta: { label: "最近更新", cellClassName: "w-36" },
       },
+      {
+        id: "actions",
+        header: "",
+        cell: ({ row }) => (
+          <TeamActionsMenu
+            record={row.original}
+            isLeaving={leaveMutation.isPending}
+            onLeave={setLeaveTarget}
+          />
+        ),
+        meta: { label: "操作", cellClassName: "w-12 text-right" },
+      },
     ],
-    []
+    [leaveMutation.isPending]
   )
   const hasActiveFilters = search.trim().length > 0 || statusFilter !== "all"
 
@@ -144,7 +191,96 @@ export default function BrowserTeamPage() {
           error={query.error}
         />
       </div>
+
+      <AlertDialog
+        open={Boolean(leaveTarget)}
+        onOpenChange={(open) => {
+          if (!open && !leaveMutation.isPending) {
+            setLeaveTarget(null)
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogMedia>
+              <UserMinusIcon />
+            </AlertDialogMedia>
+            <AlertDialogTitle>退出团队</AlertDialogTitle>
+            <AlertDialogDescription>
+              退出后将不再看到该团队的环境、代理和成员数据。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={leaveMutation.isPending}>
+              取消
+            </AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              disabled={leaveMutation.isPending || !leaveTarget?.can_leave}
+              onClick={() => {
+                if (!leaveTarget?.can_leave) {
+                  return
+                }
+                leaveMutation.mutate(leaveTarget)
+              }}
+            >
+              退出
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
+  )
+}
+
+function TeamActionsMenu({
+  record,
+  isLeaving,
+  onLeave,
+}: {
+  record: BrowserTeamResource
+  isLeaving: boolean
+  onLeave: (record: BrowserTeamResource) => void
+}) {
+  const leaveDisabledReason = isLeaving
+    ? "正在退出，请稍候"
+    : !record.can_leave
+      ? "自己的团队不能退出"
+      : undefined
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button type="button" variant="ghost" size="icon-sm" className="size-7">
+          <MoreHorizontalIcon />
+          <span className="sr-only">团队操作</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-36">
+        <DropdownMenuGroup>
+          <DropdownMenuItem
+            variant="destructive"
+            title={leaveDisabledReason}
+            aria-disabled={Boolean(leaveDisabledReason)}
+            className={
+              leaveDisabledReason
+                ? "cursor-not-allowed opacity-50 focus:bg-transparent focus:text-destructive"
+                : undefined
+            }
+            onSelect={(event) => {
+              if (leaveDisabledReason) {
+                event.preventDefault()
+                return
+              }
+              onLeave(record)
+            }}
+          >
+            <UserMinusIcon />
+            退出团队
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 

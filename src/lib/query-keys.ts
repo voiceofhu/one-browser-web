@@ -42,6 +42,10 @@ export const browserQueryKeys = {
     ["browser", "teams", "detail", teamId] as const,
   teamAction: (teamId: number, action: string) =>
     ["browser", "teams", "action", teamId, action] as const,
+  assets: ["browser", "assets"] as const,
+  assetUploads: ["browser", "assets", "uploads"] as const,
+  assetAction: (assetId: number, action: string) =>
+    ["browser", "assets", "action", assetId, action] as const,
 }
 
 export const systemQueryKeys = {
