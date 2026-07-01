@@ -20,41 +20,18 @@ const LOCAL_ROUTE_ALIASES: Record<string, string> = {
 const AUTHENTICATED_LOCAL_ROUTES = new Set<AppRouteId>(["account"])
 
 export function getAuthorizedRouteIds(access: AuthPermissions | undefined) {
-  return getAuthorizedRouteEntries(access).map((entry) => entry.routeId)
+  return orderRouteIds(
+    getAuthorizedRouteEntries(access).map((entry) => entry.routeId)
+  )
 }
 
 export function getAuthorizedRouteGroups(access: AuthPermissions | undefined) {
-  const groupByRouteId = new Map<
-    AppRouteId,
-    (typeof APP_ROUTE_GROUPS)[number]
-  >()
-  APP_ROUTE_GROUPS.forEach((group) => {
-    group.routes.forEach((routeId) => groupByRouteId.set(routeId, group))
-  })
+  const authorizedRouteIds = new Set(getAuthorizedRouteIds(access))
 
-  const orderedGroups = new Map<
-    string,
-    (typeof APP_ROUTE_GROUPS)[number] & { routes: AppRouteId[] }
-  >()
-
-  getAuthorizedRouteIds(access).forEach((routeId) => {
-    const group = groupByRouteId.get(routeId)
-    if (!group) {
-      return
-    }
-
-    const orderedGroup =
-      orderedGroups.get(group.id) ??
-      ({
-        ...group,
-        routes: [],
-      } as (typeof APP_ROUTE_GROUPS)[number] & { routes: AppRouteId[] })
-
-    orderedGroup.routes.push(routeId)
-    orderedGroups.set(group.id, orderedGroup)
-  })
-
-  return Array.from(orderedGroups.values())
+  return APP_ROUTE_GROUPS.map((group) => ({
+    ...group,
+    routes: group.routes.filter((routeId) => authorizedRouteIds.has(routeId)),
+  })).filter((group) => group.routes.length > 0)
 }
 
 export function getAuthorizedRouteIconValues(
@@ -133,6 +110,19 @@ function getAuthorizedRouteEntries(access: AuthPermissions | undefined) {
   }
 
   return entries
+}
+
+function orderRouteIds(routeIds: AppRouteId[]) {
+  const routeIdSet = new Set(routeIds)
+  const orderedRouteIds: AppRouteId[] = APP_ROUTE_GROUPS.flatMap((group) =>
+    group.routes.filter((routeId) => routeIdSet.has(routeId))
+  )
+  const orderedRouteIdSet = new Set(orderedRouteIds)
+
+  return [
+    ...orderedRouteIds,
+    ...routeIds.filter((routeId) => !orderedRouteIdSet.has(routeId)),
+  ]
 }
 
 function flattenAuthRoutesInOrder(routes: AuthRoute[] | undefined) {

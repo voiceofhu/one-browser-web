@@ -6,13 +6,15 @@ import type { Column, ColumnDef } from "@tanstack/react-table"
 import { MoreHorizontalIcon, UserMinusIcon } from "lucide-react"
 import { toast } from "sonner"
 
-import { leaveBrowserTeam, listBrowserTeams } from "@/api/browser"
+import {
+  leaveBrowserTeam,
+  listBrowserTeams,
+  setBrowserTeamStatus,
+} from "@/api/browser"
 import { OverflowTooltipText } from "@/components/overflow-tooltip-text"
 import { AnimatedSegmentedTabs } from "@/components/ui/animated-segmented-tabs"
 import {
   AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
@@ -23,15 +25,26 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
+  AlertDialogActionButton,
+  AlertDialogCancelButton,
+} from "@/components/ui/dialog-action-button"
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Switch } from "@/components/ui/switch"
+import { useAuthPermissions } from "@/hooks/use-auth"
+import { hasPermission } from "@/lib/auth-permissions"
 import { formatAbsoluteDateTime, formatRelativeTime } from "@/lib/datetime"
 import { browserQueryKeys } from "@/lib/query-keys"
-import type { BrowserListParams, BrowserTeamResource } from "@/types/browser"
+import type {
+  BrowserListParams,
+  BrowserStatusFlag,
+  BrowserTeamResource,
+} from "@/types/browser"
 import { useDebouncedValue } from "@/views/system/_components/resource/manager-utils"
 import {
   ResourceTable,
@@ -49,6 +62,11 @@ const TEAM_FILTERS = [
 
 export default function BrowserTeamPage() {
   const queryClient = useQueryClient()
+  const authPermissions = useAuthPermissions()
+  const canChangeTeamStatus = hasPermission(
+    authPermissions.data,
+    "browser:team:status"
+  )
   const [search, setSearch] = React.useState("")
   const debouncedSearch = useDebouncedValue(search, 300)
   const [statusFilter, setStatusFilter] =
@@ -81,45 +99,62 @@ export default function BrowserTeamPage() {
     },
     onError: showResourceError,
   })
+  const statusMutation = useMutation({
+    mutationFn: ({
+      teamId,
+      status,
+    }: {
+      teamId: number
+      status: BrowserStatusFlag
+    }) => setBrowserTeamStatus(teamId, status),
+    onSuccess: async (_team, variables) => {
+      await queryClient.invalidateQueries({ queryKey: browserQueryKeys.teams })
+      toast.success(variables.status === "0" ? "团队已启用" : "团队已停用")
+    },
+    onError: showResourceError,
+  })
+  const toggleTeamStatus = React.useCallback(
+    (record: BrowserTeamResource, status: BrowserStatusFlag) => {
+      if (!canChangeTeamStatus) {
+        return
+      }
+
+      statusMutation.mutate({ teamId: record.team_id, status })
+    },
+    [canChangeTeamStatus, statusMutation]
+  )
   const columns = React.useMemo<ColumnDef<BrowserTeamResource>[]>(
     () => [
       {
         accessorKey: "team_name",
-        header: ({ column }) => tableHeader(column, "团队名称"),
+        header: ({ column }) => tableHeader(column, "团队"),
         cell: ({ row }) => <TeamNameCell record={row.original} />,
-        meta: { label: "团队名称", cellClassName: "min-w-56 max-w-72" },
+        meta: { label: "团队", cellClassName: "min-w-56 max-w-72" },
       },
       {
         accessorKey: "owner_name",
-        header: ({ column }) => tableHeader(column, "负责人"),
+        header: ({ column }) => tableHeader(column, "Owner"),
         cell: ({ row }) => <TextCell value={row.original.owner_name} />,
-        meta: { label: "负责人", cellClassName: "w-36" },
+        meta: { label: "Owner", cellClassName: "w-36" },
       },
       {
-        accessorKey: "member_count",
-        header: ({ column }) => tableHeader(column, "成员"),
-        cell: ({ row }) => <CountBadge value={row.original.member_count} />,
-        meta: { label: "成员", cellClassName: "w-24" },
-      },
-      {
-        accessorKey: "environment_count",
-        header: ({ column }) => tableHeader(column, "环境"),
-        cell: ({ row }) => (
-          <CountBadge value={row.original.environment_count} />
-        ),
-        meta: { label: "环境", cellClassName: "w-24" },
-      },
-      {
-        accessorKey: "proxy_count",
-        header: ({ column }) => tableHeader(column, "代理"),
-        cell: ({ row }) => <CountBadge value={row.original.proxy_count} />,
-        meta: { label: "代理", cellClassName: "w-24" },
+        id: "resource_stats",
+        header: ({ column }) => tableHeader(column, "资源"),
+        cell: ({ row }) => <TeamStatsCell record={row.original} />,
+        meta: { label: "资源", cellClassName: "min-w-52 max-w-64" },
       },
       {
         accessorKey: "status",
         header: ({ column }) => tableHeader(column, "状态"),
-        cell: ({ row }) => <TeamStatusBadge status={row.original.status} />,
-        meta: { label: "状态", cellClassName: "w-24" },
+        cell: ({ row }) => (
+          <StatusSwitchCell
+            label="团队状态"
+            status={row.original.status}
+            disabled={!canChangeTeamStatus || statusMutation.isPending}
+            onChange={(status) => toggleTeamStatus(row.original, status)}
+          />
+        ),
+        meta: { label: "状态", cellClassName: "w-20" },
       },
       {
         accessorKey: "updated_at",
@@ -144,7 +179,12 @@ export default function BrowserTeamPage() {
         meta: { label: "操作", cellClassName: "w-12 text-right" },
       },
     ],
-    [leaveMutation.isPending]
+    [
+      canChangeTeamStatus,
+      leaveMutation.isPending,
+      statusMutation.isPending,
+      toggleTeamStatus,
+    ]
   )
   const hasActiveFilters = search.trim().length > 0 || statusFilter !== "all"
 
@@ -211,13 +251,16 @@ export default function BrowserTeamPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={leaveMutation.isPending}>
+            <AlertDialogCancelButton disabled={leaveMutation.isPending}>
               取消
-            </AlertDialogCancel>
-            <AlertDialogAction
+            </AlertDialogCancelButton>
+            <AlertDialogActionButton
               variant="destructive"
               disabled={leaveMutation.isPending || !leaveTarget?.can_leave}
-              onClick={() => {
+              loading={leaveMutation.isPending}
+              loadingText="退出中"
+              onClick={(event) => {
+                event.preventDefault()
                 if (!leaveTarget?.can_leave) {
                   return
                 }
@@ -225,7 +268,7 @@ export default function BrowserTeamPage() {
               }}
             >
               退出
-            </AlertDialogAction>
+            </AlertDialogActionButton>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -306,14 +349,38 @@ function TextCell({ value }: { value?: string | null }) {
   return <OverflowTooltipText text={text} />
 }
 
-function CountBadge({ value }: { value?: number | null }) {
-  return <Badge variant="outline">{value ?? 0} 个</Badge>
+function TeamStatsCell({ record }: { record: BrowserTeamResource }) {
+  return (
+    <div className="flex flex-wrap gap-1">
+      <Badge variant="outline">{record.member_count ?? 0} 成员</Badge>
+      <Badge variant="outline">{record.environment_count ?? 0} 环境</Badge>
+      <Badge variant="outline">{record.proxy_count ?? 0} 代理</Badge>
+    </div>
+  )
 }
 
-function TeamStatusBadge({ status }: { status?: string | null }) {
-  const meta = teamStatusMeta(status)
+function StatusSwitchCell({
+  label,
+  status,
+  disabled,
+  onChange,
+}: {
+  label: string
+  status: BrowserStatusFlag
+  disabled: boolean
+  onChange: (status: BrowserStatusFlag) => void
+}) {
+  const checked = status === "0"
 
-  return <Badge variant={meta.variant}>{meta.label}</Badge>
+  return (
+    <Switch
+      size="sm"
+      checked={checked}
+      disabled={disabled}
+      aria-label={label}
+      onCheckedChange={(nextChecked) => onChange(nextChecked ? "0" : "1")}
+    />
+  )
 }
 
 function TimeCell({ value }: { value?: string | null }) {
@@ -322,25 +389,6 @@ function TimeCell({ value }: { value?: string | null }) {
       {formatRelativeTime(value, "-")}
     </span>
   )
-}
-
-function teamStatusMeta(status?: string | null): {
-  label: string
-  variant: React.ComponentProps<typeof Badge>["variant"]
-} {
-  const normalized = status?.trim().toLowerCase()
-
-  switch (normalized) {
-    case "active":
-    case "enabled":
-    case "0":
-      return { label: "启用", variant: "default" }
-    case "disabled":
-    case "1":
-      return { label: "停用", variant: "outline" }
-    default:
-      return { label: status?.trim() || "未知", variant: "outline" }
-  }
 }
 
 function tableHeader<TData, TValue>(

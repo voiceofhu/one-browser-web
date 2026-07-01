@@ -7,6 +7,7 @@ import { toast } from "sonner"
 import { useTranslation } from "@/components/providers/language-context"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { DialogActionButton } from "@/components/ui/dialog-action-button"
 import {
   Field,
   FieldDescription,
@@ -37,7 +38,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Spinner } from "@/components/ui/spinner"
 import { Textarea } from "@/components/ui/textarea"
 import { formatAbsoluteDateTime } from "@/lib/datetime"
 import type { Locale } from "@/local"
@@ -348,20 +348,29 @@ export function JobFormDialog({
           </ResponsiveDialogBody>
           <ResponsiveDialogFooter className="mx-0 mb-0 shrink-0 rounded-b-xl bg-muted/50 px-5 py-3">
             <ResponsiveDialogClose asChild>
-              <Button type="button" variant="outline" disabled={isSubmitting}>
+              <DialogActionButton
+                type="button"
+                action="cancel"
+                disabled={isSubmitting}
+              >
                 {t("common.cancel")}
-              </Button>
+              </DialogActionButton>
             </ResponsiveDialogClose>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? (
-                <Spinner data-icon="inline-start" />
-              ) : (
-                <SaveIcon data-icon="inline-start" />
-              )}
+            <DialogActionButton
+              type="submit"
+              disabled={isSubmitting}
+              loading={isSubmitting}
+              loadingText={
+                record
+                  ? translateMonitorJob(locale, "job.form.saveChanges")
+                  : t("common.create")
+              }
+            >
+              <SaveIcon data-icon="inline-start" />
               {record
                 ? translateMonitorJob(locale, "job.form.saveChanges")
                 : t("common.create")}
-            </Button>
+            </DialogActionButton>
           </ResponsiveDialogFooter>
         </form>
       </ResponsiveDialogContent>

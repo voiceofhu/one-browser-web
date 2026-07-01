@@ -13,7 +13,7 @@ import {
 import type { ZodType } from "zod"
 
 import { useTranslation } from "@/components/providers/language-context"
-import { Button } from "@/components/ui/button"
+import { DialogActionButton } from "@/components/ui/dialog-action-button"
 import {
   ResponsiveDialog,
   ResponsiveDialogBody,
@@ -25,7 +25,6 @@ import {
   ResponsiveDialogTitle,
 } from "@/components/ui/responsive-dialog"
 import { FieldGroup } from "@/components/ui/field"
-import { Spinner } from "@/components/ui/spinner"
 
 import { getUserRoleIds } from "@/api/system/user"
 import { formatResourceActionText, translateText } from "@/local"
@@ -117,9 +116,7 @@ export function ResourceEditorDialog({
   const isLoadingBinding = isLoadingRoleBinding
   const isCompactForm =
     visibleFields.length <= 3 &&
-    !visibleFields.some((field) =>
-      ["role-multi-select"].includes(field.type)
-    )
+    !visibleFields.some((field) => ["role-multi-select"].includes(field.type))
 
   return (
     <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
@@ -176,18 +173,24 @@ export function ResourceEditorDialog({
 
           <ResponsiveDialogFooter>
             <ResponsiveDialogClose asChild>
-              <Button
+              <DialogActionButton
                 type="button"
-                variant="outline"
+                action="cancel"
                 disabled={isSubmitting || isLoadingBinding}
               >
                 {t("common.cancel")}
-              </Button>
+              </DialogActionButton>
             </ResponsiveDialogClose>
-            <Button type="submit" disabled={isSubmitting || isLoadingBinding}>
-              {isSubmitting ? <Spinner data-icon="inline-start" /> : null}
+            <DialogActionButton
+              type="submit"
+              disabled={isSubmitting || isLoadingBinding}
+              loading={isSubmitting}
+              loadingText={
+                mode === "create" ? t("common.create") : t("common.save")
+              }
+            >
               {mode === "create" ? t("common.create") : t("common.save")}
-            </Button>
+            </DialogActionButton>
           </ResponsiveDialogFooter>
         </form>
       </ResponsiveDialogContent>

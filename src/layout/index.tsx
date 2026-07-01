@@ -13,8 +13,6 @@ import { LogOutIcon } from "lucide-react"
 
 import {
   AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
@@ -22,6 +20,10 @@ import {
   AlertDialogMedia,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import {
+  AlertDialogActionButton,
+  AlertDialogCancelButton,
+} from "@/components/ui/dialog-action-button"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import {
   useAuthPermissions,
@@ -258,16 +260,18 @@ export default function AppLayout() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={logout.isPending}>
+            <AlertDialogCancelButton disabled={logout.isPending}>
               {t("logout.cancel")}
-            </AlertDialogCancel>
-            <AlertDialogAction
+            </AlertDialogCancelButton>
+            <AlertDialogActionButton
               variant="destructive"
               disabled={logout.isPending}
+              loading={logout.isPending}
+              loadingText={t("logout.pending")}
               onClick={handleLogoutConfirm}
             >
-              {logout.isPending ? t("logout.pending") : t("logout.confirm")}
-            </AlertDialogAction>
+              {t("logout.confirm")}
+            </AlertDialogActionButton>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

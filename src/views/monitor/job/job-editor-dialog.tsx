@@ -4,13 +4,14 @@ import * as React from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
 import {
   useForm,
+  useWatch,
   type FieldError as HookFormFieldError,
   type FieldErrors,
   type UseFormReturn,
 } from "react-hook-form"
 import { z } from "zod"
 
-import { Button } from "@/components/ui/button"
+import { DialogActionButton } from "@/components/ui/dialog-action-button"
 import {
   Field,
   FieldDescription,
@@ -37,7 +38,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Spinner } from "@/components/ui/spinner"
 import { Textarea } from "@/components/ui/textarea"
 import type { JobPayload, JobResource } from "@/types/admin"
 import { showResourceValidationError } from "@/views/system/_components/resource/toast"
@@ -107,7 +107,10 @@ export function JobEditorDialog({
     resolver: zodResolver(jobFormSchema),
     defaultValues: getJobFormValues(job),
   })
-  const selectedTarget = form.watch("invoke_target")
+  const selectedTarget = useWatch({
+    control: form.control,
+    name: "invoke_target",
+  })
   const selectedTargetOption = JOB_INVOKE_TARGET_OPTIONS.find(
     (option) => option.value === selectedTarget
   )
@@ -221,14 +224,22 @@ export function JobEditorDialog({
 
           <ResponsiveDialogFooter>
             <ResponsiveDialogClose asChild>
-              <Button type="button" variant="outline" disabled={isSubmitting}>
+              <DialogActionButton
+                type="button"
+                action="cancel"
+                disabled={isSubmitting}
+              >
                 取消
-              </Button>
+              </DialogActionButton>
             </ResponsiveDialogClose>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? <Spinner data-icon="inline-start" /> : null}
+            <DialogActionButton
+              type="submit"
+              disabled={isSubmitting}
+              loading={isSubmitting}
+              loadingText={mode === "create" ? "创建" : "保存"}
+            >
               {mode === "create" ? "创建" : "保存"}
-            </Button>
+            </DialogActionButton>
           </ResponsiveDialogFooter>
         </form>
       </ResponsiveDialogContent>

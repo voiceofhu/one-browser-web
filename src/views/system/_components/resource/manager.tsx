@@ -6,8 +6,6 @@ import { Trash2Icon, TriangleAlertIcon } from "lucide-react"
 
 import {
   AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
@@ -15,8 +13,11 @@ import {
   AlertDialogMedia,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import {
+  AlertDialogActionButton,
+  AlertDialogCancelButton,
+} from "@/components/ui/dialog-action-button"
 import { useTranslation } from "@/components/providers/language-context"
-import { Spinner } from "@/components/ui/spinner"
 import { useAuthPermissions } from "@/hooks/use-auth"
 import { hasPermission } from "@/lib/auth-permissions"
 import {
@@ -507,17 +508,19 @@ export function ResourceManager<TData, TDetail extends TData = TData>({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel
+            <AlertDialogCancelButton
               disabled={deleteMutation.isPending}
               onClick={() => {
                 allowDeleteDialogCloseRef.current = true
               }}
             >
               {t("common.cancel")}
-            </AlertDialogCancel>
-            <AlertDialogAction
+            </AlertDialogCancelButton>
+            <AlertDialogActionButton
               variant="destructive"
               disabled={deleteMutation.isPending}
+              loading={deleteMutation.isPending}
+              loadingText={t("common.delete")}
               onClick={(event) => {
                 event.preventDefault()
                 if (deletingRecord) {
@@ -525,11 +528,8 @@ export function ResourceManager<TData, TDetail extends TData = TData>({
                 }
               }}
             >
-              {deleteMutation.isPending ? (
-                <Spinner data-icon="inline-start" />
-              ) : null}
               {t("common.delete")}
-            </AlertDialogAction>
+            </AlertDialogActionButton>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -567,17 +567,19 @@ export function ResourceManager<TData, TDetail extends TData = TData>({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel
+            <AlertDialogCancelButton
               disabled={bulkDeleteMutation.isPending}
               onClick={() => {
                 allowBulkDeleteDialogCloseRef.current = true
               }}
             >
               {t("common.cancel")}
-            </AlertDialogCancel>
-            <AlertDialogAction
+            </AlertDialogCancelButton>
+            <AlertDialogActionButton
               variant="destructive"
               disabled={bulkDeleteMutation.isPending}
+              loading={bulkDeleteMutation.isPending}
+              loadingText={t("common.bulkDelete")}
               onClick={(event) => {
                 event.preventDefault()
                 if (bulkDeletingState) {
@@ -585,11 +587,8 @@ export function ResourceManager<TData, TDetail extends TData = TData>({
                 }
               }}
             >
-              {bulkDeleteMutation.isPending ? (
-                <Spinner data-icon="inline-start" />
-              ) : null}
               {t("common.bulkDelete")}
-            </AlertDialogAction>
+            </AlertDialogActionButton>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

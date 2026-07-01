@@ -10,7 +10,6 @@ import {
   uploadBrowserAssetDirect,
 } from "@/api/browser"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
@@ -19,6 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { DialogActionButton } from "@/components/ui/dialog-action-button"
 import {
   Field,
   FieldDescription,
@@ -35,7 +35,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Spinner } from "@/components/ui/spinner"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import type { BrowserAssetResource } from "@/types/browser"
@@ -342,22 +341,23 @@ export function BrowserAssetUploadDialog({
           </div>
 
           <DialogFooter className="mx-0 mb-0 shrink-0 rounded-b-xl border-t bg-muted/50 px-5 py-3">
-            <Button
+            <DialogActionButton
               type="button"
-              variant="outline"
+              action="cancel"
               disabled={isSubmitting}
               onClick={() => handleOpenChange(false)}
             >
               取消
-            </Button>
-            <Button type="submit" disabled={!canSubmit}>
-              {isSubmitting ? (
-                <Spinner data-icon="inline-start" />
-              ) : (
-                <UploadIcon data-icon="inline-start" />
-              )}
+            </DialogActionButton>
+            <DialogActionButton
+              type="submit"
+              disabled={!canSubmit}
+              loading={isSubmitting}
+              loadingText="上传中"
+            >
+              <UploadIcon data-icon="inline-start" />
               上传
-            </Button>
+            </DialogActionButton>
           </DialogFooter>
         </form>
       </DialogContent>

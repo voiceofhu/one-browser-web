@@ -24,8 +24,6 @@ import {
 import { useTranslation } from "@/components/providers/language-context"
 import {
   AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
@@ -35,13 +33,16 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import {
+  AlertDialogActionButton,
+  AlertDialogCancelButton,
+} from "@/components/ui/dialog-action-button"
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Spinner } from "@/components/ui/spinner"
 import { useAuthPermissions } from "@/hooks/use-auth"
 import { hasPermission } from "@/lib/auth-permissions"
 import { translate, type Locale } from "@/local"
@@ -480,20 +481,21 @@ function ConfirmDialog({
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={isPending}>
+          <AlertDialogCancelButton disabled={isPending}>
             {t("common.cancel")}
-          </AlertDialogCancel>
-          <AlertDialogAction
+          </AlertDialogCancelButton>
+          <AlertDialogActionButton
             variant={actionVariant}
             disabled={isPending}
+            loading={isPending}
+            loadingText={actionLabel}
             onClick={(event) => {
               event.preventDefault()
               onConfirm()
             }}
           >
-            {isPending ? <Spinner data-icon="inline-start" /> : null}
             {actionLabel}
-          </AlertDialogAction>
+          </AlertDialogActionButton>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

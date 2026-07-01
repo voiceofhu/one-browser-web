@@ -7,6 +7,7 @@ import { toast } from "sonner"
 
 import { useTranslation } from "@/components/providers/language-context"
 import { Button } from "@/components/ui/button"
+import { DialogActionButton } from "@/components/ui/dialog-action-button"
 import {
   ResponsiveDialog,
   ResponsiveDialogBody,
@@ -125,14 +126,22 @@ export function ResetPasswordDialog<TData>({
           </ResponsiveDialogBody>
           <ResponsiveDialogFooter>
             <ResponsiveDialogClose asChild>
-              <Button type="button" variant="outline" disabled={isSubmitting}>
+              <DialogActionButton
+                type="button"
+                action="cancel"
+                disabled={isSubmitting}
+              >
                 {t("common.cancel")}
-              </Button>
+              </DialogActionButton>
             </ResponsiveDialogClose>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? <Spinner data-icon="inline-start" /> : null}
+            <DialogActionButton
+              type="submit"
+              disabled={isSubmitting}
+              loading={isSubmitting}
+              loadingText={t("resource.resetPassword.confirm")}
+            >
               {t("resource.resetPassword.confirm")}
-            </Button>
+            </DialogActionButton>
           </ResponsiveDialogFooter>
         </form>
       </ResponsiveDialogContent>
@@ -251,14 +260,22 @@ function RoleAssignmentForm<TData>({
       </ResponsiveDialogBody>
       <ResponsiveDialogFooter>
         <ResponsiveDialogClose asChild>
-          <Button type="button" variant="outline" disabled={isSubmitting}>
+          <DialogActionButton
+            type="button"
+            action="cancel"
+            disabled={isSubmitting}
+          >
             {t("common.cancel")}
-          </Button>
+          </DialogActionButton>
         </ResponsiveDialogClose>
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? <Spinner data-icon="inline-start" /> : null}
+        <DialogActionButton
+          type="submit"
+          disabled={isSubmitting}
+          loading={isSubmitting}
+          loadingText={t("resource.assignRoles.save")}
+        >
           {t("resource.assignRoles.save")}
-        </Button>
+        </DialogActionButton>
       </ResponsiveDialogFooter>
     </form>
   )

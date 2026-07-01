@@ -18,6 +18,12 @@ export const indexQueryKeys = {
   overview: ["index", "overview"] as const,
 }
 
+export const appDownloadQueryKeys = {
+  all: ["app-downloads"] as const,
+  latest: (platform: string, arch: string) =>
+    ["app-downloads", "latest", platform, arch] as const,
+}
+
 export const browserQueryKeys = {
   all: ["browser"] as const,
   environments: ["browser", "environments"] as const,
@@ -43,6 +49,8 @@ export const browserQueryKeys = {
   teamAction: (teamId: number, action: string) =>
     ["browser", "teams", "action", teamId, action] as const,
   assets: ["browser", "assets"] as const,
+  currentDownload: (platform: string, arch: string) =>
+    ["browser", "downloads", "current", platform, arch] as const,
   assetUploads: ["browser", "assets", "uploads"] as const,
   assetAction: (assetId: number, action: string) =>
     ["browser", "assets", "action", assetId, action] as const,

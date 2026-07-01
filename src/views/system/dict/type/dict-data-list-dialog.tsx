@@ -8,8 +8,6 @@ import { listDictData } from "@/api/system/dict"
 import { useTranslation } from "@/components/providers/language-context"
 import {
   AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
@@ -18,12 +16,15 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import {
+  AlertDialogActionButton,
+  AlertDialogCancelButton,
+} from "@/components/ui/dialog-action-button"
+import {
   ResponsiveDialog,
   ResponsiveDialogContent,
   ResponsiveDialogHeader,
   ResponsiveDialogTitle,
 } from "@/components/ui/responsive-dialog"
-import { Spinner } from "@/components/ui/spinner"
 import { translateAdminText } from "@/local"
 import { systemQueryKeys } from "@/lib/query-keys"
 import type {
@@ -401,12 +402,14 @@ export function DictDataListDialog({
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel disabled={deleteMutation.isPending}>
+              <AlertDialogCancelButton disabled={deleteMutation.isPending}>
                 {t("common.cancel")}
-              </AlertDialogCancel>
-              <AlertDialogAction
+              </AlertDialogCancelButton>
+              <AlertDialogActionButton
                 variant="destructive"
                 disabled={deleteMutation.isPending}
+                loading={deleteMutation.isPending}
+                loadingText={t("common.delete")}
                 onClick={(event) => {
                   event.preventDefault()
                   if (deletingRecord) {
@@ -414,11 +417,8 @@ export function DictDataListDialog({
                   }
                 }}
               >
-                {deleteMutation.isPending ? (
-                  <Spinner data-icon="inline-start" />
-                ) : null}
                 {t("common.delete")}
-              </AlertDialogAction>
+              </AlertDialogActionButton>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>

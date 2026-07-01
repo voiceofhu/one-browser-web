@@ -1,32 +1,47 @@
 "use client"
 
 import * as React from "react"
-import { useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import type { Column, ColumnDef } from "@tanstack/react-table"
+import { toast } from "sonner"
 
-import { listBrowserMembers } from "@/api/browser"
+import { listBrowserMembers, setBrowserMemberStatus } from "@/api/browser"
 import { OverflowTooltipText } from "@/components/overflow-tooltip-text"
 import { AnimatedSegmentedTabs } from "@/components/ui/animated-segmented-tabs"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
+import { Switch } from "@/components/ui/switch"
+import { useAuthPermissions } from "@/hooks/use-auth"
+import { hasPermission } from "@/lib/auth-permissions"
 import { formatAbsoluteDateTime, formatRelativeTime } from "@/lib/datetime"
 import { browserQueryKeys } from "@/lib/query-keys"
-import type { BrowserListParams, BrowserMemberResource } from "@/types/browser"
+import type {
+  BrowserListParams,
+  BrowserMemberResource,
+  BrowserStatusFlag,
+} from "@/types/browser"
 import { useDebouncedValue } from "@/views/system/_components/resource/manager-utils"
 import {
   ResourceTable,
   ResourceTableColumnHeader,
 } from "@/views/system/_components/resource/table"
+import { showResourceError } from "@/views/system/_components/resource/toast"
 
-type MemberStatusFilter = "all" | "active" | "disabled"
+type MemberStatusFilter = "all" | "0" | "1"
 
 const MEMBER_FILTERS = [
   { label: "全部", value: "all" },
-  { label: "活跃", value: "active" },
-  { label: "停用", value: "disabled" },
+  { label: "启用", value: "0" },
+  { label: "停用", value: "1" },
 ] as const
 
 export default function BrowserMemberPage() {
+  const queryClient = useQueryClient()
+  const authPermissions = useAuthPermissions()
+  const canChangeMemberStatus = hasPermission(
+    authPermissions.data,
+    "browser:member:status"
+  )
   const [search, setSearch] = React.useState("")
   const debouncedSearch = useDebouncedValue(search, 300)
   const [statusFilter, setStatusFilter] =
@@ -47,6 +62,38 @@ export default function BrowserMemberPage() {
     queryFn: () => listBrowserMembers(params),
     placeholderData: (previousData) => previousData,
   })
+  const statusMutation = useMutation({
+    mutationFn: ({
+      memberId,
+      teamId,
+      status,
+    }: {
+      memberId: number
+      teamId: number
+      status: BrowserStatusFlag
+    }) => setBrowserMemberStatus(memberId, teamId, status),
+    onSuccess: async (_member, variables) => {
+      await queryClient.invalidateQueries({
+        queryKey: browserQueryKeys.members,
+      })
+      toast.success(variables.status === "0" ? "成员已启用" : "成员已停用")
+    },
+    onError: showResourceError,
+  })
+  const toggleMemberStatus = React.useCallback(
+    (record: BrowserMemberResource, status: BrowserStatusFlag) => {
+      if (!canChangeMemberStatus) {
+        return
+      }
+
+      statusMutation.mutate({
+        memberId: record.member_id,
+        teamId: record.team_id,
+        status,
+      })
+    },
+    [canChangeMemberStatus, statusMutation]
+  )
   const columns = React.useMemo<ColumnDef<BrowserMemberResource>[]>(
     () => [
       {
@@ -57,40 +104,57 @@ export default function BrowserMemberPage() {
       },
       {
         accessorKey: "email",
-        header: ({ column }) => tableHeader(column, "账号"),
-        cell: ({ row }) => <AccountCell record={row.original} />,
-        meta: { label: "账号", cellClassName: "min-w-52 max-w-72" },
-      },
-      {
-        id: "role_names",
-        header: ({ column }) => tableHeader(column, "团队角色"),
-        cell: ({ row }) => <RoleNamesCell values={row.original.role_names} />,
-        meta: { label: "团队角色", cellClassName: "min-w-40 max-w-56" },
+        header: ({ column }) => tableHeader(column, "联系方式"),
+        cell: ({ row }) => <MemberContactCell record={row.original} />,
+        meta: { label: "联系方式", cellClassName: "min-w-52 max-w-72" },
       },
       {
         accessorKey: "status",
         header: ({ column }) => tableHeader(column, "状态"),
-        cell: ({ row }) => <MemberStatusBadge status={row.original.status} />,
-        meta: { label: "状态", cellClassName: "w-24" },
+        cell: ({ row }) => (
+          <StatusSwitchCell
+            label="成员状态"
+            status={row.original.status}
+            disabled={!canChangeMemberStatus || statusMutation.isPending}
+            onChange={(status) => toggleMemberStatus(row.original, status)}
+          />
+        ),
+        meta: { label: "状态", cellClassName: "w-20" },
+      },
+      {
+        id: "role_names",
+        header: ({ column }) => tableHeader(column, "角色"),
+        cell: ({ row }) => <RoleNamesCell values={row.original.role_names} />,
+        meta: { label: "角色", cellClassName: "min-w-40 max-w-56" },
+      },
+      {
+        accessorKey: "environment_count",
+        header: ({ column }) => tableHeader(column, "环境"),
+        cell: ({ row }) => (
+          <span className="text-muted-foreground">
+            {row.original.environment_count} 个
+          </span>
+        ),
+        meta: { label: "环境", cellClassName: "w-24" },
       },
       {
         accessorKey: "last_active_at",
         header: ({ column }) => tableHeader(column, "最近活跃"),
         cell: ({ row }) => (
-          <LastActiveCell value={row.original.last_active_at} />
+          <LastActiveCell
+            value={row.original.last_active_at || row.original.updated_at}
+          />
         ),
         meta: { label: "最近活跃", cellClassName: "w-36" },
       },
       {
-        accessorKey: "environment_count",
-        header: ({ column }) => tableHeader(column, "负责环境"),
-        cell: ({ row }) => (
-          <Badge variant="outline">{row.original.environment_count} 个</Badge>
-        ),
-        meta: { label: "负责环境", cellClassName: "w-28" },
+        id: "actions",
+        header: ({ column }) => tableHeader(column, "操作"),
+        cell: () => <span className="text-muted-foreground">-</span>,
+        meta: { label: "操作", cellClassName: "w-20 text-right" },
       },
     ],
-    []
+    [canChangeMemberStatus, statusMutation.isPending, toggleMemberStatus]
   )
   const hasActiveFilters = search.trim().length > 0 || statusFilter !== "all"
 
@@ -160,15 +224,12 @@ function MemberIdentityCell({ record }: { record: BrowserMemberResource }) {
   )
 }
 
-function AccountCell({ record }: { record: BrowserMemberResource }) {
-  const primary = record.email || record.user_name || "-"
-  const secondary = record.email && record.user_name ? record.user_name : "-"
-
+function MemberContactCell({ record }: { record: BrowserMemberResource }) {
   return (
-    <div className="flex min-w-0 flex-col gap-0.5">
-      <OverflowTooltipText text={primary} className="font-medium" />
+    <div className="flex min-w-0 flex-col gap-1">
+      <OverflowTooltipText text={record.email || "-"} />
       <OverflowTooltipText
-        text={secondary}
+        text={record.phone_number || record.team_name || "-"}
         className="text-xs text-muted-foreground"
       />
     </div>
@@ -176,33 +237,58 @@ function AccountCell({ record }: { record: BrowserMemberResource }) {
 }
 
 function RoleNamesCell({ values }: { values: string[] }) {
-  if (values.length === 0) {
-    return <span className="block truncate text-muted-foreground">-</span>
-  }
+  const roleNames = values.length ? values : ["成员"]
 
   return (
     <div className="flex min-w-0 flex-wrap items-center gap-1">
-      {values.slice(0, 2).map((role) => (
-        <Badge
-          key={role}
-          variant={
-            role === "所有者" || role === "团队管理员" ? "default" : "outline"
-          }
-        >
+      {roleNames.slice(0, 3).map((role) => (
+        <Badge key={role} variant={memberRoleBadgeVariant(role)}>
           {role}
         </Badge>
       ))}
-      {values.length > 2 ? (
-        <Badge variant="secondary">+{values.length - 2}</Badge>
+      {roleNames.length > 3 ? (
+        <Badge variant="secondary">+{roleNames.length - 3}</Badge>
       ) : null}
     </div>
   )
 }
 
-function MemberStatusBadge({ status }: { status?: string | null }) {
-  const meta = memberStatusMeta(status)
+function memberRoleBadgeVariant(
+  value: string
+): React.ComponentProps<typeof Badge>["variant"] {
+  if (value === "Owner" || value === "所有者" || value === "团队管理员") {
+    return "default"
+  }
 
-  return <Badge variant={meta.variant}>{meta.label}</Badge>
+  if (value === "成员") {
+    return "secondary"
+  }
+
+  return "outline"
+}
+
+function StatusSwitchCell({
+  label,
+  status,
+  disabled,
+  onChange,
+}: {
+  label: string
+  status: BrowserStatusFlag
+  disabled: boolean
+  onChange: (status: BrowserStatusFlag) => void
+}) {
+  const checked = status === "0"
+
+  return (
+    <Switch
+      size="sm"
+      checked={checked}
+      disabled={disabled}
+      aria-label={label}
+      onCheckedChange={(nextChecked) => onChange(nextChecked ? "0" : "1")}
+    />
+  )
 }
 
 function LastActiveCell({ value }: { value?: string | null }) {
@@ -220,25 +306,6 @@ function getMemberName(record: BrowserMemberResource) {
     record.user_name?.trim() ||
     "-"
   )
-}
-
-function memberStatusMeta(status?: string | null): {
-  label: string
-  variant: React.ComponentProps<typeof Badge>["variant"]
-} {
-  const normalized = status?.trim().toLowerCase()
-
-  switch (normalized) {
-    case "active":
-    case "enabled":
-    case "0":
-      return { label: "活跃", variant: "default" }
-    case "disabled":
-    case "1":
-      return { label: "停用", variant: "outline" }
-    default:
-      return { label: status?.trim() || "未知", variant: "outline" }
-  }
 }
 
 function tableHeader<TData, TValue>(

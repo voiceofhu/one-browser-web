@@ -1,10 +1,12 @@
-import { buildQueryPath, http } from "@/lib/request"
+import { buildApiUrl, buildQueryPath, HttpError, http } from "@/lib/request"
 
 import type { PageResponse, ResourceMutationResult } from "@/types/admin"
 import type {
   BrowserEnvironmentActionPayload,
   BrowserEnvironmentPayload,
   BrowserEnvironmentResource,
+  AppDownloadReleaseResource,
+  AppDownloadResource,
   BrowserAssetCompletePayload,
   BrowserAssetCompleteResult,
   BrowserAssetListParams,
@@ -12,6 +14,8 @@ import type {
   BrowserAssetPartUploadResult,
   BrowserAssetResource,
   BrowserAssetUploadResource,
+  BrowserDownloadResource,
+  BrowserDownloadTarget,
   BrowserListParams,
   BrowserMemberResource,
   BrowserProxyPayload,
@@ -27,6 +31,8 @@ const BROWSER_PROXY_PATH = "/browser/proxies"
 const BROWSER_MEMBER_PATH = "/browser/members"
 const BROWSER_TEAM_PATH = "/browser/teams"
 const BROWSER_ASSET_PATH = "/browser/assets"
+const BROWSER_DOWNLOAD_PATH = "/browser-downloads/current"
+const APP_DOWNLOAD_PATH = "/app-downloads/latest"
 
 export function listBrowserEnvironments(params?: BrowserListParams) {
   return http.get<PageResponse<BrowserEnvironmentResource>>(
@@ -123,6 +129,17 @@ export function listBrowserMembers(params?: BrowserListParams) {
   )
 }
 
+export function setBrowserMemberStatus(
+  memberId: number,
+  teamId: number,
+  status: BrowserStatusFlag
+) {
+  return http.put<BrowserMemberResource>(
+    `${BROWSER_MEMBER_PATH}/${memberId}/status`,
+    { team_id: teamId, status }
+  )
+}
+
 export function listBrowserTeams(params?: BrowserListParams) {
   return http.get<PageResponse<BrowserTeamResource>>(
     buildQueryPath(BROWSER_TEAM_PATH, params)
@@ -133,6 +150,18 @@ export function createBrowserTeam(payload: BrowserTeamPayload) {
   return http.post<ResourceMutationResult>(BROWSER_TEAM_PATH, payload)
 }
 
+export function setBrowserTeamStatus(
+  teamId: number,
+  status: BrowserStatusFlag
+) {
+  return http.put<BrowserTeamResource>(
+    `${BROWSER_TEAM_PATH}/${teamId}/status`,
+    {
+      status,
+    }
+  )
+}
+
 export function leaveBrowserTeam(teamId: number) {
   return http.del<void>(`${BROWSER_TEAM_PATH}/${teamId}/membership`)
 }
@@ -141,6 +170,44 @@ export function listBrowserAssets(params?: BrowserAssetListParams) {
   return http.get<PageResponse<BrowserAssetResource>>(
     buildQueryPath(BROWSER_ASSET_PATH, params)
   )
+}
+
+export function getCurrentBrowserDownload(target: BrowserDownloadTarget) {
+  return http.get<BrowserDownloadResource>(
+    buildQueryPath(BROWSER_DOWNLOAD_PATH, target)
+  )
+}
+
+export async function getLatestAppDownload(target: BrowserDownloadTarget) {
+  const release = await http.get<AppDownloadReleaseResource>(
+    buildQueryPath(APP_DOWNLOAD_PATH, target)
+  )
+  const selected = release.selected
+  if (!selected) {
+    throw new HttpError(
+      404,
+      "APP_DOWNLOAD_NOT_CONFIGURED",
+      "app download is not configured"
+    )
+  }
+
+  return {
+    platform: selected.platform,
+    arch: selected.arch,
+    url: resolveAppDownloadUrl(selected.download_url),
+    version: release.version,
+    file_name: selected.name,
+    file_size: selected.size,
+    updated_at: selected.updated_at ?? release.published_at,
+  } satisfies AppDownloadResource
+}
+
+function resolveAppDownloadUrl(url: string) {
+  if (/^https?:\/\//.test(url)) {
+    return url
+  }
+
+  return buildApiUrl(url.replace(/^\/api(?=\/)/, ""))
 }
 
 export function uploadBrowserAssetDirect(formData: FormData) {

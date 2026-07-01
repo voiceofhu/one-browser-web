@@ -48,6 +48,7 @@ type ApiErrorResponse = {
 const API_BASE_URL = import.meta.env.VITE_API_URL || "/api"
 const APP_BASE_URL = import.meta.env.VITE_BASE_URL || "/"
 const AUTH_EXPIRED_NOTICE_KEY = "one-browser:auth-expired-notice"
+let authSessionExpired = false
 let isRedirectingToLogin = false
 let refreshPromise: Promise<AuthTokenPayload> | null = null
 
@@ -70,6 +71,8 @@ export function consumeAuthExpiredNotice() {
 }
 
 export async function ensureFreshAccessToken(options?: { force?: boolean }) {
+  syncAuthSessionStateFromTokens()
+
   if (!options?.force && !isAccessTokenStale()) {
     return getAccessToken()
   }
@@ -78,8 +81,7 @@ export async function ensureFreshAccessToken(options?: { force?: boolean }) {
     await refreshAuthTokens()
   } catch (error) {
     if (isUnauthorizedError(error)) {
-      clearAuthTokens()
-      redirectToLogin("", error)
+      expireAuthSession("", error)
     }
 
     throw error
@@ -229,11 +231,21 @@ async function request<T>(
   init: RequestInit = {},
   baseUrl = API_BASE_URL
 ) {
+  syncAuthSessionStateFromTokens()
+
   const response = await sendRequest(path, init, baseUrl)
 
   if (!response.ok) {
     const error = await parseError(response)
     if (isUnauthorizedError(error)) {
+      if (!shouldRefreshAuth(path)) {
+        throw error
+      }
+      if (authSessionExpired || isRedirectingToLogin) {
+        expireAuthSession(path, error)
+        throw error
+      }
+
       const refreshed = await refreshAndRetry<T>(path, init, baseUrl)
       if (refreshed.ok) {
         return refreshed.data
@@ -243,8 +255,7 @@ async function request<T>(
         "refreshError" in refreshed &&
         isUnauthorizedError(refreshed.refreshError)
       ) {
-        clearAuthTokens()
-        redirectToLogin(path, refreshed.refreshError)
+        expireAuthSession(path, refreshed.refreshError)
       }
 
       if (
@@ -284,6 +295,7 @@ async function request<T>(
     )
   }
 
+  markAuthSessionActiveIfTokenPresent()
   return body.data
 }
 
@@ -327,8 +339,13 @@ function shouldRefreshAuth(path: string) {
 }
 
 async function refreshAuthTokens() {
+  if (authSessionExpired) {
+    throw new HttpError(401, "AUTH_SESSION_EXPIRED", "登录信息已过期")
+  }
+
   const refreshToken = getRefreshToken()
   if (!refreshToken) {
+    authSessionExpired = true
     throw new HttpError(401, "MISSING_REFRESH_TOKEN", "登录信息已过期")
   }
 
@@ -356,7 +373,32 @@ async function fetchRefreshToken(refreshToken: string) {
 
   const tokens = await parseResponseData<AuthTokenPayload>(response)
   saveAuthTokens(tokens)
+  markAuthSessionActive()
   return tokens
+}
+
+function expireAuthSession(path: string, error: HttpError) {
+  authSessionExpired = true
+  refreshPromise = null
+  clearAuthTokens()
+  redirectToLogin(path, error)
+}
+
+function markAuthSessionActive() {
+  authSessionExpired = false
+  isRedirectingToLogin = false
+}
+
+function markAuthSessionActiveIfTokenPresent() {
+  if (getAccessToken()) {
+    markAuthSessionActive()
+  }
+}
+
+function syncAuthSessionStateFromTokens() {
+  if (authSessionExpired && getAccessToken() && getRefreshToken()) {
+    markAuthSessionActive()
+  }
 }
 
 async function parseResponseData<T>(response: Response) {

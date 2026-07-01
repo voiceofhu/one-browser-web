@@ -187,9 +187,9 @@ export const APP_ROUTE_GROUPS = [
     labelKey: "routeGroup.browser",
     label: "浏览器管理",
     routes: [
-      "browser-teams",
       "browser-environments",
       "browser-proxies",
+      "browser-teams",
       "browser-members",
       "browser-assets",
     ],

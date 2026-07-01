@@ -12,8 +12,6 @@ import {
 import { useTranslation } from "@/components/providers/language-context"
 import {
   AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
@@ -21,8 +19,11 @@ import {
   AlertDialogMedia,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import {
+  AlertDialogActionButton,
+  AlertDialogCancelButton,
+} from "@/components/ui/dialog-action-button"
 import { Button } from "@/components/ui/button"
-import { Spinner } from "@/components/ui/spinner"
 import { useAuthPermissions } from "@/hooks/use-auth"
 import { hasPermission } from "@/lib/auth-permissions"
 import { monitorQueryKeys } from "@/lib/query-keys"
@@ -195,12 +196,14 @@ export default function OnlineUsersPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={forceLogoutMutation.isPending}>
+            <AlertDialogCancelButton disabled={forceLogoutMutation.isPending}>
               {t("common.cancel")}
-            </AlertDialogCancel>
-            <AlertDialogAction
+            </AlertDialogCancelButton>
+            <AlertDialogActionButton
               variant="destructive"
               disabled={forceLogoutMutation.isPending}
+              loading={forceLogoutMutation.isPending}
+              loadingText={mt("online.forceLogout.action")}
               onClick={(event) => {
                 event.preventDefault()
                 if (forceLogoutRecord) {
@@ -208,11 +211,8 @@ export default function OnlineUsersPage() {
                 }
               }}
             >
-              {forceLogoutMutation.isPending ? (
-                <Spinner data-icon="inline-start" />
-              ) : null}
               {mt("online.forceLogout.action")}
-            </AlertDialogAction>
+            </AlertDialogActionButton>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

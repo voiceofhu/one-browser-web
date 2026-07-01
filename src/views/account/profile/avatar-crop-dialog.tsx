@@ -13,6 +13,7 @@ import { toast } from "sonner"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { useTranslation } from "@/components/providers/language-context"
+import { DialogActionButton } from "@/components/ui/dialog-action-button"
 import {
   ResponsiveDialog,
   ResponsiveDialogBody,
@@ -24,7 +25,6 @@ import {
   ResponsiveDialogTitle,
 } from "@/components/ui/responsive-dialog"
 import { Slider } from "@/components/ui/slider"
-import { Spinner } from "@/components/ui/spinner"
 import { translateAdminText } from "@/local"
 import { cn } from "@/lib/utils"
 
@@ -343,22 +343,24 @@ function AvatarCropDialogContent({
       </ResponsiveDialogBody>
       <ResponsiveDialogFooter>
         <ResponsiveDialogClose asChild>
-          <Button type="button" variant="outline" disabled={isSubmitting}>
+          <DialogActionButton
+            type="button"
+            action="cancel"
+            disabled={isSubmitting}
+          >
             {tt("取消")}
-          </Button>
+          </DialogActionButton>
         </ResponsiveDialogClose>
-        <Button
+        <DialogActionButton
           type="button"
           disabled={!imageSize || isSubmitting}
+          loading={isSubmitting}
+          loadingText={tt("提交中")}
           onClick={handleSubmit}
         >
-          {isSubmitting ? (
-            <Spinner data-icon="inline-start" />
-          ) : (
-            <SaveIcon data-icon="inline-start" />
-          )}
+          <SaveIcon data-icon="inline-start" />
           {tt("提交")}
-        </Button>
+        </DialogActionButton>
       </ResponsiveDialogFooter>
     </ResponsiveDialogContent>
   )

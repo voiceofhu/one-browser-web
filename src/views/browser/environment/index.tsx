@@ -1,25 +1,41 @@
 "use client"
 
 import * as React from "react"
-import { useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import type { Column, ColumnDef } from "@tanstack/react-table"
-import { LaptopIcon } from "lucide-react"
+import {
+  LaptopIcon,
+  PlayIcon,
+  PowerIcon,
+  PowerOffIcon,
+  SquareIcon,
+} from "lucide-react"
+import { toast } from "sonner"
 
-import { listBrowserEnvironments } from "@/api/browser"
+import {
+  closeBrowserEnvironment,
+  listBrowserEnvironments,
+  openBrowserEnvironment,
+  setBrowserEnvironmentStatus,
+} from "@/api/browser"
 import { OverflowTooltipText } from "@/components/overflow-tooltip-text"
 import { AnimatedSegmentedTabs } from "@/components/ui/animated-segmented-tabs"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
 import { formatAbsoluteDateTime, formatRelativeTime } from "@/lib/datetime"
 import { browserQueryKeys } from "@/lib/query-keys"
 import type {
   BrowserEnvironmentResource,
   BrowserListParams,
+  BrowserStatusFlag,
 } from "@/types/browser"
 import { useDebouncedValue } from "@/views/system/_components/resource/manager-utils"
 import {
   ResourceTable,
   ResourceTableColumnHeader,
 } from "@/views/system/_components/resource/table"
+import { showResourceError } from "@/views/system/_components/resource/toast"
 
 type EnvironmentStatusFilter =
   | "all"
@@ -41,6 +57,7 @@ const ENVIRONMENT_FILTERS = [
 ] as const
 
 export default function EnvironmentPage() {
+  const queryClient = useQueryClient()
   const [search, setSearch] = React.useState("")
   const debouncedSearch = useDebouncedValue(search, 300)
   const [statusFilter, setStatusFilter] =
@@ -61,6 +78,53 @@ export default function EnvironmentPage() {
     queryFn: () => listBrowserEnvironments(params),
     placeholderData: (previousData) => previousData,
   })
+  const refreshEnvironments = React.useCallback(() => {
+    void queryClient.invalidateQueries({
+      queryKey: browserQueryKeys.environments,
+    })
+  }, [queryClient])
+  const openMutation = useMutation({
+    mutationFn: (environmentId: number) =>
+      openBrowserEnvironment(environmentId),
+    onSuccess: () => {
+      toast.success("环境启动中")
+      refreshEnvironments()
+    },
+    onError: showResourceError,
+  })
+  const closeMutation = useMutation({
+    mutationFn: (environmentId: number) =>
+      closeBrowserEnvironment(environmentId),
+    onSuccess: () => {
+      toast.success("环境停止中")
+      refreshEnvironments()
+    },
+    onError: showResourceError,
+  })
+  const statusMutation = useMutation({
+    mutationFn: ({
+      environmentId,
+      status,
+    }: {
+      environmentId: number
+      status: BrowserStatusFlag
+    }) => setBrowserEnvironmentStatus(environmentId, status),
+    onSuccess: (_record, variables) => {
+      toast.success(variables.status === "0" ? "环境已启用" : "环境已停用")
+      refreshEnvironments()
+    },
+    onError: showResourceError,
+  })
+  const runtimePendingId =
+    openMutation.isPending && typeof openMutation.variables === "number"
+      ? openMutation.variables
+      : closeMutation.isPending && typeof closeMutation.variables === "number"
+        ? closeMutation.variables
+        : null
+  const statusPendingId =
+    statusMutation.isPending && statusMutation.variables
+      ? statusMutation.variables.environmentId
+      : null
   const columns = React.useMemo<ColumnDef<BrowserEnvironmentResource>[]>(
     () => [
       {
@@ -110,8 +174,31 @@ export default function EnvironmentPage() {
         cell: ({ row }) => <TagsCell values={row.original.tags} />,
         meta: { label: "标签", cellClassName: "min-w-44 max-w-64" },
       },
+      {
+        id: "actions",
+        header: "",
+        cell: ({ row }) => (
+          <EnvironmentActionCell
+            record={row.original}
+            runtimePending={runtimePendingId === row.original.environment_id}
+            statusPending={statusPendingId === row.original.environment_id}
+            onOpen={(environmentId) => openMutation.mutate(environmentId)}
+            onClose={(environmentId) => closeMutation.mutate(environmentId)}
+            onStatusChange={(environmentId, status) =>
+              statusMutation.mutate({ environmentId, status })
+            }
+          />
+        ),
+        meta: { label: "操作", cellClassName: "w-40 text-right" },
+      },
     ],
-    []
+    [
+      closeMutation,
+      openMutation,
+      runtimePendingId,
+      statusMutation,
+      statusPendingId,
+    ]
   )
   const hasActiveFilters = search.trim().length > 0 || statusFilter !== "all"
 
@@ -200,6 +287,74 @@ function EnvironmentStatusBadge({
   return <Badge variant={meta.variant}>{meta.label}</Badge>
 }
 
+function EnvironmentActionCell({
+  record,
+  runtimePending,
+  statusPending,
+  onOpen,
+  onClose,
+  onStatusChange,
+}: {
+  record: BrowserEnvironmentResource
+  runtimePending: boolean
+  statusPending: boolean
+  onOpen: (environmentId: number) => void
+  onClose: (environmentId: number) => void
+  onStatusChange: (environmentId: number, status: BrowserStatusFlag) => void
+}) {
+  const disabled = isEnvironmentDisabled(record.status)
+  const running = isEnvironmentRunning(record.runtime_status)
+  const transitioning = isEnvironmentTransitioning(record.runtime_status)
+  const runtimeDisabled =
+    disabled || runtimePending || statusPending || transitioning
+  const statusDisabled = runtimePending || statusPending || transitioning
+  const nextStatus: BrowserStatusFlag = disabled ? "0" : "1"
+
+  return (
+    <div className="flex items-center justify-end gap-1">
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        disabled={runtimeDisabled}
+        onClick={() => {
+          if (running) {
+            onClose(record.environment_id)
+            return
+          }
+
+          onOpen(record.environment_id)
+        }}
+      >
+        {runtimePending ? (
+          <Spinner data-icon="inline-start" />
+        ) : running ? (
+          <SquareIcon data-icon="inline-start" />
+        ) : (
+          <PlayIcon data-icon="inline-start" />
+        )}
+        {running ? "停止" : "启动"}
+      </Button>
+      <Button
+        type="button"
+        variant={disabled ? "secondary" : "outline"}
+        size="sm"
+        disabled={statusDisabled}
+        onClick={() => onStatusChange(record.environment_id, nextStatus)}
+      >
+        {statusPending ? (
+          <Spinner data-icon="inline-start" />
+        ) : disabled ? (
+          <PowerIcon data-icon="inline-start" />
+        ) : (
+          <PowerOffIcon data-icon="inline-start" />
+        )}
+        {disabled ? "启用" : "停用"}
+      </Button>
+    </div>
+  )
+}
+
 function TagsCell({ values }: { values: string[] }) {
   if (values.length === 0) {
     return <span className="block truncate text-muted-foreground">-</span>
@@ -245,6 +400,39 @@ function TimeCell({ value }: { value?: string | null }) {
       {formatRelativeTime(value, "-")}
     </span>
   )
+}
+
+function isEnvironmentDisabled(status?: string | null) {
+  const normalized = normalizeEnvironmentStatus(status)
+
+  return (
+    normalized === "1" || normalized === "disabled" || normalized === "disable"
+  )
+}
+
+function isEnvironmentRunning(status?: string | null) {
+  const normalized = normalizeEnvironmentStatus(status)
+
+  return (
+    normalized === "running" ||
+    normalized === "active" ||
+    normalized === "online"
+  )
+}
+
+function isEnvironmentTransitioning(status?: string | null) {
+  const normalized = normalizeEnvironmentStatus(status)
+
+  return (
+    normalized === "starting" ||
+    normalized === "opening" ||
+    normalized === "stopping" ||
+    normalized === "closing"
+  )
+}
+
+function normalizeEnvironmentStatus(status?: string | null) {
+  return status?.trim().toLowerCase() ?? ""
 }
 
 function environmentStatusMeta(status?: string | null): {

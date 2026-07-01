@@ -22,8 +22,6 @@ import { OverflowTooltipText } from "@/components/overflow-tooltip-text"
 import { AnimatedSegmentedTabs } from "@/components/ui/animated-segmented-tabs"
 import {
   AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
@@ -33,6 +31,10 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import {
+  AlertDialogActionButton,
+  AlertDialogCancelButton,
+} from "@/components/ui/dialog-action-button"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -317,12 +319,14 @@ export default function BrowserAssetsPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteMutation.isPending}>
+            <AlertDialogCancelButton disabled={deleteMutation.isPending}>
               取消
-            </AlertDialogCancel>
-            <AlertDialogAction
+            </AlertDialogCancelButton>
+            <AlertDialogActionButton
               variant="destructive"
               disabled={deleteMutation.isPending || deleteRecord?.is_current}
+              loading={deleteMutation.isPending}
+              loadingText="删除中"
               onClick={(event) => {
                 event.preventDefault()
                 if (deleteRecord) {
@@ -330,11 +334,8 @@ export default function BrowserAssetsPage() {
                 }
               }}
             >
-              {deleteMutation.isPending ? (
-                <Spinner data-icon="inline-start" />
-              ) : null}
               删除
-            </AlertDialogAction>
+            </AlertDialogActionButton>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -359,12 +360,14 @@ export default function BrowserAssetsPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={bulkDeleteMutation.isPending}>
+            <AlertDialogCancelButton disabled={bulkDeleteMutation.isPending}>
               取消
-            </AlertDialogCancel>
-            <AlertDialogAction
+            </AlertDialogCancelButton>
+            <AlertDialogActionButton
               variant="destructive"
               disabled={bulkDeleteMutation.isPending}
+              loading={bulkDeleteMutation.isPending}
+              loadingText="删除中"
               onClick={(event) => {
                 event.preventDefault()
                 if (bulkDeleteState) {
@@ -372,11 +375,8 @@ export default function BrowserAssetsPage() {
                 }
               }}
             >
-              {bulkDeleteMutation.isPending ? (
-                <Spinner data-icon="inline-start" />
-              ) : null}
               批量删除
-            </AlertDialogAction>
+            </AlertDialogActionButton>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
