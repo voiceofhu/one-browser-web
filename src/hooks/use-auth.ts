@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import {
+  bindReferral,
+  checkReferralCode,
   getAuthPermissions,
   getCurrentUser,
   authorizeApp,
@@ -8,6 +10,8 @@ import {
   login,
   logout,
   previewTeamInvite,
+  type BindReferralPayload,
+  type TeamInviteLookup,
 } from "@/api/auth"
 import { clearAuthTokens, saveAuthTokens } from "@/lib/auth-tokens"
 import {
@@ -51,7 +55,6 @@ export function useLoginMutation() {
     mutationFn: login,
     onSuccess: (response) => {
       saveAuthTokens(response)
-      queryClient.setQueryData(authQueryKeys.currentUser, response.user)
       queryClient.invalidateQueries({ queryKey: authQueryKeys.currentUser })
       queryClient.invalidateQueries({ queryKey: authQueryKeys.permissions })
     },
@@ -64,11 +67,11 @@ export function useAppAuthorizeMutation() {
   })
 }
 
-export function useTeamInviteQuery(token: string) {
+export function useTeamInviteQuery(lookup: TeamInviteLookup) {
   return useQuery({
-    queryKey: authQueryKeys.teamInvite(token),
-    queryFn: () => previewTeamInvite(token),
-    enabled: Boolean(token),
+    queryKey: authQueryKeys.teamInvite(lookup.code, lookup.team_code),
+    queryFn: () => previewTeamInvite(lookup),
+    enabled: Boolean(lookup.code && lookup.team_code),
     retry: false,
   })
 }
@@ -78,11 +81,37 @@ export function useJoinTeamInviteMutation() {
 
   return useMutation({
     mutationFn: joinTeamInvite,
-    onSuccess: (_team, token) => {
+    onSuccess: (_team, lookup) => {
       queryClient.invalidateQueries({ queryKey: authQueryKeys.currentUser })
       queryClient.invalidateQueries({ queryKey: authQueryKeys.permissions })
       queryClient.invalidateQueries({
-        queryKey: authQueryKeys.teamInvite(token),
+        queryKey: authQueryKeys.teamInvite(lookup.code, lookup.team_code),
+      })
+      queryClient.invalidateQueries({ queryKey: browserQueryKeys.all })
+      queryClient.invalidateQueries({ queryKey: systemQueryKeys.all })
+    },
+  })
+}
+
+export function useReferralCodeCheckQuery(aff: string) {
+  return useQuery({
+    queryKey: authQueryKeys.referralCodeCheck(aff),
+    queryFn: () => checkReferralCode(aff),
+    enabled: Boolean(aff),
+    retry: false,
+  })
+}
+
+export function useBindReferralMutation() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (payload: BindReferralPayload) => bindReferral(payload),
+    onSuccess: (_result, payload) => {
+      queryClient.invalidateQueries({ queryKey: authQueryKeys.currentUser })
+      queryClient.invalidateQueries({ queryKey: authQueryKeys.permissions })
+      queryClient.invalidateQueries({
+        queryKey: authQueryKeys.referralCodeCheck(payload.aff),
       })
       queryClient.invalidateQueries({ queryKey: browserQueryKeys.all })
       queryClient.invalidateQueries({ queryKey: systemQueryKeys.all })

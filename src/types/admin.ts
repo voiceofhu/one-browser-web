@@ -20,10 +20,6 @@ export interface CurrentUser {
   user_type: string
 }
 
-export interface CurrentUserEnvelope {
-  user: CurrentUser
-}
-
 export interface AuthPermissions {
   roles: string[]
   permissions: string[]
@@ -54,15 +50,12 @@ export interface AuthTokenResponse {
   refresh_expires_in: number
 }
 
-export interface LoginResponse extends AuthTokenResponse {
-  user: CurrentUser
-}
+export type LoginResponse = AuthTokenResponse
 
 export interface TeamInvite {
   team_id: number
   team_key: string
   team_name: string
-  expires_at?: string | null
 }
 
 export interface HealthResponse {

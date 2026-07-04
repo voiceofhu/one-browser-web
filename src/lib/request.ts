@@ -74,9 +74,18 @@ export async function ensureFreshAccessToken(options?: { force?: boolean }) {
   syncAuthSessionStateFromTokens()
 
   if (!options?.force && !isAccessTokenStale()) {
+    console.info("[auth-debug] ensure fresh access token skipped refresh", {
+      force: options?.force ?? false,
+      accessToken: getAccessToken(),
+    })
     return getAccessToken()
   }
 
+  console.info("[auth-debug] ensure fresh access token refreshing", {
+    force: options?.force ?? false,
+    accessToken: getAccessToken(),
+    refreshToken: getRefreshToken(),
+  })
   try {
     await refreshAuthTokens()
   } catch (error) {
@@ -238,6 +247,15 @@ async function request<T>(
   if (!response.ok) {
     const error = await parseError(response)
     if (isUnauthorizedError(error)) {
+      console.info("[auth-debug] request unauthorized", {
+        path,
+        url: buildUrl(path, baseUrl),
+        status: error.status,
+        code: error.code,
+        message: error.message,
+        accessToken: getAccessToken(),
+        refreshToken: getRefreshToken(),
+      })
       if (!shouldRefreshAuth(path)) {
         throw error
       }
@@ -340,15 +358,24 @@ function shouldRefreshAuth(path: string) {
 
 async function refreshAuthTokens() {
   if (authSessionExpired) {
-    throw new HttpError(401, "AUTH_SESSION_EXPIRED", "登录信息已过期")
+    console.info("[auth-debug] refresh skipped expired auth session")
+    throw new HttpError(401, "AUTH_SESSION_EXPIRED", "请重新登录")
   }
 
   const refreshToken = getRefreshToken()
   if (!refreshToken) {
     authSessionExpired = true
-    throw new HttpError(401, "MISSING_REFRESH_TOKEN", "登录信息已过期")
+    console.info("[auth-debug] refresh skipped missing refresh token", {
+      accessToken: getAccessToken(),
+    })
+    throw new HttpError(401, "MISSING_REFRESH_TOKEN", "请重新登录")
   }
 
+  console.info("[auth-debug] refresh auth tokens start", {
+    refreshToken,
+    accessToken: getAccessToken(),
+    hasExistingPromise: Boolean(refreshPromise),
+  })
   refreshPromise ??= fetchRefreshToken(refreshToken).finally(() => {
     refreshPromise = null
   })
@@ -361,23 +388,60 @@ async function fetchRefreshToken(refreshToken: string) {
     method: "POST",
     body: JSON.stringify({ refresh_token: refreshToken }),
   }
-  const response = await fetch(buildUrl("/auth/refresh"), {
+  const refreshUrl = buildUrl("/auth/refresh")
+  console.info("[auth-debug] fetch refresh token request", {
+    url: refreshUrl,
+    refreshToken,
+  })
+  const response = await fetch(refreshUrl, {
     ...init,
     credentials: "omit",
     headers: buildHeaders(init, { auth: false }),
   })
+  console.info("[auth-debug] fetch refresh token response", {
+    url: refreshUrl,
+    refreshToken,
+    status: response.status,
+    ok: response.ok,
+  })
 
   if (!response.ok) {
-    throw await parseError(response)
+    const error = await parseError(response)
+    console.info("[auth-debug] fetch refresh token failed", {
+      url: refreshUrl,
+      refreshToken,
+      status: error.status,
+      code: error.code,
+      message: error.message,
+      details: error.details,
+    })
+    throw error
   }
 
   const tokens = await parseResponseData<AuthTokenPayload>(response)
+  console.info("[auth-debug] fetch refresh token parsed", {
+    url: refreshUrl,
+    previousRefreshToken: refreshToken,
+    accessToken: tokens.access_token,
+    refreshToken: tokens.refresh_token,
+    tokenType: tokens.token_type,
+    expiresIn: tokens.expires_in,
+    refreshExpiresIn: tokens.refresh_expires_in,
+  })
   saveAuthTokens(tokens)
   markAuthSessionActive()
   return tokens
 }
 
 function expireAuthSession(path: string, error: HttpError) {
+  console.info("[auth-debug] expire auth session", {
+    path,
+    status: error.status,
+    code: error.code,
+    message: error.message,
+    accessToken: getAccessToken(),
+    refreshToken: getRefreshToken(),
+  })
   authSessionExpired = true
   refreshPromise = null
   clearAuthTokens()

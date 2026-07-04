@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react"
-import { CheckCircle2Icon, ExternalLinkIcon, XIcon } from "lucide-react"
+import { useEffect, useRef, type RefObject } from "react"
+import { ExternalLinkIcon } from "lucide-react"
 import { gsap } from "gsap"
 
 import { APP_NAME } from "@/app"
@@ -13,11 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import {
-  APP_AUTH_CLOSE_DELAY_SECONDS,
-  closeCurrentWindow,
-  wakeAppRedirect,
-} from "@/lib/app-redirect"
+import { wakeAppRedirect } from "@/lib/app-redirect"
 import { cn } from "@/lib/utils"
 import { InteractiveGridBackground } from "./interactive-grid-background"
 
@@ -26,31 +22,120 @@ type AppAuthorizationSuccessProps = {
   className?: string
 }
 
+type AppAuthorizationPendingProps = {
+  className?: string
+}
+
+export function AppAuthorizationPending({
+  className,
+}: AppAuthorizationPendingProps) {
+  const { t } = useTranslation()
+  const rootRef = useRef<HTMLElement>(null)
+
+  useAppAuthorizationReveal(rootRef)
+
+  return (
+    <main
+      ref={rootRef}
+      className={cn(
+        "relative flex min-h-svh flex-col overflow-hidden bg-background px-4 py-5 sm:px-6 lg:px-8",
+        className
+      )}
+    >
+      <InteractiveGridBackground />
+
+      <section className="relative z-10 grid flex-1 place-items-center py-8 sm:py-10 lg:py-12">
+        <Card
+          className="w-full max-w-sm border-border/80 bg-card/95"
+          data-app-auth-reveal
+        >
+          <CardHeader className="items-center gap-3 px-8 pt-8 text-center">
+            <CardTitle className="text-2xl font-semibold tracking-normal">
+              {t("appAuth.pendingTitle")}
+            </CardTitle>
+            <CardDescription className="text-sm leading-6">
+              {t("appAuth.pendingDescription", { appName: APP_NAME })}
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent className="px-8 pb-8 text-center">
+            <p className="text-xs leading-5 text-muted-foreground">
+              {t("appAuth.pendingHint")}
+            </p>
+          </CardContent>
+        </Card>
+      </section>
+    </main>
+  )
+}
+
 export function AppAuthorizationSuccess({
   appUrl,
   className,
 }: AppAuthorizationSuccessProps) {
   const { t } = useTranslation()
-  const [secondsLeft, setSecondsLeft] = useState(APP_AUTH_CLOSE_DELAY_SECONDS)
   const rootRef = useRef<HTMLElement>(null)
 
-  useEffect(() => {
-    const cleanupWake = wakeAppRedirect(appUrl)
-    const closeTimer = window.setTimeout(() => {
-      setSecondsLeft(0)
-      closeCurrentWindow()
-    }, APP_AUTH_CLOSE_DELAY_SECONDS * 1000)
-    const countdownTimer = window.setInterval(() => {
-      setSecondsLeft((value) => Math.max(value - 1, 0))
-    }, 1000)
+  useAppAuthorizationReveal(rootRef)
 
-    return () => {
-      cleanupWake()
-      window.clearTimeout(closeTimer)
-      window.clearInterval(countdownTimer)
-    }
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      wakeAppRedirect(appUrl)
+    }, 300)
+
+    return () => window.clearTimeout(timer)
   }, [appUrl])
 
+  return (
+    <main
+      ref={rootRef}
+      className={cn(
+        "relative flex min-h-svh flex-col overflow-hidden bg-background px-4 py-5 sm:px-6 lg:px-8",
+        className
+      )}
+    >
+      <InteractiveGridBackground />
+
+      <section className="relative z-10 grid flex-1 place-items-center py-8 sm:py-10 lg:py-12">
+        <Card
+          className="w-full max-w-md border-border/80 bg-card/95"
+          data-app-auth-reveal
+        >
+          <CardHeader className="items-center gap-2 px-8 pt-8 text-center">
+            <CardTitle className="text-2xl font-semibold tracking-normal">
+              {t("appAuth.successTitle")}
+            </CardTitle>
+            <CardDescription className="text-base leading-7">
+              {t("appAuth.successDescription", { appName: APP_NAME })}
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent className="flex flex-col gap-4 px-8 text-center">
+            <p className="text-sm text-muted-foreground">
+              {t("appAuth.openingHint", { appName: APP_NAME })}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {t("appAuth.closeFallback")}
+            </p>
+          </CardContent>
+
+          <CardFooter className="border-t bg-transparent">
+            <Button
+              type="button"
+              className="w-full"
+              onClick={() => wakeAppRedirect(appUrl)}
+            >
+              <ExternalLinkIcon data-icon="inline-start" />
+              {t("appAuth.openApp")}
+            </Button>
+          </CardFooter>
+        </Card>
+      </section>
+    </main>
+  )
+}
+
+function useAppAuthorizationReveal(rootRef: RefObject<HTMLElement | null>) {
   useEffect(() => {
     if (!rootRef.current || shouldReduceMotion()) {
       return
@@ -73,76 +158,7 @@ export function AppAuthorizationSuccess({
     }, rootRef)
 
     return () => ctx.revert()
-  }, [])
-
-  return (
-    <main
-      ref={rootRef}
-      className={cn(
-        "relative flex min-h-svh flex-col overflow-hidden bg-background px-4 py-5 sm:px-6 lg:px-8",
-        className
-      )}
-    >
-      <InteractiveGridBackground />
-
-      <section className="relative z-10 grid flex-1 place-items-center py-8 sm:py-10 lg:py-12">
-        <Card
-          className="w-full max-w-md shadow-lg shadow-foreground/5"
-          data-app-auth-reveal
-        >
-          <CardHeader className="items-center gap-2 text-center">
-            <div className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-              <CheckCircle2Icon />
-            </div>
-            <CardTitle className="text-2xl font-semibold">
-              {t("appAuth.successTitle")}
-            </CardTitle>
-            <CardDescription>
-              {t("appAuth.successDescription", { appName: APP_NAME })}
-            </CardDescription>
-          </CardHeader>
-
-          <CardContent className="flex flex-col gap-4 text-center">
-            <p className="text-sm text-muted-foreground">
-              {t("appAuth.openingHint", { appName: APP_NAME })}
-            </p>
-            <div className="flex flex-col gap-2" aria-live="polite">
-              <p className="text-sm font-medium tabular-nums">
-                {t("appAuth.closeCountdown", {
-                  seconds: Math.max(secondsLeft, 1),
-                })}
-              </p>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {t("appAuth.closeFallback")}
-            </p>
-          </CardContent>
-
-          <CardFooter className="grid grid-cols-1 gap-2 border-t bg-muted/30 sm:grid-cols-2">
-            <Button
-              type="button"
-              onClick={() =>
-                wakeAppRedirect(appUrl, {
-                  preservePage: false,
-                })
-              }
-            >
-              <ExternalLinkIcon data-icon="inline-start" />
-              {t("appAuth.openApp")}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={closeCurrentWindow}
-            >
-              <XIcon data-icon="inline-start" />
-              {t("appAuth.closeNow")}
-            </Button>
-          </CardFooter>
-        </Card>
-      </section>
-    </main>
-  )
+  }, [rootRef])
 }
 
 function shouldReduceMotion() {

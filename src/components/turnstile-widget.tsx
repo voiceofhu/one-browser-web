@@ -26,6 +26,7 @@ type TurnstileApi = {
     container: string | HTMLElement,
     options: TurnstileRenderOptions
   ) => string
+  getResponse?: (widgetId?: string) => string
   reset: (widgetId?: string) => void
   remove: (widgetId: string) => void
 }
@@ -124,7 +125,33 @@ export const TurnstileWidget = forwardRef<
     }
 
     let active = true
+    let lastToken = ""
+    let responsePollTimer: number | null = null
     const container = containerRef.current
+    const emitToken = (token: string) => {
+      if (!active) {
+        return
+      }
+
+      setLoadState("ready")
+      lastToken = token
+      onTokenChange(token)
+    }
+    const pollResponse = () => {
+      const widgetId = widgetIdRef.current
+      if (!widgetId || !window.turnstile?.getResponse) {
+        return
+      }
+
+      const token = window.turnstile.getResponse(widgetId)?.trim() ?? ""
+      if (!token) {
+        lastToken = ""
+        return
+      }
+      if (token !== lastToken) {
+        emitToken(token)
+      }
+    }
     const removeRenderedWidget = () => {
       const widgetId = widgetIdRef.current
       widgetIdRef.current = null
@@ -148,12 +175,7 @@ export const TurnstileWidget = forwardRef<
         theme: "auto",
         size,
         callback: (token) => {
-          if (!active) {
-            return
-          }
-
-          setLoadState("ready")
-          onTokenChange(token)
+          emitToken(token)
         },
         "expired-callback": () => {
           if (!active) {
@@ -191,6 +213,8 @@ export const TurnstileWidget = forwardRef<
       })
       widgetIdRef.current = widgetId
       setLoadState("ready")
+      responsePollTimer = window.setInterval(pollResponse, 300)
+      pollResponse()
     } catch {
       setLoadState("error")
       onTokenChange("")
@@ -199,6 +223,9 @@ export const TurnstileWidget = forwardRef<
 
     return () => {
       active = false
+      if (responsePollTimer !== null) {
+        window.clearInterval(responsePollTimer)
+      }
       removeRenderedWidget()
       onTokenChange("")
     }

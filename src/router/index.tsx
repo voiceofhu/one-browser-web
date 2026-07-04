@@ -18,7 +18,6 @@ import {
   getAuthorizedDynamicRouteRedirects,
   getLocalAuthenticatedRouteElements,
 } from "@/router/dynamic-routes"
-import { LoginSourceGate } from "@/router/guards/login-source-gate"
 import { RequireAuth } from "@/router/guards/require-auth"
 import { getFirstAuthorizedPath, getRouteAccessTarget } from "@/router/access"
 import DownloadHomePage from "@/views/download"
@@ -42,6 +41,9 @@ const AppLayout = lazy(() => import("@/layout"))
 const LoginPage = lazy(() => import("@/views/login"))
 const InvitePage = lazy(() => import("@/views/invite"))
 const OAuthCallbackPage = lazy(() => import("@/views/login/oauth"))
+const OAuthAuthorizationPage = lazy(
+  () => import("@/views/login/oauth-authorization")
+)
 const TermsPage = lazy(() => import("@/views/legal/terms"))
 const PrivacyPage = lazy(() => import("@/views/legal/privacy"))
 
@@ -52,9 +54,7 @@ export function AppRouter() {
       <RouteProgressBar />
       {/* <RouteLoading /> */}
       <Suspense fallback={<RouteLoading />}>
-        <LoginSourceGate>
-          <AppRouteTree />
-        </LoginSourceGate>
+        <AppRouteTree />
       </Suspense>
     </BrowserRouter>
   )
@@ -95,10 +95,22 @@ function AppRouteTree() {
       <Route path="/privacy" element={<LocaleRedirect to="privacy" />} />
       <Route path="/oauth" element={<OAuthCallbackPage />} />
       <Route
+        path="/oauth/authorize"
+        element={<LocaleOAuthAuthorizeRedirect />}
+      />
+      <Route
         path="/:locale/oauth"
         element={
           <LocaleSegmentGuard>
             <OAuthCallbackPage />
+          </LocaleSegmentGuard>
+        }
+      />
+      <Route
+        path="/:locale/oauth/authorize"
+        element={
+          <LocaleSegmentGuard>
+            <OAuthAuthorizationPage />
           </LocaleSegmentGuard>
         }
       />
@@ -205,6 +217,18 @@ function LocaleRedirect({ to }: { to: PublicLocaleRoute }) {
   return (
     <Navigate
       to={`${localizedPublicPath(locale, to)}${location.search}${location.hash}`}
+      replace
+    />
+  )
+}
+
+function LocaleOAuthAuthorizeRedirect() {
+  const location = useLocation()
+  const { locale } = useLanguage()
+
+  return (
+    <Navigate
+      to={`${localizedPath(locale, "/oauth/authorize")}${location.search}${location.hash}`}
       replace
     />
   )
