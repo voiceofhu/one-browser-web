@@ -12,7 +12,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { useAuthPermissions } from "@/hooks/use-auth"
-import { hasPermission } from "@/lib/auth-permissions"
+import { hasTeamPermission } from "@/lib/auth-permissions"
 import { formatAbsoluteDateTime, formatRelativeTime } from "@/lib/datetime"
 import { browserQueryKeys } from "@/lib/query-keys"
 import type {
@@ -38,9 +38,10 @@ const MEMBER_FILTERS = [
 export default function BrowserMemberPage() {
   const queryClient = useQueryClient()
   const authPermissions = useAuthPermissions()
-  const canChangeMemberStatus = hasPermission(
-    authPermissions.data,
-    "browser:member:status"
+  const canChangeMemberStatus = React.useCallback(
+    (teamId: number) =>
+      hasTeamPermission(authPermissions.data, teamId, "browser:member:status"),
+    [authPermissions.data]
   )
   const [search, setSearch] = React.useState("")
   const debouncedSearch = useDebouncedValue(search, 300)
@@ -82,7 +83,7 @@ export default function BrowserMemberPage() {
   })
   const toggleMemberStatus = React.useCallback(
     (record: BrowserMemberResource, status: BrowserStatusFlag) => {
-      if (!canChangeMemberStatus) {
+      if (!canChangeMemberStatus(record.team_id)) {
         return
       }
 
@@ -115,7 +116,10 @@ export default function BrowserMemberPage() {
           <StatusSwitchCell
             label="成员状态"
             status={row.original.status}
-            disabled={!canChangeMemberStatus || statusMutation.isPending}
+            disabled={
+              !canChangeMemberStatus(row.original.team_id) ||
+              statusMutation.isPending
+            }
             onChange={(status) => toggleMemberStatus(row.original, status)}
           />
         ),

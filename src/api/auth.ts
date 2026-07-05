@@ -1,6 +1,6 @@
 import { buildQueryPath, http } from "@/lib/request"
 import { clearAuthTokens } from "@/lib/auth-tokens"
-import { getCurrentLocale, localizedPath, type Locale } from "@/local"
+import { getCurrentLocale, localizedPath } from "@/local"
 
 import type {
   AuthPermissions,
@@ -40,6 +40,9 @@ export type AppAuthorizationPayload = {
 const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 const GOOGLE_OAUTH_SCOPES = "openid email profile"
 const GOOGLE_OAUTH_STATE_KEY = "one-browser:google-oauth-state"
+const GOOGLE_OAUTH_STATE_COOKIE_NAME = "one_browser_google_oauth_state"
+const GOOGLE_OAUTH_STATE_MAX_AGE_SECONDS = 10 * 60
+const GOOGLE_OAUTH_CALLBACK_PATH = "/oauth/google"
 export const APP_AUTHORIZE_PATH = "/auth/app/authorize"
 const APP_CALLBACK_PROTOCOLS = ["one-browser:"] as const
 const APP_CALLBACK_HOST = "auth"
@@ -50,6 +53,10 @@ const REQUIRED_APP_CALLBACK_PARAMS = [
   "expires_in",
   "refresh_expires_in",
 ] as const
+
+export function isGoogleLoginEnabled() {
+  return Boolean(import.meta.env.VITE_GOOGLE_OAUTH_ID)
+}
 
 export async function getCurrentUser() {
   return http.get<CurrentUser>("/auth/me")
@@ -65,12 +72,10 @@ export async function uploadCurrentUserAvatar(file: File) {
   const formData = new FormData()
   formData.set("file", file)
 
-  const response = await http.post<
-    {
-      user: CurrentUser
-      avatar: string
-    }
-  >("/auth/avatar", formData)
+  const response = await http.post<{
+    user: CurrentUser
+    avatar: string
+  }>("/auth/avatar", formData)
   return response.user
 }
 
@@ -93,8 +98,7 @@ export function login(payload: {
 }
 
 export type TeamInviteLookup = {
-  code: string
-  team_code: string
+  token: string
 }
 
 export type ReferralCodeCheck = {
@@ -132,20 +136,18 @@ export type BindReferralResult = {
   message?: string
 }
 
-export function previewTeamInvite({ code, team_code }: TeamInviteLookup) {
+export function previewTeamInvite({ token }: TeamInviteLookup) {
   return http.get<TeamInvite>(
-    buildQueryPath("/referrals/team-invite/check", {
-      aff: code,
-      team: team_code,
-    })
+    buildQueryPath("/referrals/team-invite/check", { token })
   )
 }
 
-export function joinTeamInvite({ code, team_code }: TeamInviteLookup) {
-  return http.post<TeamInvite>("/referrals/team-invite/join", {
-    aff: code,
-    team: team_code,
-  })
+export function acceptTeamInvite({ token }: TeamInviteLookup) {
+  return http.post<TeamInvite>("/referrals/team-invite/accept", { token })
+}
+
+export function declineTeamInvite({ token }: TeamInviteLookup) {
+  return http.post<TeamInvite>("/referrals/team-invite/decline", { token })
 }
 
 export function checkReferralCode(aff: string) {
@@ -190,18 +192,24 @@ function describeAppCallbackUrl(callbackUrl: string) {
       userName: parsed.searchParams.get("user_name"),
     }
   } catch (error) {
-    return { parseError: error instanceof Error ? error.message : String(error) }
+    return {
+      parseError: error instanceof Error ? error.message : String(error),
+    }
   }
 }
 
-export function buildGoogleLoginUrl(redirect: string, locale?: Locale) {
+export function buildGoogleLoginUrl(redirect: string) {
   const clientId = import.meta.env.VITE_GOOGLE_OAUTH_ID
   if (!clientId || typeof window === "undefined") {
+    console.warn("[auth-debug][google] build login url skipped", {
+      hasClientId: Boolean(clientId),
+      hasWindow: typeof window !== "undefined",
+      redirect,
+    })
     return null
   }
 
-  const callbackPath = localizedPath(locale ?? getCurrentLocale(), "/oauth")
-  const redirectUri = `${window.location.origin}${callbackPath}`
+  const redirectUri = buildGoogleOAuthRedirectUri()
   const state = createGoogleOAuthState(redirect)
   const params = new URLSearchParams({
     client_id: clientId,
@@ -212,7 +220,24 @@ export function buildGoogleLoginUrl(redirect: string, locale?: Locale) {
     prompt: "select_account",
   })
 
+  console.info("[auth-debug][google] build login url", {
+    currentOrigin: window.location.origin,
+    publicUrlEnv: import.meta.env.VITE_APP_PUBLIC_URL || "",
+    redirectUri,
+    redirect,
+    statePrefix: state.slice(0, 12),
+  })
+
   return `${GOOGLE_AUTH_URL}?${params.toString()}`
+}
+
+function buildGoogleOAuthRedirectUri() {
+  const publicUrl =
+    typeof window !== "undefined"
+      ? window.location.origin
+      : import.meta.env.VITE_APP_PUBLIC_URL?.trim()
+
+  return `${(publicUrl || "").replace(/\/+$/, "")}${GOOGLE_OAUTH_CALLBACK_PATH}`
 }
 
 export function completeGoogleLogin(payload: {
@@ -228,8 +253,21 @@ export function completeGoogleLogin(payload: {
 
 export function consumeGoogleOAuthState(state: string) {
   const parsed = parseGoogleOAuthState(state)
-  const stored = readStoredGoogleOAuthState()
+  const sessionState = readStoredGoogleOAuthState()
+  const cookieState = readStoredGoogleOAuthStateCookie()
+  const stored = sessionState ?? cookieState
   clearGoogleOAuthState()
+
+  console.info("[auth-debug][google] consume oauth state", {
+    incomingStatePrefix: state.slice(0, 12),
+    parsed: Boolean(parsed),
+    parsedNoncePrefix: parsed?.nonce.slice(0, 8) ?? "",
+    parsedRedirect: parsed?.redirect ?? "",
+    hasSessionState: Boolean(sessionState),
+    hasCookieState: Boolean(cookieState),
+    storedNoncePrefix: stored?.nonce.slice(0, 8) ?? "",
+    nonceMatched: Boolean(parsed && stored && parsed.nonce === stored.nonce),
+  })
 
   if (!parsed || !stored || parsed.nonce !== stored.nonce) {
     return null
@@ -248,6 +286,10 @@ function createGoogleOAuthState(redirect: string) {
   const normalizedRedirect =
     redirect || localizedPath(getCurrentLocale(), "/index")
   storeGoogleOAuthState({ nonce, redirect: normalizedRedirect })
+  console.info("[auth-debug][google] created oauth state", {
+    noncePrefix: nonce.slice(0, 8),
+    redirect: normalizedRedirect,
+  })
   return `${nonce}.${encodeURIComponent(normalizedRedirect)}`
 }
 
@@ -271,11 +313,20 @@ function parseGoogleOAuthState(state: string): GoogleOAuthState | null {
 }
 
 function storeGoogleOAuthState(state: GoogleOAuthState) {
+  let sessionStored = false
   try {
     window.sessionStorage.setItem(GOOGLE_OAUTH_STATE_KEY, JSON.stringify(state))
+    sessionStored = true
   } catch {
-    // The callback will fail closed if session storage is unavailable.
+    // The cookie fallback below keeps the OAuth callback recoverable.
   }
+  const cookieStored = writeGoogleOAuthStateCookie(state)
+  console.info("[auth-debug][google] stored oauth state", {
+    noncePrefix: state.nonce.slice(0, 8),
+    redirect: state.redirect,
+    sessionStored,
+    cookieStored,
+  })
 }
 
 function readStoredGoogleOAuthState() {
@@ -307,6 +358,73 @@ function clearGoogleOAuthState() {
   } catch {
     // Nothing else to clean up.
   }
+  deleteGoogleOAuthStateCookie()
+}
+
+function writeGoogleOAuthStateCookie(state: GoogleOAuthState) {
+  if (typeof document === "undefined") {
+    return false
+  }
+
+  document.cookie = [
+    `${GOOGLE_OAUTH_STATE_COOKIE_NAME}=${encodeURIComponent(JSON.stringify(state))}`,
+    "Path=/",
+    "SameSite=Lax",
+    `Max-Age=${GOOGLE_OAUTH_STATE_MAX_AGE_SECONDS}`,
+    window.location.protocol === "https:" ? "Secure" : "",
+  ]
+    .filter(Boolean)
+    .join("; ")
+  return true
+}
+
+function readStoredGoogleOAuthStateCookie() {
+  if (typeof document === "undefined") {
+    return null
+  }
+
+  const raw = document.cookie
+    .split(";")
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(`${GOOGLE_OAUTH_STATE_COOKIE_NAME}=`))
+    ?.slice(GOOGLE_OAUTH_STATE_COOKIE_NAME.length + 1)
+
+  if (!raw) {
+    return null
+  }
+
+  try {
+    const value: unknown = JSON.parse(decodeURIComponent(raw))
+    if (
+      value &&
+      typeof value === "object" &&
+      typeof (value as GoogleOAuthState).nonce === "string" &&
+      typeof (value as GoogleOAuthState).redirect === "string"
+    ) {
+      return value as GoogleOAuthState
+    }
+  } catch {
+    // Invalid state is handled as an OAuth failure by the caller.
+  }
+
+  return null
+}
+
+function deleteGoogleOAuthStateCookie() {
+  if (typeof document === "undefined") {
+    return
+  }
+
+  document.cookie = [
+    `${GOOGLE_OAUTH_STATE_COOKIE_NAME}=`,
+    "Path=/",
+    "SameSite=Lax",
+    "Max-Age=0",
+    "Expires=Thu, 01 Jan 1970 00:00:00 GMT",
+    window.location.protocol === "https:" ? "Secure" : "",
+  ]
+    .filter(Boolean)
+    .join("; ")
 }
 
 function isCompleteAppCallbackUrl(value: string) {

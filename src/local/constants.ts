@@ -5,6 +5,7 @@ export const SUPPORTED_LOCALES = ["zh-CN", "en-US"] as const
 export const PUBLIC_LOCALE_ROUTES = [
   "login",
   "invite",
+  "team-invite",
   "terms",
   "privacy",
 ] as const

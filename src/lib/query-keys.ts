@@ -2,8 +2,7 @@ export const authQueryKeys = {
   all: ["auth"] as const,
   currentUser: ["auth", "current-user"] as const,
   permissions: ["auth", "permissions"] as const,
-  teamInvite: (code: string, teamCode: string) =>
-    ["auth", "team-invite", code, teamCode] as const,
+  teamInvite: (token: string) => ["auth", "team-invite", token] as const,
   referralCodeCheck: (aff: string) =>
     ["auth", "referral-code-check", aff] as const,
 }

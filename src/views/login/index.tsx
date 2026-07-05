@@ -1,8 +1,8 @@
-import { useEffect, useMemo } from "react"
+import { useCallback, useEffect } from "react"
 import { Navigate, useNavigate, useSearchParams } from "react-router"
 import { toast } from "sonner"
 
-import { buildGoogleLoginUrl } from "@/api/auth"
+import { buildGoogleLoginUrl, isGoogleLoginEnabled } from "@/api/auth"
 import { LoginForm } from "@/components/login-form"
 import { useTranslation } from "@/components/providers/language-context"
 import { ThemeToggleButton } from "@/components/theme/theme-toggle-button"
@@ -31,13 +31,22 @@ export default function LoginPage() {
   const oauthError = searchParams.get("oauth_error")
   const { locale, t } = useTranslation()
   const redirectTo = normalizeRedirect(searchParams.get("redirect"), locale)
-  const googleLoginUrl = useMemo(
-    () => buildGoogleLoginUrl(redirectTo, locale),
-    [locale, redirectTo]
-  )
+  const googleLoginEnabled = isGoogleLoginEnabled()
   const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY || undefined
   const loginMutation = useLoginMutation()
   const currentUser = useCurrentUser()
+  const handleGoogleLogin = useCallback(() => {
+    console.info("[auth-debug][google] login button clicked", {
+      redirectTo,
+    })
+    const googleLoginUrl = buildGoogleLoginUrl(redirectTo)
+    if (!googleLoginUrl) {
+      toast.error(t("login.googleError"))
+      return
+    }
+
+    window.location.assign(googleLoginUrl)
+  }, [redirectTo, t])
 
   useEffect(() => {
     const authNotice = consumeAuthExpiredNotice()
@@ -67,7 +76,8 @@ export default function LoginPage() {
             loginMutation.error ||
             (oauthError === "google" ? new Error(t("login.googleError")) : null)
           }
-          googleLoginUrl={googleLoginUrl}
+          googleLoginEnabled={googleLoginEnabled}
+          onGoogleLogin={handleGoogleLogin}
           turnstileSiteKey={turnstileSiteKey}
           onSubmit={async (values) => {
             await loginMutation.mutateAsync(values)

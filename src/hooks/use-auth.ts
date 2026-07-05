@@ -1,12 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import {
+  acceptTeamInvite,
   bindReferral,
   checkReferralCode,
+  declineTeamInvite,
   getAuthPermissions,
   getCurrentUser,
   authorizeApp,
-  joinTeamInvite,
   login,
   logout,
   previewTeamInvite,
@@ -69,26 +70,39 @@ export function useAppAuthorizeMutation() {
 
 export function useTeamInviteQuery(lookup: TeamInviteLookup) {
   return useQuery({
-    queryKey: authQueryKeys.teamInvite(lookup.code, lookup.team_code),
+    queryKey: authQueryKeys.teamInvite(lookup.token),
     queryFn: () => previewTeamInvite(lookup),
-    enabled: Boolean(lookup.code && lookup.team_code),
+    enabled: Boolean(lookup.token),
     retry: false,
   })
 }
 
-export function useJoinTeamInviteMutation() {
+export function useAcceptTeamInviteMutation() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: joinTeamInvite,
+    mutationFn: acceptTeamInvite,
     onSuccess: (_team, lookup) => {
       queryClient.invalidateQueries({ queryKey: authQueryKeys.currentUser })
       queryClient.invalidateQueries({ queryKey: authQueryKeys.permissions })
       queryClient.invalidateQueries({
-        queryKey: authQueryKeys.teamInvite(lookup.code, lookup.team_code),
+        queryKey: authQueryKeys.teamInvite(lookup.token),
       })
       queryClient.invalidateQueries({ queryKey: browserQueryKeys.all })
       queryClient.invalidateQueries({ queryKey: systemQueryKeys.all })
+    },
+  })
+}
+
+export function useDeclineTeamInviteMutation() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: declineTeamInvite,
+    onSuccess: (_team, lookup) => {
+      queryClient.invalidateQueries({
+        queryKey: authQueryKeys.teamInvite(lookup.token),
+      })
     },
   })
 }

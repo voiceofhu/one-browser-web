@@ -40,6 +40,7 @@ export default defineConfig(({ mode }) => {
         },
       },
       strictPort: true,
+      allowedHosts: ["browser.marseo.eu.org"],
     },
     resolve: {
       alias: {

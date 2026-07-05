@@ -46,7 +46,8 @@ type LoginFormValues = {
 type LoginFormProps = Omit<React.ComponentProps<"div">, "onSubmit"> & {
   isSubmitting?: boolean
   error?: unknown
-  googleLoginUrl?: string | null
+  googleLoginEnabled?: boolean
+  onGoogleLogin?: () => void
   turnstileSiteKey?: string
   onSubmit: (values: LoginFormValues) => Promise<void> | void
 }
@@ -55,7 +56,8 @@ export function LoginForm({
   className,
   isSubmitting = false,
   error,
-  googleLoginUrl,
+  googleLoginEnabled = false,
+  onGoogleLogin,
   turnstileSiteKey,
   onSubmit,
   ...props
@@ -356,7 +358,7 @@ export function LoginForm({
                 </Button>
               </Field>
 
-              {googleLoginUrl ? (
+              {googleLoginEnabled ? (
                 <>
                   <div data-login-reveal className="flex items-center gap-3">
                     <Separator className="flex-1" />
@@ -368,15 +370,15 @@ export function LoginForm({
 
                   <Field data-login-reveal>
                     <Button
-                      asChild
+                      type="button"
                       variant="outline"
                       size="lg"
                       data-provider="google"
+                      disabled={disabled}
+                      onClick={onGoogleLogin}
                     >
-                      <a href={googleLoginUrl}>
-                        <GoogleLogo data-icon="inline-start" />
-                        {t("login.google")}
-                      </a>
+                      <GoogleLogo data-icon="inline-start" />
+                      {t("login.google")}
                     </Button>
                   </Field>
                 </>

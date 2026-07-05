@@ -20,9 +20,20 @@ export interface CurrentUser {
   user_type: string
 }
 
+export type AuthTeamPermissions =
+  | Record<string, string[]>
+  | AuthTeamPermissionEntry[]
+
+export interface AuthTeamPermissionEntry {
+  team_id: number | string
+  permissions: string[]
+}
+
 export interface AuthPermissions {
   roles: string[]
   permissions: string[]
+  global_permissions?: string[]
+  team_permissions?: AuthTeamPermissions
   routes: AuthRoute[]
 }
 
@@ -53,9 +64,18 @@ export interface AuthTokenResponse {
 export type LoginResponse = AuthTokenResponse
 
 export interface TeamInvite {
+  invite_id: number
+  invite_token: string
   team_id: number
   team_key: string
   team_name: string
+  inviter_user_id: number
+  inviter_name: string
+  email?: string | null
+  role_key?: string | null
+  role_name?: string | null
+  status: "pending" | "accepted" | "declined" | "cancelled" | "expired"
+  expires_at: string
 }
 
 export interface HealthResponse {

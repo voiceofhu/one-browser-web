@@ -40,6 +40,7 @@ import type { AuthPermissions } from "@/types/admin"
 const AppLayout = lazy(() => import("@/layout"))
 const LoginPage = lazy(() => import("@/views/login"))
 const InvitePage = lazy(() => import("@/views/invite"))
+const TeamInvitePage = lazy(() => import("@/views/team-invite"))
 const OAuthCallbackPage = lazy(() => import("@/views/login/oauth"))
 const OAuthAuthorizationPage = lazy(
   () => import("@/views/login/oauth-authorization")
@@ -91,12 +92,25 @@ function AppRouteTree() {
       <Route path="/" element={<LocaleHomeRedirect />} />
       <Route path="/login" element={<LocaleRedirect to="login" />} />
       <Route path="/invite" element={<LocaleRedirect to="invite" />} />
+      <Route
+        path="/team-invite"
+        element={<LocaleRedirect to="team-invite" />}
+      />
       <Route path="/terms" element={<LocaleRedirect to="terms" />} />
       <Route path="/privacy" element={<LocaleRedirect to="privacy" />} />
+      <Route path="/oauth/google" element={<OAuthCallbackPage />} />
       <Route path="/oauth" element={<OAuthCallbackPage />} />
       <Route
         path="/oauth/authorize"
         element={<LocaleOAuthAuthorizeRedirect />}
+      />
+      <Route
+        path="/:locale/oauth/google"
+        element={
+          <LocaleSegmentGuard>
+            <OAuthCallbackPage />
+          </LocaleSegmentGuard>
+        }
       />
       <Route
         path="/:locale/oauth"
@@ -127,6 +141,14 @@ function AppRouteTree() {
         element={
           <LocaleSegmentGuard>
             <InvitePage />
+          </LocaleSegmentGuard>
+        }
+      />
+      <Route
+        path="/:locale/team-invite"
+        element={
+          <LocaleSegmentGuard>
+            <TeamInvitePage />
           </LocaleSegmentGuard>
         }
       />
