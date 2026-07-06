@@ -106,34 +106,40 @@ export function ThemeToggleButton({
       updateTheme(nextTheme)
     })
 
-    transition.ready.then(() => {
-      const clipPath = [
-        `circle(0px at ${x}px ${y}px)`,
-        `circle(${endRadius}px at ${x}px ${y}px)`,
-      ]
+    void transition.ready
+      .then(() => {
+        const clipPath = [
+          `circle(0px at ${x}px ${y}px)`,
+          `circle(${endRadius}px at ${x}px ${y}px)`,
+        ]
 
-      document.documentElement.animate(
-        {
-          clipPath: nextTheme === "dark" ? [...clipPath].reverse() : clipPath,
-        },
-        {
-          duration: 500,
-          easing: "cubic-bezier(0.4, 0, 0.2, 1)",
-          fill: "forwards",
-          pseudoElement:
-            nextTheme === "dark"
-              ? "::view-transition-old(root)"
-              : "::view-transition-new(root)",
-        }
-      )
-    })
+        document.documentElement.animate(
+          {
+            clipPath: nextTheme === "dark" ? [...clipPath].reverse() : clipPath,
+          },
+          {
+            duration: 500,
+            easing: "cubic-bezier(0.4, 0, 0.2, 1)",
+            fill: "forwards",
+            pseudoElement:
+              nextTheme === "dark"
+                ? "::view-transition-old(root)"
+                : "::view-transition-new(root)",
+          }
+        )
+      })
+      .catch(() => {
+        delete document.documentElement.dataset.themeSwitching
+      })
 
-    Promise.all([
+    void Promise.all([
       transition.ready,
       new Promise<void>((resolve) => setTimeout(resolve, 550)),
-    ]).then(() => {
-      delete document.documentElement.dataset.themeSwitching
-    })
+    ])
+      .catch(() => undefined)
+      .then(() => {
+        delete document.documentElement.dataset.themeSwitching
+      })
   }
 
   return (

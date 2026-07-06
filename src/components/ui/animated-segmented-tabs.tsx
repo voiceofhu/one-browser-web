@@ -5,9 +5,16 @@ import { gsap } from "gsap"
 import { Tabs as TabsPrimitive } from "radix-ui"
 
 import { cn } from "@/lib/utils"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 export type AnimatedSegmentedTabsOption<TValue extends string = string> = {
   label: React.ReactNode
+  tooltip?: React.ReactNode
   value: TValue
   disabled?: boolean
 }
@@ -72,13 +79,11 @@ export function AnimatedSegmentedTabs<TValue extends string = string>({
         return
       }
 
-      const listRect = list.getBoundingClientRect()
-      const triggerRect = activeTrigger.getBoundingClientRect()
       const nextState = {
-        x: triggerRect.left - listRect.left,
-        y: triggerRect.top - listRect.top,
-        width: triggerRect.width,
-        height: triggerRect.height,
+        x: activeTrigger.offsetLeft,
+        y: activeTrigger.offsetTop,
+        width: activeTrigger.offsetWidth,
+        height: activeTrigger.offsetHeight,
         opacity: 1,
       }
 
@@ -158,21 +163,38 @@ export function AnimatedSegmentedTabs<TValue extends string = string>({
             highlightClassName
           )}
         />
-        {options.map((option) => (
-          <TabsPrimitive.Trigger
-            key={option.value}
-            ref={setTriggerRef(option.value)}
-            value={option.value}
-            disabled={option.disabled}
-            data-slot="animated-segmented-tabs-trigger"
-            className={cn(
-              "relative z-10 inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-3 py-0.5 text-sm font-medium whitespace-nowrap text-foreground/60 transition-colors outline-none hover:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-1 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2 data-[state=active]:text-foreground data-active:text-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
-              triggerClassName
-            )}
-          >
-            {option.label}
-          </TabsPrimitive.Trigger>
-        ))}
+        <TooltipProvider>
+          {options.map((option) => {
+            const trigger = (
+              <TabsPrimitive.Trigger
+                key={option.value}
+                ref={setTriggerRef(option.value)}
+                value={option.value}
+                disabled={option.disabled}
+                data-slot="animated-segmented-tabs-trigger"
+                className={cn(
+                  "relative z-10 inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-3 py-0.5 text-sm font-medium whitespace-nowrap text-foreground/60 transition-colors outline-none hover:text-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-1 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2 data-[state=active]:text-foreground data-active:text-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+                  triggerClassName
+                )}
+              >
+                {option.label}
+              </TabsPrimitive.Trigger>
+            )
+
+            if (!option.tooltip) {
+              return trigger
+            }
+
+            return (
+              <Tooltip key={option.value}>
+                <TooltipTrigger asChild>{trigger}</TooltipTrigger>
+                <TooltipContent side="top" sideOffset={6}>
+                  {option.tooltip}
+                </TooltipContent>
+              </Tooltip>
+            )
+          })}
+        </TooltipProvider>
       </TabsPrimitive.List>
       {children}
     </TabsPrimitive.Root>

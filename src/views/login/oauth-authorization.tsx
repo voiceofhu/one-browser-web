@@ -6,7 +6,8 @@ import {
   useState,
   type ReactNode,
 } from "react"
-import { Navigate, useLocation } from "react-router"
+import { useQueryClient } from "@tanstack/react-query"
+import { Navigate, useLocation, useNavigate } from "react-router"
 
 import { APP_NAME } from "@/app"
 import { authorizeApp } from "@/api/auth"
@@ -23,9 +24,10 @@ import {
   TurnstileWidget,
   type TurnstileWidgetHandle,
 } from "@/components/turnstile-widget"
-import { useCurrentUser } from "@/hooks/use-auth"
+import { authQueryKeys, useCurrentUser } from "@/hooks/use-auth"
 import { localizedPublicPath } from "@/local"
-import { isUnauthorizedError } from "@/lib/request"
+import { isUnauthorizedError, markAuthRedirectNotice } from "@/lib/request"
+import { clearAuthTokens } from "@/lib/auth-tokens"
 import { cn } from "@/lib/utils"
 import {
   AppAuthorizationPending,
@@ -35,12 +37,15 @@ import { InteractiveGridBackground } from "./interactive-grid-background"
 
 export default function OAuthAuthorizationPage() {
   const location = useLocation()
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const { locale, t } = useTranslation()
   const currentUser = useCurrentUser()
   const turnstileRef = useRef<TurnstileWidgetHandle>(null)
   const authorizeInFlightRef = useRef(false)
   const authorizationRequestIdRef = useRef(0)
   const submittedAuthorizationKeyRef = useRef("")
+  const loginRedirectedRef = useRef(false)
   const [turnstileToken, setTurnstileToken] = useState("")
   const [appAuthorizationUrl, setAppAuthorizationUrl] = useState<string | null>(
     null
@@ -56,9 +61,27 @@ export default function OAuthAuthorizationPage() {
   const loginRedirect = `${location.pathname}${location.search}${location.hash}`
   const loginPath = `${localizedPublicPath(locale, "login")}?redirect=${encodeURIComponent(loginRedirect)}`
 
+  const redirectToLogin = useCallback(() => {
+    if (loginRedirectedRef.current) {
+      return
+    }
+
+    loginRedirectedRef.current = true
+    clearAuthTokens()
+    queryClient.removeQueries({ queryKey: authQueryKeys.all })
+    markAuthRedirectNotice(t("appAuth.loginRequiredToast"))
+    navigate(loginPath, { replace: true })
+  }, [loginPath, navigate, queryClient, t])
+
   const handleTurnstileError = useCallback(() => {
     setAuthorizationError(t("login.turnstileLoadFailed"))
   }, [t])
+
+  useEffect(() => {
+    if (isUnauthorizedError(currentUser.error)) {
+      redirectToLogin()
+    }
+  }, [currentUser.error, redirectToLogin])
 
   useEffect(() => {
     if (
@@ -93,6 +116,11 @@ export default function OAuthAuthorizationPage() {
       .catch((error) => {
         if (authorizationRequestIdRef.current === requestId) {
           submittedAuthorizationKeyRef.current = ""
+          if (isUnauthorizedError(error)) {
+            redirectToLogin()
+            return
+          }
+
           setAuthorizationError(
             getErrorMessage(error, t("appAuth.authorizationFailed"))
           )
@@ -109,6 +137,7 @@ export default function OAuthAuthorizationPage() {
     appAuthorizationUrl,
     authorizationSource,
     currentUser.isSuccess,
+    redirectToLogin,
     t,
     turnstileToken,
     turnstileSiteKey,
@@ -127,7 +156,7 @@ export default function OAuthAuthorizationPage() {
   }
 
   if (isUnauthorizedError(currentUser.error)) {
-    return <Navigate to={loginPath} replace />
+    return <AppAuthorizationPending />
   }
 
   if (currentUser.isError) {

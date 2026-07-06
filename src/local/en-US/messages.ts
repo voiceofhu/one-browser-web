@@ -8,6 +8,9 @@ export const enUSMessages: Record<LocaleMessageKey, string> = {
   "language.zhCN": "Simplified Chinese",
   "language.enUS": "English",
   "theme.toggle": "Toggle theme",
+  "theme.system": "Follow system",
+  "theme.light": "Light",
+  "theme.dark": "Dark",
   "login.title": "Sign in",
   "login.failed": "Sign-in failed",
   "login.username": "Username",
@@ -52,23 +55,32 @@ export const enUSMessages: Record<LocaleMessageKey, string> = {
   "oauthCallback.backendFailedMessage":
     "The backend did not accept this Google callback.",
   "oauthCallback.backToHome": "Back to home",
-  "appAuth.successTitle": "Authorization complete",
+  "appAuth.accountCenter": "{appName} Account Center",
+  "appAuth.successTitle": "Authorization complete, signing in",
   "appAuth.successDescription": "{appName} has received your sign-in approval.",
   "appAuth.pendingTitle": "Authorizing...",
   "appAuth.pendingDescription": "Checking your sign-in status for {appName}.",
   "appAuth.pendingHint":
     "Keep this page open. The app will reopen automatically.",
+  "appAuth.scopeTitle": "{appName} will receive these permissions",
+  "appAuth.scopeProfile": "Read your basic profile, including name and avatar",
+  "appAuth.scopeEmail": "Access your email address",
+  "appAuth.scopeAccess": "Complete client sign-in authorization for you",
+  "appAuth.returnToApp": "Return to {appName} to finish sign-in",
+  "appAuth.returningStatus": "Returning to {appName}. Please wait...",
   "appAuth.verifyTitle": "Authorization check",
   "appAuth.verifyDescription":
     "Complete the security check to authorize {appName}.",
   "appAuth.verifyHint":
     "Authorization will continue automatically after verification.",
   "appAuth.authorizationFailed": "Authorization failed. Refresh and try again.",
+  "appAuth.loginRequiredToast":
+    "Sign in or use Google sign-in first. Authorization will continue afterwards.",
   "appAuth.turnstileSiteKeyMissing":
     "Security check site key is missing. Contact an administrator.",
   "appAuth.openingHint":
     "Opening the authorization result in this tab. If it does not open automatically, use the button below.",
-  "appAuth.closeCountdown": "This page will close in {seconds}s.",
+  "appAuth.closeCountdown": "Returning to {appName} in {seconds}s.",
   "appAuth.closeFallback":
     "You can safely close this page, or keep it here to reopen the result.",
   "appAuth.openApp": "Open again",
@@ -176,6 +188,9 @@ export const enUSMessages: Record<LocaleMessageKey, string> = {
   "nav.downloadClient": "Download client",
   "nav.downloadClientDescription": "Latest installer",
   "nav.accountSettings": "Account settings",
+  "nav.preferences": "Preferences",
+  "nav.theme": "Theme",
+  "nav.language": "Language",
   "nav.logout": "Sign out",
   "notifications.title": "Notification center",
   "notifications.trigger": "Notifications",

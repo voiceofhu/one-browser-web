@@ -1,5 +1,5 @@
 import * as React from "react"
-import { NavLink } from "react-router"
+import { NavLink, useLocation, useNavigate } from "react-router"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import type { CurrentUser } from "@/types/admin"
@@ -8,30 +8,38 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@/components/ui/hover-card"
 import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { ThemeModeToggle } from "@/components/theme/theme-mode-toggle"
 import {
   CircleUserRoundIcon,
   DownloadIcon,
   EllipsisVerticalIcon,
   ExternalLinkIcon,
+  LanguagesIcon,
   LogOutIcon,
 } from "lucide-react"
 
-import { useTranslation } from "@/components/providers/language-context"
-import { localizedPath } from "@/local"
+import { useLanguage } from "@/components/providers/language-context"
+import {
+  LOCALE_OPTIONS,
+  localizedPath,
+  normalizeLocale,
+  withLocaleInPath,
+} from "@/local"
 import { cn } from "@/lib/utils"
 
 export function NavUser({
@@ -42,15 +50,25 @@ export function NavUser({
   onLogout?: () => void
 }) {
   const { isMobile } = useSidebar()
-  const { locale, t } = useTranslation()
-  const [hoverOpen, setHoverOpen] = React.useState(false)
+  const { locale, setLocale, t } = useLanguage()
+  const location = useLocation()
+  const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = React.useState(false)
   const displayName = user?.nick_name || user?.user_name || t("nav.guestName")
   const email = user?.email || t("nav.loginRequired")
-  const userName = user?.user_name || t("nav.loginRequired")
   const avatar = user?.avatar || ""
   const fallback = (displayName || "OB").slice(0, 2).toUpperCase()
   const downloadUrl = localizedPath(locale, "/")
+
+  function handleLocaleChange(value: string) {
+    const nextLocale = normalizeLocale(value)
+    setLocale(nextLocale)
+
+    const nextPathname = withLocaleInPath(location.pathname, nextLocale)
+    if (nextPathname !== location.pathname) {
+      navigate(`${nextPathname}${location.search}${location.hash}`)
+    }
+  }
 
   return (
     <SidebarMenu className="gap-2">
@@ -62,50 +80,17 @@ export function NavUser({
         />
       </SidebarMenuItem>
       <SidebarMenuItem>
-        <DropdownMenu
-          open={menuOpen}
-          onOpenChange={(open) => {
-            setMenuOpen(open)
-            if (open) {
-              setHoverOpen(false)
-            }
-          }}
-        >
+        <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
-              <HoverCard
-                open={menuOpen ? false : hoverOpen}
-                openDelay={120}
-                closeDelay={120}
-                onOpenChange={setHoverOpen}
-              >
-                <HoverCardTrigger asChild>
-                  <span className="inline-flex shrink-0">
-                    <UserAvatar
-                      avatar={avatar}
-                      displayName={displayName}
-                      fallback={fallback}
-                    />
-                  </span>
-                </HoverCardTrigger>
-                <HoverCardContent
-                  side={isMobile ? "bottom" : "right"}
-                  align="end"
-                  sideOffset={8}
-                  className="w-64 p-3"
-                >
-                  <UserInfoCard
-                    avatar={avatar}
-                    displayName={displayName}
-                    fallback={fallback}
-                    userName={userName}
-                    size="lg"
-                  />
-                </HoverCardContent>
-              </HoverCard>
+              <UserAvatar
+                avatar={avatar}
+                displayName={displayName}
+                fallback={fallback}
+              />
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{displayName}</span>
                 <span className="truncate text-xs text-muted-foreground">
@@ -116,20 +101,18 @@ export function NavUser({
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="w-(--radix-dropdown-menu-trigger-width) min-w-64 rounded-lg"
+            className="min-w-64"
             side={isMobile ? "bottom" : "right"}
             align="end"
             sideOffset={4}
           >
-            <DropdownMenuGroup className="flex flex-col gap-2 p-1">
+            <DropdownMenuLabel className="p-0 font-normal text-foreground">
               <UserInfoCard
-                avatar={avatar}
                 displayName={displayName}
-                fallback={fallback}
-                userName={userName}
-                className="px-1 py-1.5"
+                email={email}
+                className="px-2 py-1.5"
               />
-            </DropdownMenuGroup>
+            </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem asChild>
@@ -140,10 +123,49 @@ export function NavUser({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={onLogout}>
-              <LogOutIcon />
-              {t("nav.logout")}
-            </DropdownMenuItem>
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>{t("nav.preferences")}</DropdownMenuLabel>
+              <DropdownMenuItem onSelect={(event) => event.preventDefault()}>
+                <span>{t("nav.theme")}</span>
+                <ThemeModeToggle
+                  className="ml-auto"
+                  label={t("nav.theme")}
+                  labels={{
+                    "theme.system": t("theme.system"),
+                    "theme.light": t("theme.light"),
+                    "theme.dark": t("theme.dark"),
+                  }}
+                />
+              </DropdownMenuItem>
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                  <LanguagesIcon />
+                  <span>{t("nav.language")}</span>
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent className="min-w-40">
+                  <DropdownMenuRadioGroup
+                    value={locale}
+                    onValueChange={handleLocaleChange}
+                  >
+                    {LOCALE_OPTIONS.map((option) => (
+                      <DropdownMenuRadioItem
+                        key={option.value}
+                        value={option.value}
+                      >
+                        {t(option.labelKey)}
+                      </DropdownMenuRadioItem>
+                    ))}
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <DropdownMenuItem variant="destructive" onSelect={onLogout}>
+                <LogOutIcon />
+                {t("nav.logout")}
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>
@@ -207,34 +229,22 @@ function UserAvatar({
 }
 
 function UserInfoCard({
-  avatar,
   className,
   displayName,
-  fallback,
-  size = "default",
-  userName,
+  email,
 }: {
-  avatar: string
   className?: string
   displayName: string
-  fallback: string
-  size?: "default" | "lg"
-  userName: string
+  email: string
 }) {
   return (
-    <div className={cn("flex min-w-0 items-center gap-3", className)}>
-      <UserAvatar
-        avatar={avatar}
-        displayName={displayName}
-        fallback={fallback}
-        size={size}
-      />
-      <div className="grid min-w-0 flex-1 text-left leading-tight">
-        <span className="truncate text-sm font-medium">{displayName}</span>
-        <span className="truncate text-xs text-muted-foreground">
-          {userName}
-        </span>
-      </div>
+    <div className={cn("grid min-w-0 text-left leading-tight", className)}>
+      <span className="truncate text-sm font-medium" title={displayName}>
+        {displayName}
+      </span>
+      <span className="truncate text-xs text-muted-foreground" title={email}>
+        {email}
+      </span>
     </div>
   )
 }

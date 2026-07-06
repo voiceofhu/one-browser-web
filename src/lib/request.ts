@@ -70,6 +70,18 @@ export function consumeAuthExpiredNotice() {
   }
 }
 
+export function markAuthRedirectNotice(message: string) {
+  if (typeof window === "undefined") {
+    return
+  }
+
+  try {
+    window.sessionStorage.setItem(AUTH_EXPIRED_NOTICE_KEY, message)
+  } catch {
+    // Redirect should still happen if browser storage is unavailable.
+  }
+}
+
 export async function ensureFreshAccessToken(options?: { force?: boolean }) {
   syncAuthSessionStateFromTokens()
 
@@ -151,11 +163,7 @@ function shouldSkipAuthRedirect(path: string) {
 }
 
 function markAuthExpiredNotice(message: string) {
-  try {
-    window.sessionStorage.setItem(AUTH_EXPIRED_NOTICE_KEY, message)
-  } catch {
-    // Redirect should still happen if browser storage is unavailable.
-  }
+  markAuthRedirectNotice(message)
 }
 
 function buildUrl(path: string, baseUrl = API_BASE_URL) {

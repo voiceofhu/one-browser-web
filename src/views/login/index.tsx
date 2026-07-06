@@ -7,7 +7,12 @@ import { LoginForm } from "@/components/login-form"
 import { useTranslation } from "@/components/providers/language-context"
 import { ThemeToggleButton } from "@/components/theme/theme-toggle-button"
 import { LanguageSwitcher } from "@/layout/components/language-switcher"
-import { isLoginPath, localizedPath, type Locale } from "@/local"
+import {
+  isLoginPath,
+  localizedPath,
+  stripLocaleFromPathname,
+  type Locale,
+} from "@/local"
 import { consumeAuthExpiredNotice } from "@/lib/request"
 import { useCurrentUser, useLoginMutation } from "@/hooks/use-auth"
 import { InteractiveGridBackground } from "./interactive-grid-background"
@@ -23,6 +28,12 @@ function normalizeRedirect(value: string | null, locale: Locale) {
   }
 
   return `${localizedPath(locale, redirectPathname)}${value.slice(redirectPathname.length)}`
+}
+
+function isAppAuthorizationRedirect(value: string) {
+  const redirectPathname = value.split(/[?#]/)[0]
+
+  return stripLocaleFromPathname(redirectPathname) === "/oauth/authorize"
 }
 
 export default function LoginPage() {
@@ -51,11 +62,16 @@ export default function LoginPage() {
   useEffect(() => {
     const authNotice = consumeAuthExpiredNotice()
     if (authNotice !== null) {
+      if (isAppAuthorizationRedirect(redirectTo)) {
+        toast.message(t("appAuth.loginRequiredToast"))
+        return
+      }
+
       toast.warning(t("auth.expired.title"), {
         description: authNotice || t("auth.expired.description"),
       })
     }
-  }, [t])
+  }, [redirectTo, t])
 
   if (currentUser.isSuccess) {
     return <Navigate to={redirectTo} replace />

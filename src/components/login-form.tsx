@@ -283,7 +283,10 @@ export function LoginForm({
                 <FieldLabel className="sr-only" htmlFor="password">
                   {t("login.password")}
                 </FieldLabel>
-                <InputGroup data-password-group className="h-9">
+                <InputGroup
+                  data-password-group
+                  className="h-9"
+                >
                   <InputGroupAddon>
                     <InputGroupText>
                       <LockKeyholeIcon />
@@ -331,7 +334,7 @@ export function LoginForm({
                     ref={turnstileRef}
                     siteKey={turnstileSiteKey}
                     appearance="always"
-                    className="mt-1"
+                    size="flexible"
                     loadingLabel={t("login.turnstileLoading")}
                     onTokenChange={handleTurnstileTokenChange}
                     onError={handleTurnstileError}

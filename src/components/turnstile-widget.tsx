@@ -235,12 +235,14 @@ export const TurnstileWidget = forwardRef<
     return null
   }
 
-  const reserveWidgetSpace = appearance === "always"
+  const reserveWidgetSpace = appearance === "always" && size !== "flexible"
 
   return (
     <div
       className={cn(
-        "relative mx-auto flex w-full max-w-[300px] items-center justify-center",
+        "relative mx-auto flex w-full items-center justify-center",
+        size === "compact" ? "max-w-[150px]" : "max-w-[300px]",
+        size === "flexible" && "max-w-full",
         reserveWidgetSpace ? "min-h-[65px]" : "min-h-0",
         className
       )}

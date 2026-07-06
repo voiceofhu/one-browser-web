@@ -1,21 +1,26 @@
-import { useEffect, useRef, type RefObject } from "react"
-import { ExternalLinkIcon } from "lucide-react"
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+  type RefObject,
+} from "react"
+import {
+  ArrowRightIcon,
+  CheckIcon,
+  ClockIcon,
+  ShieldCheckIcon,
+} from "lucide-react"
 import { gsap } from "gsap"
 
 import { APP_NAME } from "@/app"
 import { useTranslation } from "@/components/providers/language-context"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Spinner } from "@/components/ui/spinner"
 import { wakeAppRedirect } from "@/lib/app-redirect"
 import { cn } from "@/lib/utils"
-import { InteractiveGridBackground } from "./interactive-grid-background"
+
+const APP_RETURN_DELAY_SECONDS = 1
 
 type AppAuthorizationSuccessProps = {
   appUrl: string
@@ -38,33 +43,30 @@ export function AppAuthorizationPending({
     <main
       ref={rootRef}
       className={cn(
-        "relative flex min-h-svh flex-col overflow-hidden bg-background px-4 py-5 sm:px-6 lg:px-8",
+        "flex min-h-svh items-center justify-center bg-muted/40 p-4",
         className
       )}
     >
-      <InteractiveGridBackground />
+      <AuthPanel className="max-w-[21rem]">
+        <div className="flex flex-col items-center px-5 py-6 text-center">
+          <div className="mb-4 flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <Spinner className="size-5" />
+          </div>
 
-      <section className="relative z-10 grid flex-1 place-items-center py-8 sm:py-10 lg:py-12">
-        <Card
-          className="w-full max-w-sm border-border/80 bg-card/95"
-          data-app-auth-reveal
-        >
-          <CardHeader className="items-center gap-3 px-8 pt-8 text-center">
-            <CardTitle className="text-2xl font-semibold tracking-normal">
+          <div className="flex flex-col gap-1.5">
+            <h1 className="text-lg font-semibold tracking-normal">
               {t("appAuth.pendingTitle")}
-            </CardTitle>
-            <CardDescription className="text-sm leading-6">
+            </h1>
+            <p className="text-sm leading-6 text-muted-foreground">
               {t("appAuth.pendingDescription", { appName: APP_NAME })}
-            </CardDescription>
-          </CardHeader>
-
-          <CardContent className="px-8 pb-8 text-center">
-            <p className="text-xs leading-5 text-muted-foreground">
-              {t("appAuth.pendingHint")}
             </p>
-          </CardContent>
-        </Card>
-      </section>
+          </div>
+
+          <p className="mt-4 text-xs leading-5 text-muted-foreground">
+            {t("appAuth.pendingHint")}
+          </p>
+        </div>
+      </AuthPanel>
     </main>
   )
 }
@@ -75,6 +77,12 @@ export function AppAuthorizationSuccess({
 }: AppAuthorizationSuccessProps) {
   const { t } = useTranslation()
   const rootRef = useRef<HTMLElement>(null)
+  const [countdown, setCountdown] = useState(APP_RETURN_DELAY_SECONDS)
+  const scopes = [
+    t("appAuth.scopeProfile"),
+    t("appAuth.scopeEmail"),
+    t("appAuth.scopeAccess"),
+  ]
 
   useAppAuthorizationReveal(rootRef)
 
@@ -86,53 +94,143 @@ export function AppAuthorizationSuccess({
     return () => window.clearTimeout(timer)
   }, [appUrl])
 
+  useEffect(() => {
+    if (countdown <= 0) {
+      return
+    }
+
+    const timer = window.setTimeout(() => {
+      setCountdown((seconds) => seconds - 1)
+    }, 1000)
+
+    return () => window.clearTimeout(timer)
+  }, [countdown])
+
   return (
     <main
       ref={rootRef}
       className={cn(
-        "relative flex min-h-svh flex-col overflow-hidden bg-background px-4 py-5 sm:px-6 lg:px-8",
+        "flex min-h-svh items-center justify-center bg-muted/40 p-4",
         className
       )}
     >
-      <InteractiveGridBackground />
+      <div className="w-full max-w-sm">
+        <AuthPanel>
+          <div className="px-5 py-6">
+            <div className="relative mx-auto mb-4 flex size-16 items-center justify-center">
+              <span
+                aria-hidden="true"
+                className="absolute inset-0 animate-ping rounded-full bg-emerald-500/20"
+              />
+              <span className="relative flex size-16 items-center justify-center rounded-full bg-emerald-600 text-white shadow-sm ring-4 ring-emerald-500/15 dark:bg-emerald-500">
+                <CheckIcon className="size-8" aria-hidden="true" />
+              </span>
+            </div>
 
-      <section className="relative z-10 grid flex-1 place-items-center py-8 sm:py-10 lg:py-12">
-        <Card
-          className="w-full max-w-md border-border/80 bg-card/95"
-          data-app-auth-reveal
-        >
-          <CardHeader className="items-center gap-2 px-8 pt-8 text-center">
-            <CardTitle className="text-2xl font-semibold tracking-normal">
-              {t("appAuth.successTitle")}
-            </CardTitle>
-            <CardDescription className="text-base leading-7">
-              {t("appAuth.successDescription", { appName: APP_NAME })}
-            </CardDescription>
-          </CardHeader>
+            <div className="text-center">
+              <h1 className="text-lg font-semibold text-balance text-foreground">
+                {t("appAuth.successTitle")}
+              </h1>
+              <p className="mx-auto mt-1.5 max-w-[16rem] text-xs leading-relaxed text-pretty text-muted-foreground">
+                {t("appAuth.successDescription", { appName: APP_NAME })}
+              </p>
+            </div>
 
-          <CardContent className="flex flex-col gap-4 px-8 text-center">
-            <p className="text-sm text-muted-foreground">
-              {t("appAuth.openingHint", { appName: APP_NAME })}
+            <div className="mt-4 rounded-lg border border-border bg-muted/50 p-3">
+              <p className="mb-2 text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
+                {t("appAuth.scopeTitle", { appName: APP_NAME })}
+              </p>
+              <ul className="flex flex-col gap-1.5">
+                {scopes.map((scope) => (
+                  <li
+                    key={scope}
+                    className="flex items-start gap-2 text-xs text-foreground"
+                  >
+                    <CheckIcon
+                      className="mt-0.5 size-3.5 shrink-0 text-emerald-600 dark:text-emerald-400"
+                      aria-hidden="true"
+                    />
+                    <span className="leading-relaxed">{scope}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="mt-4 flex flex-col gap-2">
+              <Button
+                type="button"
+                className="w-full"
+                onClick={() => wakeAppRedirect(appUrl)}
+              >
+                {t("appAuth.returnToApp", { appName: APP_NAME })}
+                <ArrowRightIcon data-icon="inline-end" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="w-full"
+                onClick={closeAuthorizationPage}
+              >
+                {t("appAuth.closeNow")}
+              </Button>
+            </div>
+
+            <p className="mt-4 flex items-center justify-center gap-1.5 text-center text-[11px] text-muted-foreground">
+              <ClockIcon className="size-3" aria-hidden="true" />
+              <span>
+                {countdown > 0
+                  ? t("appAuth.closeCountdown", {
+                      appName: APP_NAME,
+                      seconds: countdown,
+                    })
+                  : t("appAuth.returningStatus", { appName: APP_NAME })}
+              </span>
             </p>
-            <p className="text-xs text-muted-foreground">
-              {t("appAuth.closeFallback")}
-            </p>
-          </CardContent>
+          </div>
+        </AuthPanel>
 
-          <CardFooter className="border-t bg-transparent">
-            <Button
-              type="button"
-              className="w-full"
-              onClick={() => wakeAppRedirect(appUrl)}
-            >
-              <ExternalLinkIcon data-icon="inline-start" />
-              {t("appAuth.openApp")}
-            </Button>
-          </CardFooter>
-        </Card>
-      </section>
+        <p className="mt-4 text-center text-[11px] leading-relaxed text-muted-foreground">
+          {t("appAuth.closeFallback")}
+        </p>
+      </div>
     </main>
   )
+}
+
+function AuthPanel({
+  children,
+  className,
+}: {
+  children: ReactNode
+  className?: string
+}) {
+  const { t } = useTranslation()
+
+  return (
+    <div
+      className={cn(
+        "w-full overflow-hidden rounded-xl border border-border bg-card text-card-foreground shadow-sm",
+        className
+      )}
+      data-app-auth-reveal
+    >
+      <div className="flex items-center justify-center gap-2 border-b border-border px-5 py-3">
+        <div className="flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
+          <ShieldCheckIcon className="size-3.5" aria-hidden="true" />
+        </div>
+        <span className="text-xs font-medium text-foreground">
+          {t("appAuth.accountCenter", { appName: APP_NAME })}
+        </span>
+      </div>
+
+      {children}
+    </div>
+  )
+}
+
+function closeAuthorizationPage() {
+  window.close()
 }
 
 function useAppAuthorizationReveal(rootRef: RefObject<HTMLElement | null>) {
