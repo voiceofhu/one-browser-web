@@ -86,10 +86,17 @@ export const enUSMessages: Record<LocaleMessageKey, string> = {
   "invite.defaultReady": "Invitation link is ready",
   "invite.invalidDefault": "Invalid invitation link",
   "invite.bind": "Complete invitation",
+  "invite.bindingTitle": "Binding invitation",
+  "invite.bindingDescription":
+    "Please wait. We will continue automatically after binding the invitation.",
   "invite.bindFailed": "Failed to bind invitation",
+  "invite.bindFailedDescription":
+    "Failed to bind the invitation. You can still continue.",
   "invite.loginAndBind": "Sign in and bind",
   "invite.continue": "Continue",
   "invite.bindSuccess": "Invitation bound",
+  "invite.bindSuccessDescription":
+    "The invitation has been bound. Continuing automatically.",
   "invite.bindAlreadyBound": "Existing invitation kept",
   "invite.selfInvite": "You cannot invite yourself",
   "invite.bindSkipped": "Invitation was not bound",
@@ -166,6 +173,8 @@ export const enUSMessages: Record<LocaleMessageKey, string> = {
   "brand.name": APP_NAME,
   "nav.guestName": "Not signed in",
   "nav.loginRequired": "Sign-in required",
+  "nav.downloadClient": "Download client",
+  "nav.downloadClientDescription": "Latest installer",
   "nav.accountSettings": "Account settings",
   "nav.logout": "Sign out",
   "notifications.title": "Notification center",

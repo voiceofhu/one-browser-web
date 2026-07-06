@@ -21,23 +21,50 @@ import {
 import { Separator } from "@/components/ui/separator"
 
 import type { OverviewSection } from "@/api/index"
+import { hasPermission } from "@/lib/auth-permissions"
 import { APP_ROUTE_BY_ID } from "@/router/routes"
 import { localizedPath, translateText } from "@/local"
-import type { CurrentUser, HealthResponse } from "@/types/admin"
+import type {
+  AuthPermissions,
+  CurrentUser,
+  HealthResponse,
+} from "@/types/admin"
 
 const quickActions = [
-  { label: "用户管理", routeId: "users", icon: UsersIcon },
-  { label: "角色管理", routeId: "roles", icon: ShieldIcon },
-  { label: "权限管理", routeId: "menus", icon: KeyRoundIcon },
-  { label: "健康检查", routeId: "health", icon: HeartPulseIcon },
+  {
+    label: "用户管理",
+    routeId: "users",
+    icon: UsersIcon,
+    permission: "system:user:list",
+  },
+  {
+    label: "角色管理",
+    routeId: "roles",
+    icon: ShieldIcon,
+    permission: "system:role:list",
+  },
+  {
+    label: "权限管理",
+    routeId: "menus",
+    icon: KeyRoundIcon,
+    permission: "system:menu:list",
+  },
+  {
+    label: "健康检查",
+    routeId: "health",
+    icon: HeartPulseIcon,
+    permission: "monitor:health:list",
+  },
 ] as const
 
 export function RuntimePanel({
+  authPermissions,
   user,
   health,
   isLoading,
   error,
 }: {
+  authPermissions?: AuthPermissions
   user?: CurrentUser
   health?: OverviewSection<HealthResponse>
   isLoading: boolean
@@ -52,98 +79,125 @@ export function RuntimePanel({
   const data = health?.data
   const serviceStatus = data?.status ?? "unknown"
   const dependencyStatus = getDependencyStatus(data)
+  const canViewHealth = canViewRuntimeHealth(authPermissions)
+  const visibleQuickActions = getVisibleQuickActions(authPermissions)
+
+  if (!canViewHealth && visibleQuickActions.length === 0) {
+    return null
+  }
 
   return (
     <Card size="sm" className="bg-muted/20 shadow-none ring-0">
-      <CardHeader className="pb-1">
-        <CardDescription>{translateText(locale, "运行状态")}</CardDescription>
-        <CardTitle>
-          {isLoading
-            ? translateText(locale, "检查中")
-            : formatStatusText(locale, serviceStatus)}
-        </CardTitle>
-        <CardAction>
-          <Badge variant={statusBadgeVariant(serviceStatus, errorMessage)}>
-            {translateText(
-              locale,
-              errorMessage
-                ? "错误"
-                : isOkStatus(serviceStatus)
-                  ? "健康"
-                  : "注意"
-            )}
-          </Badge>
-        </CardAction>
-      </CardHeader>
+      {canViewHealth ? (
+        <CardHeader className="pb-1">
+          <CardDescription>{translateText(locale, "运行状态")}</CardDescription>
+          <CardTitle>
+            {isLoading
+              ? translateText(locale, "检查中")
+              : formatStatusText(locale, serviceStatus)}
+          </CardTitle>
+          <CardAction>
+            <Badge variant={statusBadgeVariant(serviceStatus, errorMessage)}>
+              {translateText(
+                locale,
+                errorMessage
+                  ? "错误"
+                  : isOkStatus(serviceStatus)
+                    ? "健康"
+                    : "注意"
+              )}
+            </Badge>
+          </CardAction>
+        </CardHeader>
+      ) : null}
       <CardContent className="grid gap-2.5">
-        {errorMessage ? (
-          <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-            {errorMessage}
-          </div>
+        {canViewHealth ? (
+          <>
+            {errorMessage ? (
+              <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+                {errorMessage}
+              </div>
+            ) : null}
+
+            <div className="grid gap-1.5 rounded-lg border bg-background/75 px-3 py-2 text-sm">
+              <CompactRow
+                label={translateText(locale, "当前用户")}
+                value={user?.nick_name || user?.user_name || t("nav.guestName")}
+              />
+              <CompactRow
+                label={translateText(locale, "运行环境")}
+                value={displayValue(data?.environment)}
+              />
+            </div>
+
+            <div className="grid gap-1.5 rounded-lg border bg-background/75 px-3 py-2 text-sm">
+              <CompactRow
+                label={translateText(locale, "服务健康")}
+                value={
+                  data
+                    ? `${formatStatusText(locale, serviceStatus)} / ${data.service}`
+                    : "-"
+                }
+              />
+              <CompactRow
+                label={translateText(locale, "依赖健康")}
+                value={formatStatusText(locale, dependencyStatus)}
+              />
+              <Separator />
+              <CompactRow
+                label="Postgres"
+                value={displayValue(data?.postgres)}
+              />
+              <CompactRow label="SeaORM" value={displayValue(data?.sea_orm)} />
+              <CompactRow label="Redis" value={displayValue(data?.redis)} />
+            </div>
+          </>
         ) : null}
 
-        <div className="grid gap-1.5 rounded-lg border bg-background/75 px-3 py-2 text-sm">
-          <CompactRow
-            label={translateText(locale, "当前用户")}
-            value={user?.nick_name || user?.user_name || t("nav.guestName")}
-          />
-          <CompactRow
-            label={translateText(locale, "运行环境")}
-            value={displayValue(data?.environment)}
-          />
-        </div>
+        {visibleQuickActions.length > 0 ? (
+          <div className="grid grid-cols-2 gap-1.5">
+            {visibleQuickActions.map((action) => {
+              const Icon = action.icon
 
-        <div className="grid gap-1.5 rounded-lg border bg-background/75 px-3 py-2 text-sm">
-          <CompactRow
-            label={translateText(locale, "服务健康")}
-            value={
-              data
-                ? `${formatStatusText(locale, serviceStatus)} / ${data.service}`
-                : "-"
-            }
-          />
-          <CompactRow
-            label={translateText(locale, "依赖健康")}
-            value={formatStatusText(locale, dependencyStatus)}
-          />
-          <Separator />
-          <CompactRow label="Postgres" value={displayValue(data?.postgres)} />
-          <CompactRow label="SeaORM" value={displayValue(data?.sea_orm)} />
-          <CompactRow label="Redis" value={displayValue(data?.redis)} />
-        </div>
-
-        <div className="grid grid-cols-2 gap-1.5">
-          {quickActions.map((action) => {
-            const Icon = action.icon
-
-            return (
-              <Button
-                key={action.routeId}
-                asChild
-                size="xs"
-                variant="outline"
-                className="justify-between bg-background/75 px-2"
-              >
-                <NavLink
-                  to={localizedPath(
-                    locale,
-                    APP_ROUTE_BY_ID[action.routeId].path
-                  )}
+              return (
+                <Button
+                  key={action.routeId}
+                  asChild
+                  size="xs"
+                  variant="outline"
+                  className="justify-between bg-background/75 px-2"
                 >
-                  <span className="flex min-w-0 items-center gap-1.5">
-                    <Icon data-icon="inline-start" />
-                    <span className="truncate">
-                      {translateText(locale, action.label)}
+                  <NavLink
+                    to={localizedPath(
+                      locale,
+                      APP_ROUTE_BY_ID[action.routeId].path
+                    )}
+                  >
+                    <span className="flex min-w-0 items-center gap-1.5">
+                      <Icon data-icon="inline-start" />
+                      <span className="truncate">
+                        {translateText(locale, action.label)}
+                      </span>
                     </span>
-                  </span>
-                  <ArrowRightIcon data-icon="inline-end" />
-                </NavLink>
-              </Button>
-            )
-          })}
-        </div>
+                    <ArrowRightIcon data-icon="inline-end" />
+                  </NavLink>
+                </Button>
+              )
+            })}
+          </div>
+        ) : null}
       </CardContent>
     </Card>
+  )
+}
+
+function canViewRuntimeHealth(authPermissions?: AuthPermissions) {
+  return hasPermission(authPermissions, "monitor:health:list")
+}
+
+function getVisibleQuickActions(authPermissions?: AuthPermissions) {
+  return quickActions.filter((action) =>
+    hasPermission(authPermissions, action.permission)
   )
 }
 

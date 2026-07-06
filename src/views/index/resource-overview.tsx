@@ -43,6 +43,10 @@ export function ResourceOverview({ groups }: { groups: ResourceGroupView[] }) {
     group.items.some((item) => item.isLoading)
   )
 
+  if (groups.length === 0) {
+    return null
+  }
+
   return (
     <Card
       size="sm"

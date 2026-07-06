@@ -63,34 +63,46 @@ export function buildResourceGroups({
   fallbackErrorMessage: string | null
 }): ResourceGroupView[] {
   if (groups?.length) {
-    return groups.map((group) => ({
-      key: group.key,
-      title: group.title,
-      items: group.items.map((item) => ({
-        key: item.key,
-        title: item.title,
-        description: item.description,
-        total: item.total,
-        error: fallbackErrorMessage ?? item.error,
-        isLoading,
-      })),
-    }))
+    return groups
+      .map((group) => ({
+        key: group.key,
+        title: group.title,
+        items: group.items
+          .filter((item) => shouldShowResourceItem(item.error))
+          .map((item) => ({
+            key: item.key,
+            title: item.title,
+            description: item.description,
+            total: item.total,
+            error: fallbackErrorMessage ?? item.error,
+            isLoading,
+          })),
+      }))
+      .filter((group) => group.items.length > 0)
   }
 
-  return resourceGroupDefinitions.map((group) => ({
-    key: group.key,
-    title: group.title,
-    items: group.items.map((item) => {
-      const count = resources?.[item.key]
+  return resourceGroupDefinitions
+    .map((group) => ({
+      key: group.key,
+      title: group.title,
+      items: group.items
+        .map((item) => {
+          const count = resources?.[item.key]
 
-      return {
-        key: item.key,
-        title: item.title,
-        description: item.description,
-        total: count?.total ?? 0,
-        error: fallbackErrorMessage ?? count?.error ?? null,
-        isLoading,
-      }
-    }),
-  }))
+          return {
+            key: item.key,
+            title: item.title,
+            description: item.description,
+            total: count?.total ?? 0,
+            error: fallbackErrorMessage ?? count?.error ?? null,
+            isLoading,
+          }
+        })
+        .filter((item) => shouldShowResourceItem(item.error)),
+    }))
+    .filter((group) => group.items.length > 0)
+}
+
+function shouldShowResourceItem(error?: string | null) {
+  return !error || !error.includes("无权限")
 }

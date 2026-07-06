@@ -13,15 +13,26 @@ import {
 } from "@/components/ui/card"
 
 import { getIndexOverview, type IndexOverviewRecentResource } from "@/api/index"
+import { useAuthPermissions } from "@/hooks/use-auth"
+import { hasPermission } from "@/lib/auth-permissions"
 import { indexQueryKeys } from "@/lib/query-keys"
 import { formatAbsoluteDateTime, formatRelativeTime } from "@/lib/datetime"
 import { translateText } from "@/local"
+import { cn } from "@/lib/utils"
 import { buildResourceGroups } from "@/views/index/resource-data"
 import { ResourceOverview } from "@/views/index/resource-overview"
 import { RuntimePanel } from "@/views/index/runtime-panel"
 
+const runtimePanelPermissions = [
+  "monitor:health:list",
+  "system:user:list",
+  "system:role:list",
+  "system:menu:list",
+]
+
 export default function IndexPage() {
   const { locale, t } = useTranslation()
+  const authPermissions = useAuthPermissions()
   const overview = useOverviewData()
   const overviewData = overview.data
   const overviewErrorMessage = overview.error
@@ -34,6 +45,9 @@ export default function IndexPage() {
     fallbackErrorMessage: overviewErrorMessage,
   })
   const recentItems = buildRecentItems(overviewData?.recent)
+  const showRuntimePanel = runtimePanelPermissions.some((permission) =>
+    hasPermission(authPermissions.data, permission)
+  )
 
   return (
     <div className="flex flex-col gap-2.5 px-3 pt-3 lg:px-4">
@@ -46,17 +60,25 @@ export default function IndexPage() {
         </Alert>
       ) : null}
 
-      <div className="grid grid-cols-1 items-start gap-2.5 xl:grid-cols-[minmax(0,1fr)_18rem]">
+      <div
+        className={cn(
+          "grid grid-cols-1 items-start gap-2.5",
+          showRuntimePanel ? "xl:grid-cols-[minmax(0,1fr)_18rem]" : null
+        )}
+      >
         <div className="grid min-w-0 content-start gap-2.5">
           <ResourceOverview groups={resourceGroups} />
           <RecentResources items={recentItems} />
         </div>
-        <RuntimePanel
-          user={overviewData?.current_user}
-          health={overviewData?.health}
-          isLoading={overview.isLoading}
-          error={overview.error}
-        />
+        {showRuntimePanel ? (
+          <RuntimePanel
+            authPermissions={authPermissions.data}
+            user={overviewData?.current_user}
+            health={overviewData?.health}
+            isLoading={overview.isLoading}
+            error={overview.error}
+          />
+        ) : null}
       </div>
     </div>
   )

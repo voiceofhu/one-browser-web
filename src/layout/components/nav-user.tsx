@@ -8,7 +8,6 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
@@ -25,7 +24,9 @@ import {
 } from "@/components/ui/sidebar"
 import {
   CircleUserRoundIcon,
+  DownloadIcon,
   EllipsisVerticalIcon,
+  ExternalLinkIcon,
   LogOutIcon,
 } from "lucide-react"
 
@@ -46,11 +47,20 @@ export function NavUser({
   const [menuOpen, setMenuOpen] = React.useState(false)
   const displayName = user?.nick_name || user?.user_name || t("nav.guestName")
   const email = user?.email || t("nav.loginRequired")
+  const userName = user?.user_name || t("nav.loginRequired")
   const avatar = user?.avatar || ""
   const fallback = (displayName || "OB").slice(0, 2).toUpperCase()
+  const downloadUrl = localizedPath(locale, "/")
 
   return (
-    <SidebarMenu>
+    <SidebarMenu className="gap-2">
+      <SidebarMenuItem>
+        <SidebarDownloadClientCard
+          href={downloadUrl}
+          title={t("nav.downloadClient")}
+          description={t("nav.downloadClientDescription")}
+        />
+      </SidebarMenuItem>
       <SidebarMenuItem>
         <DropdownMenu
           open={menuOpen}
@@ -90,9 +100,8 @@ export function NavUser({
                   <UserInfoCard
                     avatar={avatar}
                     displayName={displayName}
-                    email={email}
                     fallback={fallback}
-                    user={user}
+                    userName={userName}
                     size="lg"
                   />
                 </HoverCardContent>
@@ -107,21 +116,20 @@ export function NavUser({
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
+            className="w-(--radix-dropdown-menu-trigger-width) min-w-64 rounded-lg"
             side={isMobile ? "bottom" : "right"}
             align="end"
             sideOffset={4}
           >
-            <DropdownMenuLabel className="p-0 font-normal">
+            <DropdownMenuGroup className="flex flex-col gap-2 p-1">
               <UserInfoCard
                 avatar={avatar}
                 displayName={displayName}
-                email={email}
                 fallback={fallback}
-                user={user}
+                userName={userName}
                 className="px-1 py-1.5"
               />
-            </DropdownMenuLabel>
+            </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem asChild>
@@ -140,6 +148,42 @@ export function NavUser({
         </DropdownMenu>
       </SidebarMenuItem>
     </SidebarMenu>
+  )
+}
+
+function SidebarDownloadClientCard({
+  description,
+  href,
+  title,
+}: {
+  description: string
+  href: string
+  title: string
+}) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      title={title}
+      className={cn(
+        "group/download flex h-11 items-center gap-2 rounded-md px-2.5 text-sidebar-foreground outline-hidden transition-[background-color,color,box-shadow] duration-150 hover:bg-sidebar-accent/80 hover:text-sidebar-accent-foreground hover:shadow-[0_0_0_1px_var(--sidebar-border),0_8px_20px_-16px_var(--sidebar-ring)] focus-visible:ring-2 focus-visible:ring-sidebar-ring [&_svg]:size-4 [&_svg]:shrink-0",
+        "group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
+      )}
+    >
+      <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary transition-[background-color,color,box-shadow,transform] duration-150 group-hover/download:-translate-y-px group-hover/download:bg-primary group-hover/download:text-primary-foreground group-hover/download:shadow-sm group-hover/download:shadow-primary/20 group-focus-visible/download:bg-primary group-focus-visible/download:text-primary-foreground">
+        <DownloadIcon />
+      </span>
+      <span className="grid min-w-0 flex-1 gap-1 text-left leading-none group-data-[collapsible=icon]:hidden">
+        <span className="truncate text-[0.8125rem] leading-none font-medium transition-colors duration-150">
+          {title}
+        </span>
+        <span className="truncate text-[0.6875rem] leading-none text-sidebar-foreground/60 transition-colors duration-150 group-hover/download:text-sidebar-accent-foreground/70 group-focus-visible/download:text-sidebar-accent-foreground/70">
+          {description}
+        </span>
+      </span>
+      <ExternalLinkIcon className="text-sidebar-foreground/50 opacity-0 transition-[color,opacity,transform] duration-150 group-hover/download:translate-x-0.5 group-hover/download:text-sidebar-accent-foreground/70 group-hover/download:opacity-100 group-focus-visible/download:translate-x-0.5 group-focus-visible/download:text-sidebar-accent-foreground/70 group-focus-visible/download:opacity-100 group-data-[collapsible=icon]:hidden" />
+    </a>
   )
 }
 
@@ -166,23 +210,17 @@ function UserInfoCard({
   avatar,
   className,
   displayName,
-  email,
   fallback,
   size = "default",
-  user,
+  userName,
 }: {
   avatar: string
   className?: string
   displayName: string
-  email: string
   fallback: string
   size?: "default" | "lg"
-  user?: CurrentUser
+  userName: string
 }) {
-  const account = user?.user_name || ""
-  const phone = user?.phone_number || ""
-  const meta = phone ? [account, phone].filter(Boolean).join(" · ") : account
-
   return (
     <div className={cn("flex min-w-0 items-center gap-3", className)}>
       <UserAvatar
@@ -193,12 +231,9 @@ function UserInfoCard({
       />
       <div className="grid min-w-0 flex-1 text-left leading-tight">
         <span className="truncate text-sm font-medium">{displayName}</span>
-        <span className="truncate text-xs text-muted-foreground">{email}</span>
-        {meta ? (
-          <span className="mt-1 truncate text-[0.6875rem] text-muted-foreground">
-            {meta}
-          </span>
-        ) : null}
+        <span className="truncate text-xs text-muted-foreground">
+          {userName}
+        </span>
       </div>
     </div>
   )
