@@ -1,6 +1,7 @@
 import * as React from "react"
 import { NavLink, useLocation, useNavigate } from "react-router"
 
+import { DefaultUserAvatar } from "@/components/default-user-avatar"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import type { CurrentUser } from "@/types/admin"
 import {
@@ -40,6 +41,7 @@ import {
   normalizeLocale,
   withLocaleInPath,
 } from "@/local"
+import { getDefaultUserAvatarSeed } from "@/lib/default-user-avatar"
 import { cn } from "@/lib/utils"
 
 export function NavUser({
@@ -57,7 +59,12 @@ export function NavUser({
   const displayName = user?.nick_name || user?.user_name || t("nav.guestName")
   const email = user?.email || t("nav.loginRequired")
   const avatar = user?.avatar || ""
-  const fallback = (displayName || "OB").slice(0, 2).toUpperCase()
+  const avatarSeed = getDefaultUserAvatarSeed(
+    user?.user_id,
+    user?.email,
+    user?.user_name,
+    displayName
+  )
   const downloadUrl = localizedPath(locale, "/")
 
   function handleLocaleChange(value: string) {
@@ -88,8 +95,8 @@ export function NavUser({
             >
               <UserAvatar
                 avatar={avatar}
+                avatarSeed={avatarSeed}
                 displayName={displayName}
-                fallback={fallback}
               />
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">{displayName}</span>
@@ -211,19 +218,25 @@ function SidebarDownloadClientCard({
 
 function UserAvatar({
   avatar,
+  avatarSeed,
   displayName,
-  fallback,
   size = "default",
 }: {
   avatar: string
+  avatarSeed: string
   displayName: string
-  fallback: string
   size?: "default" | "lg"
 }) {
   return (
     <Avatar className="rounded-full" size={size}>
-      <AvatarImage src={avatar} alt={displayName} className="rounded-full" />
-      <AvatarFallback className="rounded-full">{fallback}</AvatarFallback>
+      <AvatarImage
+        src={avatar || undefined}
+        alt={displayName}
+        className="rounded-full"
+      />
+      <AvatarFallback className="overflow-hidden rounded-full p-0">
+        <DefaultUserAvatar seed={avatarSeed} />
+      </AvatarFallback>
     </Avatar>
   )
 }

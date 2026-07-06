@@ -21,6 +21,7 @@ import {
   uploadCurrentUserAvatar,
   type UpdateCurrentUserProfilePayload,
 } from "@/api/auth"
+import { DefaultUserAvatar } from "@/components/default-user-avatar"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
@@ -45,6 +46,7 @@ import { useTranslation } from "@/components/providers/language-context"
 import { useCurrentUser } from "@/hooks/use-auth"
 import { translateAdminText } from "@/local"
 import type { Locale } from "@/local"
+import { getDefaultUserAvatarSeed } from "@/lib/default-user-avatar"
 import { authQueryKeys } from "@/lib/query-keys"
 import { SEX_LABELS } from "@/router/routes"
 import type { CurrentUser, SexFlag } from "@/types/admin"
@@ -117,7 +119,12 @@ export default function AccountProfilePage() {
   const sex = useWatch({ control: form.control, name: "sex" })
   const avatarSrc = avatar
   const displayName = nickName || user?.user_name || tt("账号")
-  const fallback = displayName.slice(0, 2).toUpperCase()
+  const avatarSeed = getDefaultUserAvatarSeed(
+    user?.user_id,
+    user?.email,
+    user?.user_name,
+    displayName
+  )
   const hasProfileChanges = form.formState.isDirty
   const updateProfile = useMutation({
     mutationFn: (values: ProfileFormValues) =>
@@ -294,8 +301,8 @@ export default function AccountProfilePage() {
                         src={avatarSrc || undefined}
                         alt={displayName}
                       />
-                      <AvatarFallback className="rounded-xl">
-                        {fallback}
+                      <AvatarFallback className="overflow-hidden rounded-xl p-0">
+                        <DefaultUserAvatar seed={avatarSeed} />
                       </AvatarFallback>
                     </Avatar>
                   </button>

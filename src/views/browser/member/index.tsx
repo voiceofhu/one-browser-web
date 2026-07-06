@@ -6,6 +6,7 @@ import type { Column, ColumnDef } from "@tanstack/react-table"
 import { toast } from "sonner"
 
 import { listBrowserMembers, setBrowserMemberStatus } from "@/api/browser"
+import { DefaultUserAvatar } from "@/components/default-user-avatar"
 import { OverflowTooltipText } from "@/components/overflow-tooltip-text"
 import { AnimatedSegmentedTabs } from "@/components/ui/animated-segmented-tabs"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -14,6 +15,7 @@ import { Switch } from "@/components/ui/switch"
 import { useAuthPermissions } from "@/hooks/use-auth"
 import { hasTeamPermission } from "@/lib/auth-permissions"
 import { formatAbsoluteDateTime, formatRelativeTime } from "@/lib/datetime"
+import { getDefaultUserAvatarSeed } from "@/lib/default-user-avatar"
 import { browserQueryKeys } from "@/lib/query-keys"
 import type {
   BrowserListParams,
@@ -215,7 +217,17 @@ function MemberIdentityCell({ record }: { record: BrowserMemberResource }) {
   return (
     <div className="flex min-w-0 items-center gap-2">
       <Avatar size="sm">
-        <AvatarFallback>{name.slice(0, 1) || "成"}</AvatarFallback>
+        <AvatarFallback className="overflow-hidden p-0">
+          <DefaultUserAvatar
+            seed={getDefaultUserAvatarSeed(
+              record.user_id,
+              record.email,
+              record.user_name,
+              record.nick_name,
+              record.display_name
+            )}
+          />
+        </AvatarFallback>
       </Avatar>
       <div className="min-w-0 flex-1">
         <OverflowTooltipText text={name} className="font-medium" />
