@@ -146,7 +146,11 @@ export default function TeamInvitePage() {
         <Card className="relative isolate w-full max-w-[25rem] overflow-hidden border border-white/50 bg-card/70 p-0 shadow-xl shadow-foreground/10 backdrop-blur-2xl before:pointer-events-none before:absolute before:inset-0 before:z-0 before:bg-[linear-gradient(135deg,rgb(255_255_255/0.44),rgb(255_255_255/0.12)_38%,rgb(255_255_255/0.03)_68%,transparent)] before:opacity-80 after:pointer-events-none after:absolute after:inset-px after:z-0 after:rounded-[calc(var(--radius-xl)-1px)] after:shadow-[inset_0_1px_0_rgb(255_255_255/0.56),inset_0_-1px_0_rgb(255_255_255/0.12)] supports-backdrop-filter:bg-card/55 dark:border-white/15 dark:bg-card/50 dark:shadow-black/30 dark:before:bg-[linear-gradient(135deg,rgb(255_255_255/0.18),rgb(255_255_255/0.06)_42%,transparent_72%)] dark:after:shadow-[inset_0_1px_0_rgb(255_255_255/0.18),inset_0_-1px_0_rgb(255_255_255/0.05)] dark:supports-backdrop-filter:bg-card/42">
           <CardContent className="relative z-10 flex flex-col gap-5 px-5 py-6 sm:px-7 sm:py-7">
             <div className="flex flex-col items-center gap-2 text-center">
-              <img src="/pwa-512x512.png" alt="" className="size-14" />
+              <img
+                src="/pwa-512x512.png"
+                alt=""
+                className="size-14 drop-shadow-[0_10px_16px_rgba(15,23,42,0.16)] dark:drop-shadow-[0_12px_18px_rgba(0,0,0,0.36)]"
+              />
               <h1 className="text-[1.55rem] leading-tight font-semibold">
                 {t("teamInvite.title")}
               </h1>

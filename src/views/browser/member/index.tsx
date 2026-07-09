@@ -9,7 +9,7 @@ import { listBrowserMembers, setBrowserMemberStatus } from "@/api/browser"
 import { DefaultUserAvatar } from "@/components/default-user-avatar"
 import { OverflowTooltipText } from "@/components/overflow-tooltip-text"
 import { AnimatedSegmentedTabs } from "@/components/ui/animated-segmented-tabs"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { useAuthPermissions } from "@/hooks/use-auth"
@@ -217,6 +217,7 @@ function MemberIdentityCell({ record }: { record: BrowserMemberResource }) {
   return (
     <div className="flex min-w-0 items-center gap-2">
       <Avatar size="sm">
+        <AvatarImage src={record.avatar || undefined} alt={`${name} 的头像`} />
         <AvatarFallback className="overflow-hidden p-0">
           <DefaultUserAvatar
             seed={getDefaultUserAvatarSeed(

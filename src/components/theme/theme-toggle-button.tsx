@@ -147,9 +147,12 @@ export function ThemeToggleButton({
       <ThemeToggleViewTransitionStyles />
       <Button
         aria-label={accessibleLabel}
-        className={cn("shrink-0", className)}
+        className={cn(
+          "shrink-0 border-border/60 bg-muted/70 text-foreground shadow-none hover:bg-muted dark:bg-muted/50 dark:hover:bg-muted/70",
+          className
+        )}
         onClick={handleToggle}
-        size="icon-sm"
+        size="icon-xs"
         title={accessibleLabel}
         variant="outline"
       >

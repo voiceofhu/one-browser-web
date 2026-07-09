@@ -243,7 +243,11 @@ export function LoginForm({
                 data-login-reveal
                 className="mb-2 flex flex-col items-center gap-2 text-center"
               >
-                <img src="/pwa-512x512.png" alt="" className="size-14" />
+                <img
+                  src="/pwa-512x512.png"
+                  alt=""
+                  className="size-14 drop-shadow-[0_10px_16px_rgba(15,23,42,0.16)] dark:drop-shadow-[0_12px_18px_rgba(0,0,0,0.36)]"
+                />
                 <h1 className="text-[1.55rem] leading-tight font-semibold">
                   {t("login.title")} {APP_NAME}
                 </h1>
@@ -283,10 +287,7 @@ export function LoginForm({
                 <FieldLabel className="sr-only" htmlFor="password">
                   {t("login.password")}
                 </FieldLabel>
-                <InputGroup
-                  data-password-group
-                  className="h-9"
-                >
+                <InputGroup data-password-group className="h-9">
                   <InputGroupAddon>
                     <InputGroupText>
                       <LockKeyholeIcon />

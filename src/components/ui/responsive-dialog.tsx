@@ -136,13 +136,21 @@ function ResponsiveDialogHeader({
   return mode === "drawer" ? (
     <DrawerHeader
       className={cn(
-        "shrink-0 border-b px-4 py-2 pr-12 text-left group-data-[vaul-drawer-direction=bottom]/drawer-content:text-left group-data-[vaul-drawer-direction=top]/drawer-content:text-left",
-        className
+        "shrink-0 gap-0.5 bg-muted/50 px-4 py-2 pr-12 text-left group-data-[vaul-drawer-direction=bottom]/drawer-content:text-left group-data-[vaul-drawer-direction=top]/drawer-content:text-left",
+        className,
+        "border-b-0"
       )}
       {...props}
     />
   ) : (
-    <DialogHeader className={className} {...props} />
+    <DialogHeader
+      className={cn(
+        "shrink-0 gap-0.5 bg-muted/50 px-4 py-2 pr-12 text-left",
+        className,
+        "border-b-0"
+      )}
+      {...props}
+    />
   )
 }
 
@@ -173,27 +181,36 @@ function ResponsiveDialogFooter({
   return mode === "drawer" ? (
     <DrawerFooter
       className={cn(
-        "sticky bottom-0 mt-auto grid shrink-0 grid-cols-5 gap-2 border-t bg-popover p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]",
+        "sticky bottom-0 mt-auto grid shrink-0 grid-cols-5 gap-2 bg-muted/50 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]",
         "[&>*]:w-full [&>*:first-child]:order-2 [&>*:first-child]:col-span-2 [&>*:last-child]:order-1 [&>*:last-child]:col-span-3",
-        className
+        className,
+        "border-t-0"
       )}
       {...props}
     />
   ) : (
-    <DialogFooter className={className} {...props} />
+    <DialogFooter
+      className={cn(
+        "mx-0 mb-0 shrink-0 rounded-b-xl bg-muted/50 px-4 py-2",
+        className,
+        "border-t-0"
+      )}
+      {...props}
+    />
   )
 }
 
 function ResponsiveDialogTitle({
+  className,
   ...props
 }: React.ComponentProps<typeof DialogTitle> &
   React.ComponentProps<typeof DrawerTitle>) {
   const mode = useResponsiveDialogMode()
 
   return mode === "drawer" ? (
-    <DrawerTitle {...props} />
+    <DrawerTitle className={cn("text-sm font-medium", className)} {...props} />
   ) : (
-    <DialogTitle {...props} />
+    <DialogTitle className={cn("text-sm font-medium", className)} {...props} />
   )
 }
 
@@ -207,7 +224,10 @@ function ResponsiveDialogDescription({
   return mode === "drawer" ? (
     <DrawerDescription className={cn("sr-only", className)} {...props} />
   ) : (
-    <DialogDescription className={className} {...props} />
+    <DialogDescription
+      className={cn("text-xs/relaxed", className)}
+      {...props}
+    />
   )
 }
 

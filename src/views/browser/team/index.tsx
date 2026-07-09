@@ -3,7 +3,13 @@
 import * as React from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import type { Column, ColumnDef } from "@tanstack/react-table"
-import { MoreHorizontalIcon, UserMinusIcon } from "lucide-react"
+import {
+  LaptopIcon,
+  MoreHorizontalIcon,
+  RouteIcon,
+  UserMinusIcon,
+  UsersRoundIcon,
+} from "lucide-react"
 import { toast } from "sonner"
 
 import {
@@ -22,7 +28,6 @@ import {
   AlertDialogMedia,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   AlertDialogActionButton,
@@ -134,14 +139,8 @@ export default function BrowserTeamPage() {
       {
         accessorKey: "owner_name",
         header: ({ column }) => tableHeader(column, "Owner"),
-        cell: ({ row }) => <TextCell value={row.original.owner_name} />,
-        meta: { label: "Owner", cellClassName: "w-36" },
-      },
-      {
-        id: "resource_stats",
-        header: ({ column }) => tableHeader(column, "资源"),
-        cell: ({ row }) => <TeamStatsCell record={row.original} />,
-        meta: { label: "资源", cellClassName: "min-w-52 max-w-64" },
+        cell: ({ row }) => <TeamOwnerCell record={row.original} />,
+        meta: { label: "Owner", cellClassName: "min-w-44 max-w-60" },
       },
       {
         accessorKey: "status",
@@ -339,22 +338,57 @@ function TeamNameCell({ record }: { record: BrowserTeamResource }) {
   )
 }
 
-function TextCell({ value }: { value?: string | null }) {
-  const text = value?.trim() || "-"
+function TeamOwnerCell({ record }: { record: BrowserTeamResource }) {
+  const ownerName = record.owner_name?.trim() || "-"
 
-  if (text === "-") {
-    return <span className="block truncate text-muted-foreground">{text}</span>
-  }
-
-  return <OverflowTooltipText text={text} />
+  return (
+    <div className="min-w-0">
+      {ownerName === "-" ? (
+        <span className="block truncate text-muted-foreground">{ownerName}</span>
+      ) : (
+        <OverflowTooltipText text={ownerName} className="font-medium" />
+      )}
+      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+        <ResourceStat
+          Icon={UsersRoundIcon}
+          value={record.member_count ?? 0}
+          label="Members"
+        />
+        <ResourceStat
+          Icon={LaptopIcon}
+          value={record.environment_count ?? 0}
+          label="Environments"
+        />
+        <ResourceStat
+          Icon={RouteIcon}
+          value={record.proxy_count ?? 0}
+          label="Proxies"
+        />
+      </div>
+    </div>
+  )
 }
 
-function TeamStatsCell({ record }: { record: BrowserTeamResource }) {
+function ResourceStat({
+  Icon,
+  value,
+  label,
+}: {
+  Icon: React.ComponentType<React.SVGProps<SVGSVGElement>>
+  value: number
+  label: string
+}) {
   return (
-    <div className="flex flex-wrap gap-1">
-      <Badge variant="outline">{record.member_count ?? 0} 成员</Badge>
-      <Badge variant="outline">{record.environment_count ?? 0} 环境</Badge>
-      <Badge variant="outline">{record.proxy_count ?? 0} 代理</Badge>
+    <div
+      className="flex min-w-0 items-center gap-1"
+      aria-label={`${label}: ${value}`}
+      title={`${label}: ${value}`}
+    >
+      <Icon
+        aria-hidden="true"
+        className="size-3.5 shrink-0 text-muted-foreground/80"
+      />
+      <span className="tabular-nums">{value}</span>
     </div>
   )
 }

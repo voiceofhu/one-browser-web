@@ -233,20 +233,22 @@ export function BrowserAssetUploadDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-h-[88svh] overflow-hidden p-0 sm:max-w-2xl">
+      <DialogContent className="max-h-[86svh] overflow-hidden p-0 sm:max-w-xl">
         <form
           onSubmit={handleSubmit}
-          className="flex max-h-[88svh] min-h-0 flex-col"
+          className="flex max-h-[86svh] min-h-0 flex-col"
         >
-          <DialogHeader className="border-b px-5 py-3 pr-12">
-            <DialogTitle>上传安装包</DialogTitle>
-            <DialogDescription>
+          <DialogHeader className="gap-0.5 border-b-0 bg-muted/50 px-4 py-2 pr-12 text-left">
+            <DialogTitle className="text-sm font-semibold">
+              上传安装包
+            </DialogTitle>
+            <DialogDescription className="text-xs/relaxed">
               小包可直传，大包使用分片上传到 OneFile 后设为客户端下载版本。
             </DialogDescription>
           </DialogHeader>
 
-          <div className="min-h-0 flex-1 overflow-auto px-5 py-4">
-            <FieldGroup className="gap-4">
+          <div className="min-h-0 flex-1 overflow-auto px-4 py-3">
+            <FieldGroup className="gap-3">
               {error ? (
                 <Alert variant="destructive">
                   <AlertTitle>上传失败</AlertTitle>
@@ -254,7 +256,7 @@ export function BrowserAssetUploadDialog({
                 </Alert>
               ) : null}
 
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-3 sm:grid-cols-2">
                 <SelectField
                   label="运行平台"
                   value={platform}
@@ -296,7 +298,7 @@ export function BrowserAssetUploadDialog({
                     handleFileChange(event.currentTarget.files?.[0] ?? null)
                   }
                 />
-                <FieldDescription>
+                <FieldDescription className="text-xs/relaxed">
                   {fileNameError
                     ? fileNameError
                     : file
@@ -305,7 +307,7 @@ export function BrowserAssetUploadDialog({
                 </FieldDescription>
               </Field>
 
-              <Field orientation="horizontal" className="items-center">
+              <Field orientation="horizontal" className="items-center gap-2">
                 <Switch
                   checked={makeCurrent}
                   onCheckedChange={setMakeCurrent}
@@ -322,13 +324,13 @@ export function BrowserAssetUploadDialog({
                   onChange={(event) => setRemark(event.target.value)}
                   disabled={isSubmitting}
                   placeholder="可选"
-                  className="min-h-20"
+                  className="min-h-16 resize-none"
                 />
               </Field>
 
               {progress ? (
                 <div className="flex flex-col gap-2">
-                  <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground">
                       {progress.label}
                     </span>
@@ -340,7 +342,7 @@ export function BrowserAssetUploadDialog({
             </FieldGroup>
           </div>
 
-          <DialogFooter className="mx-0 mb-0 shrink-0 rounded-b-xl border-t bg-muted/50 px-5 py-3">
+          <DialogFooter className="mx-0 mb-0 shrink-0 rounded-b-xl border-t-0 bg-muted/50 px-4 py-2">
             <DialogActionButton
               type="button"
               action="cancel"

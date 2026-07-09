@@ -132,7 +132,7 @@ export function NavUser({
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuLabel>{t("nav.preferences")}</DropdownMenuLabel>
-              <DropdownMenuItem onSelect={(event) => event.preventDefault()}>
+              <div className="flex min-h-6 items-center gap-2 rounded-md px-2 py-0.5 text-xs/relaxed">
                 <span>{t("nav.theme")}</span>
                 <ThemeModeToggle
                   className="ml-auto"
@@ -143,7 +143,7 @@ export function NavUser({
                     "theme.dark": t("theme.dark"),
                   }}
                 />
-              </DropdownMenuItem>
+              </div>
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger>
                   <LanguagesIcon />

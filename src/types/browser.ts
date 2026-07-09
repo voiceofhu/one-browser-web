@@ -191,6 +191,7 @@ export interface BrowserMemberResource {
   user_id: number
   user_name: string
   nick_name: string
+  avatar: string
   display_name: string
   email: string
   phone_number: string

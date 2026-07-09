@@ -250,8 +250,8 @@ export function ThemeModeToggle({
             handleThemeChange(nextTheme)
           }
         }}
-        listClassName="h-7 rounded-md p-0.5"
-        triggerClassName="min-w-7 px-2"
+        listClassName="h-6 rounded-md p-0.5"
+        triggerClassName="min-w-6 px-1.5"
       />
     </div>
   )

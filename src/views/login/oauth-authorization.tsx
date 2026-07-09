@@ -20,6 +20,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { Spinner } from "@/components/ui/spinner"
 import {
   TurnstileWidget,
   type TurnstileWidgetHandle,
@@ -151,7 +152,10 @@ export default function OAuthAuthorizationPage() {
     return <AppAuthorizationSuccess appUrl={appAuthorizationUrl} />
   }
 
-  if (currentUser.isLoading || currentUser.isFetching || isAuthorizing) {
+  if (
+    currentUser.isLoading ||
+    (currentUser.isFetching && !currentUser.isSuccess)
+  ) {
     return <AppAuthorizationPending />
   }
 
@@ -172,22 +176,29 @@ export default function OAuthAuthorizationPage() {
   return (
     <AuthorizationShell>
       <AuthorizationCard
-        className={isAuthorizing ? "pointer-events-none opacity-75" : undefined}
+        isAuthorizing={isAuthorizing}
         error={
           authorizationError ||
           (!turnstileSiteKey ? t("appAuth.turnstileSiteKeyMissing") : "")
         }
       >
         {turnstileSiteKey ? (
-          <TurnstileWidget
-            ref={turnstileRef}
-            siteKey={turnstileSiteKey}
-            action="app_authorize"
-            appearance="always"
-            loadingLabel={t("login.turnstileLoading")}
-            onTokenChange={setTurnstileToken}
-            onError={handleTurnstileError}
-          />
+          <div
+            className={cn(
+              "w-full",
+              isAuthorizing && "pointer-events-none opacity-75"
+            )}
+          >
+            <TurnstileWidget
+              ref={turnstileRef}
+              siteKey={turnstileSiteKey}
+              action="app_authorize"
+              appearance="always"
+              loadingLabel={t("login.turnstileLoading")}
+              onTokenChange={setTurnstileToken}
+              onError={handleTurnstileError}
+            />
+          </div>
         ) : null}
       </AuthorizationCard>
     </AuthorizationShell>
@@ -209,10 +220,12 @@ function AuthorizationCard({
   children,
   className,
   error,
+  isAuthorizing = false,
 }: {
   children?: ReactNode
   className?: string
   error?: string
+  isAuthorizing?: boolean
 }) {
   const { t } = useTranslation()
 
@@ -230,9 +243,22 @@ function AuthorizationCard({
       </CardHeader>
       <CardContent className="flex flex-col items-center gap-4 px-8 pb-8 text-center">
         {children}
-        <p className="text-sm text-muted-foreground">
-          {t("appAuth.verifyHint")}
-        </p>
+        {isAuthorizing ? (
+          <div
+            className="flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm text-foreground"
+            role="status"
+            aria-live="polite"
+          >
+            <Spinner className="size-4" />
+            <span>
+              {t("appAuth.pendingDescription", { appName: APP_NAME })}
+            </span>
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            {t("appAuth.verifyHint")}
+          </p>
+        )}
         {error ? (
           <Alert variant="destructive" className="text-left">
             <AlertDescription>{error}</AlertDescription>
