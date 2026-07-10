@@ -231,13 +231,9 @@ export function uploadBrowserAssetPart(
   partNumber: number,
   chunk: Blob
 ) {
-  const formData = new FormData()
-  formData.set("part_number", String(partNumber))
-  formData.set("chunk", chunk, `part-${String(partNumber).padStart(5, "0")}`)
-
   return http.post<BrowserAssetPartUploadResult>(
-    `${BROWSER_ASSET_PATH}/uploads/${uploadId}/parts`,
-    formData
+    `${BROWSER_ASSET_PATH}/uploads/${uploadId}/parts?part_number=${partNumber}`,
+    chunk
   )
 }
 

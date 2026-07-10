@@ -216,6 +216,13 @@ function buildHeaders(init: RequestInit, options?: { auth?: boolean }) {
     return headers
   }
 
+  if (init.body instanceof Blob) {
+    if (!headers.has("Content-Type")) {
+      headers.set("Content-Type", init.body.type || "application/octet-stream")
+    }
+    return headers
+  }
+
   if (!headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json")
   }
@@ -529,7 +536,9 @@ function getResponseDetails(value: Record<string, unknown>) {
 }
 
 function encodeBody(body?: unknown) {
-  return body instanceof FormData ? body : JSON.stringify(body ?? {})
+  return body instanceof FormData || body instanceof Blob
+    ? body
+    : JSON.stringify(body ?? {})
 }
 
 export const http = {

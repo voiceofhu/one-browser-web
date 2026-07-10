@@ -2,6 +2,20 @@ import { uploadBrowserAssetPart } from "@/api/browser"
 import type { BrowserAssetCompletePayload } from "@/types/browser"
 
 const FALLBACK_CPU_COUNT = 2
+const MAX_UPLOAD_CONCURRENCY = 6
+const MEBIBYTE_BYTES = 1024 * 1024
+const GIBIBYTE_BYTES = 1024 * MEBIBYTE_BYTES
+const R2_MIN_PART_SIZE_BYTES = 5 * MEBIBYTE_BYTES
+const R2_MAX_PART_SIZE_BYTES = 5 * GIBIBYTE_BYTES - 5 * MEBIBYTE_BYTES
+const R2_MAX_PARTS = 10_000
+const API_MAX_PART_SIZE_BYTES = 128 * MEBIBYTE_BYTES
+const MAX_PART_SIZE_BYTES = Math.min(
+  API_MAX_PART_SIZE_BYTES,
+  R2_MAX_PART_SIZE_BYTES
+)
+const DEFAULT_PART_SIZE_BYTES = 16 * MEBIBYTE_BYTES
+const LARGE_PART_SIZE_BYTES = 32 * MEBIBYTE_BYTES
+const EXTRA_LARGE_PART_SIZE_BYTES = 64 * MEBIBYTE_BYTES
 
 type UploadedMultipartPart = BrowserAssetCompletePayload["parts"][number]
 
@@ -9,6 +23,62 @@ export type MultipartUploadProgress = {
   completedParts: number
   totalParts: number
   concurrency: number
+}
+
+export function resolveMultipartPartSize(fileSize: number) {
+  if (!Number.isSafeInteger(fileSize) || fileSize <= 0) {
+    throw new Error("文件大小无效")
+  }
+
+  const preferredPartSize =
+    fileSize >= 4 * GIBIBYTE_BYTES
+      ? EXTRA_LARGE_PART_SIZE_BYTES
+      : fileSize >= GIBIBYTE_BYTES
+        ? LARGE_PART_SIZE_BYTES
+        : DEFAULT_PART_SIZE_BYTES
+  const minimumPartSize = Math.ceil(fileSize / R2_MAX_PARTS)
+  const partSize = roundUpToMebibyte(
+    Math.max(R2_MIN_PART_SIZE_BYTES, preferredPartSize, minimumPartSize)
+  )
+
+  if (partSize > MAX_PART_SIZE_BYTES) {
+    throw new Error(
+      "文件过大：当前上传接口最多支持 10,000 个、每个 128 MiB 的分片"
+    )
+  }
+
+  return partSize
+}
+
+export function resolveMultipartUploadPlan({
+  fileSize,
+  requestedPartSize,
+  sessionPartSize,
+  sessionTotalParts,
+}: {
+  fileSize: number
+  requestedPartSize: number
+  sessionPartSize?: number
+  sessionTotalParts?: number
+}) {
+  const partSize = sessionPartSize ?? requestedPartSize
+  if (
+    !Number.isSafeInteger(partSize) ||
+    partSize < R2_MIN_PART_SIZE_BYTES ||
+    partSize > MAX_PART_SIZE_BYTES
+  ) {
+    throw new Error("服务端返回的分片大小不符合 R2 上传限制")
+  }
+
+  const totalParts = Math.ceil(fileSize / partSize)
+  if (totalParts <= 0 || totalParts > R2_MAX_PARTS) {
+    throw new Error("分片数量必须在 1 到 10,000 之间")
+  }
+  if (sessionTotalParts !== undefined && sessionTotalParts !== totalParts) {
+    throw new Error("服务端返回的分片数量与文件大小不一致")
+  }
+
+  return { partSize, totalParts }
 }
 
 export async function uploadPartsConcurrently({
@@ -117,5 +187,9 @@ function resolveUploadConcurrency(totalParts: number) {
       ? Math.floor(hardwareConcurrency)
       : FALLBACK_CPU_COUNT
 
-  return Math.max(1, Math.min(totalParts, cpuCount * 2))
+  return Math.max(1, Math.min(totalParts, MAX_UPLOAD_CONCURRENCY, cpuCount * 2))
+}
+
+function roundUpToMebibyte(value: number) {
+  return Math.ceil(value / MEBIBYTE_BYTES) * MEBIBYTE_BYTES
 }

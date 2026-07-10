@@ -40,13 +40,12 @@ import { Textarea } from "@/components/ui/textarea"
 import type { BrowserAssetResource } from "@/types/browser"
 import {
   multipartProgressValue,
+  resolveMultipartPartSize,
+  resolveMultipartUploadPlan,
   uploadPartsConcurrently,
 } from "./upload-multipart"
 
 const DIRECT_LIMIT_BYTES = 100 * 1024 * 1024
-const DEFAULT_PART_SIZE_BYTES = 16 * 1024 * 1024
-const LARGE_PART_SIZE_BYTES = 32 * 1024 * 1024
-const EXTRA_LARGE_PART_SIZE_BYTES = 64 * 1024 * 1024
 const DEFAULT_CHANNEL = "stable"
 const CHROMIUM_ASSET_NAME_PATTERN =
   /^one-browser-chromium-(macos|windows)-(arm64|x64)-(\d+\.\d+\.\d+\.\d+)\.tar\.gz$/i
@@ -184,7 +183,7 @@ export function BrowserAssetUploadDialog({
   }
 
   async function uploadMultipart(uploadFile: File) {
-    const partSizeBytes = resolvePartSize(uploadFile.size)
+    const partSizeBytes = resolveMultipartPartSize(uploadFile.size)
     setProgress({ label: "正在创建分片会话", value: 3 })
     const session = await createBrowserAssetUpload({
       platform,
@@ -199,12 +198,13 @@ export function BrowserAssetUploadDialog({
       remark: remark.trim(),
     })
     try {
-      const actualPartSize = session.part_size || partSizeBytes
-      const totalParts =
-        session.total_parts || Math.ceil(uploadFile.size / actualPartSize)
-      if (totalParts <= 0) {
-        throw new Error("分片数量无效")
-      }
+      const { partSize: actualPartSize, totalParts } =
+        resolveMultipartUploadPlan({
+          fileSize: uploadFile.size,
+          requestedPartSize: partSizeBytes,
+          sessionPartSize: session.part_size,
+          sessionTotalParts: session.total_parts,
+        })
 
       const parts = await uploadPartsConcurrently({
         uploadFile,
@@ -438,18 +438,6 @@ function TextField({
 
 function resolveUploadMode(file: File) {
   return file.size <= DIRECT_LIMIT_BYTES ? "direct" : "multipart"
-}
-
-function resolvePartSize(fileSize: number) {
-  if (fileSize >= 4 * 1024 * 1024 * 1024) {
-    return EXTRA_LARGE_PART_SIZE_BYTES
-  }
-
-  if (fileSize >= 1024 * 1024 * 1024) {
-    return LARGE_PART_SIZE_BYTES
-  }
-
-  return DEFAULT_PART_SIZE_BYTES
 }
 
 function parseChromiumAssetFileName(fileName: string) {
