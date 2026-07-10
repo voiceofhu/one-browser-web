@@ -4,7 +4,6 @@ import {
   Clock3Icon,
   LogInIcon,
   MailIcon,
-  ShieldCheckIcon,
   UserRoundIcon,
   UsersRoundIcon,
   XIcon,
@@ -143,18 +142,17 @@ export default function TeamInvitePage() {
       </header>
 
       <section className="relative z-10 grid flex-1 place-items-center py-6 sm:py-8 lg:py-10">
-        <Card className="relative isolate w-full max-w-[25rem] overflow-hidden border border-white/50 bg-card/70 p-0 shadow-xl shadow-foreground/10 backdrop-blur-2xl before:pointer-events-none before:absolute before:inset-0 before:z-0 before:bg-[linear-gradient(135deg,rgb(255_255_255/0.44),rgb(255_255_255/0.12)_38%,rgb(255_255_255/0.03)_68%,transparent)] before:opacity-80 after:pointer-events-none after:absolute after:inset-px after:z-0 after:rounded-[calc(var(--radius-xl)-1px)] after:shadow-[inset_0_1px_0_rgb(255_255_255/0.56),inset_0_-1px_0_rgb(255_255_255/0.12)] supports-backdrop-filter:bg-card/55 dark:border-white/15 dark:bg-card/50 dark:shadow-black/30 dark:before:bg-[linear-gradient(135deg,rgb(255_255_255/0.18),rgb(255_255_255/0.06)_42%,transparent_72%)] dark:after:shadow-[inset_0_1px_0_rgb(255_255_255/0.18),inset_0_-1px_0_rgb(255_255_255/0.05)] dark:supports-backdrop-filter:bg-card/42">
-          <CardContent className="relative z-10 flex flex-col gap-5 px-5 py-6 sm:px-7 sm:py-7">
+        <Card className="w-full max-w-[26rem] border-border/80 bg-card/90 p-0 shadow-2xl shadow-foreground/10 backdrop-blur-xl">
+          <CardContent className="flex flex-col gap-6 px-5 py-6 sm:px-7 sm:py-7">
             <div className="flex flex-col items-center gap-2 text-center">
-              <img
-                src="/pwa-512x512.png"
-                alt=""
-                className="size-14 drop-shadow-[0_10px_16px_rgba(15,23,42,0.16)] dark:drop-shadow-[0_12px_18px_rgba(0,0,0,0.36)]"
-              />
-              <h1 className="text-[1.55rem] leading-tight font-semibold">
-                {t("teamInvite.title")}
+              <img src="/pwa-512x512.png" alt="" className="size-11" />
+              <span className="text-xs font-medium text-muted-foreground">
+                {t("teamInvite.badge")}
+              </span>
+              <h1 className="max-w-full text-2xl leading-tight font-semibold text-balance break-words">
+                {invite?.team_name || t("teamInvite.title")}
               </h1>
-              <p className="max-w-xs text-sm leading-6 text-muted-foreground">
+              <p className="max-w-sm text-sm leading-6 text-pretty text-muted-foreground">
                 {t("teamInvite.description")}
               </p>
             </div>
@@ -192,11 +190,11 @@ export default function TeamInvitePage() {
               ) : null}
             </div>
 
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-3">
               <Button
                 type="button"
                 size="lg"
-                className="w-full justify-center"
+                className="h-11 w-full justify-center"
                 disabled={!canRespond || isMutating}
                 onClick={acceptInvite}
               >
@@ -238,8 +236,7 @@ export default function TeamInvitePage() {
 
               <Button
                 type="button"
-                variant="outline"
-                size="lg"
+                variant="ghost"
                 className="w-full justify-center"
                 onClick={() => navigate(redirectTo, { replace: true })}
               >
@@ -249,8 +246,8 @@ export default function TeamInvitePage() {
 
               <Button
                 type="button"
-                variant="destructive"
-                className="w-full justify-center"
+                variant="ghost"
+                className="w-full justify-center text-destructive hover:bg-destructive/10 hover:text-destructive"
                 disabled={!canRespond || isMutating}
                 onClick={declineInvite}
               >
@@ -271,11 +268,19 @@ export default function TeamInvitePage() {
 
 function InviteSkeleton() {
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-border bg-background/70 p-3">
-      <Skeleton className="h-9 w-full" />
-      <Skeleton className="h-9 w-full" />
-      <Skeleton className="h-9 w-full" />
-      <Skeleton className="h-9 w-full" />
+    <div className="flex flex-col gap-4 rounded-xl bg-muted/60 p-4">
+      <div className="flex items-center gap-3">
+        <Skeleton className="size-11 rounded-xl" />
+        <div className="flex flex-1 flex-col gap-2">
+          <Skeleton className="h-3 w-16" />
+          <Skeleton className="h-6 w-2/3" />
+        </div>
+      </div>
+      <div className="flex flex-col divide-y divide-border/70 border-y border-border/70">
+        <Skeleton className="my-2 h-5 w-full" />
+        <Skeleton className="my-2 h-5 w-full" />
+        <Skeleton className="my-2 h-5 w-full" />
+      </div>
     </div>
   )
 }
@@ -290,33 +295,22 @@ function InviteSummary({
   const { t } = useTranslation()
 
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-border bg-background/70 p-3">
-      <div className="flex min-w-0 items-center justify-between gap-3 rounded-lg bg-muted/40 px-3 py-2.5">
-        <div className="flex min-w-0 items-center gap-3">
-          <div className="grid size-9 shrink-0 place-items-center rounded-lg bg-background text-primary ring-1 ring-border">
-            <UsersRoundIcon className="size-4" aria-hidden="true" />
-          </div>
-          <div className="flex min-w-0 flex-col">
-            <span className="text-xs font-medium text-muted-foreground">
-              {t("teamInvite.badge")}
-            </span>
-            <span className="truncate font-semibold">{invite.team_name}</span>
-            <span className="truncate text-xs text-muted-foreground">
-              {invite.team_key}
-            </span>
-          </div>
+    <section className="overflow-hidden rounded-xl bg-muted/60">
+      <div className="flex min-w-0 items-center gap-3 px-4 py-4">
+        <div className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground shadow-sm shadow-primary/20">
+          <UsersRoundIcon aria-hidden="true" />
         </div>
-        <Badge variant="secondary" className="shrink-0">
-          {invite.role_name || "-"}
-        </Badge>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs text-muted-foreground">
+            {t("teamInvite.role")}
+          </p>
+          <Badge variant="secondary" className="mt-1 max-w-full truncate">
+            {invite.role_name || "-"}
+          </Badge>
+        </div>
       </div>
 
-      <dl className="grid gap-2 text-sm">
-        <SummaryItem
-          icon={ShieldCheckIcon}
-          label={t("teamInvite.role")}
-          value={invite.role_name}
-        />
+      <dl className="flex flex-col divide-y divide-border/70 border-y border-border/70 bg-background/50 px-4 text-sm">
         <SummaryItem
           icon={UserRoundIcon}
           label={t("teamInvite.inviter")}
@@ -333,7 +327,7 @@ function InviteSummary({
           value={formatDateTime(invite.expires_at, locale)}
         />
       </dl>
-    </div>
+    </section>
   )
 }
 
@@ -347,12 +341,12 @@ function SummaryItem({
   value?: string | null
 }) {
   return (
-    <div className="grid min-h-9 grid-cols-[auto_minmax(0,1fr)] items-center gap-3 rounded-lg border border-border bg-card px-3 py-2">
+    <div className="grid min-h-11 grid-cols-[minmax(0,0.9fr)_minmax(0,1.4fr)] items-center gap-3 py-2.5">
       <dt className="flex min-w-0 items-center gap-2 text-muted-foreground">
         <Icon className="size-4 shrink-0" aria-hidden={true} />
         <span className="truncate">{label}</span>
       </dt>
-      <dd className="min-w-0 truncate text-right font-medium">
+      <dd className="min-w-0 text-right font-medium break-words">
         {value || "-"}
       </dd>
     </div>
