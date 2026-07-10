@@ -4,8 +4,8 @@ import {
   Clock3Icon,
   LogInIcon,
   MailIcon,
+  ShieldCheckIcon,
   UserRoundIcon,
-  UsersRoundIcon,
   XIcon,
 } from "lucide-react"
 import type React from "react"
@@ -19,7 +19,14 @@ import { ThemeToggleButton } from "@/components/theme/theme-toggle-button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
@@ -31,6 +38,7 @@ import {
 } from "@/hooks/use-auth"
 import { hasAuthTokens } from "@/lib/auth-tokens"
 import { HttpError } from "@/lib/request"
+import { cn } from "@/lib/utils"
 import { localizedPath, localizedPublicPath, type Locale } from "@/local"
 import type { TeamInvite } from "@/types/admin"
 import { InteractiveGridBackground } from "@/views/login/interactive-grid-background"
@@ -142,112 +150,111 @@ export default function TeamInvitePage() {
       </header>
 
       <section className="relative z-10 grid flex-1 place-items-center py-6 sm:py-8 lg:py-10">
-        <Card className="w-full max-w-[26rem] border-border/80 bg-card/90 p-0 shadow-2xl shadow-foreground/10 backdrop-blur-xl">
-          <CardContent className="flex flex-col gap-6 px-5 py-6 sm:px-7 sm:py-7">
-            <div className="flex flex-col items-center gap-2 text-center">
-              <img src="/pwa-512x512.png" alt="" className="size-11" />
-              <span className="text-xs font-medium text-muted-foreground">
-                {t("teamInvite.badge")}
-              </span>
-              <h1 className="max-w-full text-2xl leading-tight font-semibold text-balance break-words">
-                {invite?.team_name || t("teamInvite.title")}
-              </h1>
-              <p className="max-w-sm text-sm leading-6 text-pretty text-muted-foreground">
-                {t("teamInvite.description")}
-              </p>
-            </div>
+        <Card className="w-full max-w-[26rem] bg-card/90 shadow-2xl shadow-foreground/10 backdrop-blur-xl [--card-spacing:--spacing(5)] sm:[--card-spacing:--spacing(7)]">
+          <CardHeader className="justify-items-center gap-2 text-center">
+            <img src="/pwa-512x512.png" alt="" className="size-11" />
+            <CardTitle className="text-xl leading-tight font-bold text-balance">
+              <h1>{t("teamInvite.title")}</h1>
+            </CardTitle>
+            <CardDescription className="max-w-sm leading-6 text-pretty">
+              {t("teamInvite.description")}
+            </CardDescription>
+          </CardHeader>
 
-            <div className="flex flex-col gap-3">
-              {!token ? (
-                <Alert variant="destructive">
-                  <AlertDescription>
-                    {t("teamInvite.missingToken")}
-                  </AlertDescription>
-                </Alert>
-              ) : null}
+          <CardContent className="flex flex-col gap-3">
+            {!token ? (
+              <Alert variant="destructive">
+                <AlertDescription>
+                  {t("teamInvite.missingToken")}
+                </AlertDescription>
+              </Alert>
+            ) : null}
 
-              {inviteQuery.isLoading ? (
-                <InviteSkeleton />
-              ) : inviteQuery.isError ? (
-                <Alert variant="destructive">
-                  <AlertDescription>
-                    {getErrorMessage(
-                      inviteQuery.error,
-                      t("teamInvite.loadFailed")
-                    )}
-                  </AlertDescription>
-                </Alert>
-              ) : invite ? (
-                <InviteSummary invite={invite} locale={locale} />
-              ) : null}
+            {inviteQuery.isLoading ? (
+              <InviteSkeleton />
+            ) : inviteQuery.isError ? (
+              <Alert variant="destructive">
+                <AlertDescription>
+                  {getErrorMessage(
+                    inviteQuery.error,
+                    t("teamInvite.loadFailed")
+                  )}
+                </AlertDescription>
+              </Alert>
+            ) : invite ? (
+              <InviteSummary invite={invite} locale={locale} />
+            ) : null}
 
-              {invite && !canRespond ? (
-                <Alert>
-                  <AlertDescription>
-                    {t("teamInvite.unavailable")}
-                  </AlertDescription>
-                </Alert>
-              ) : null}
-            </div>
+            {invite && !canRespond ? (
+              <Alert>
+                <AlertDescription>
+                  {t("teamInvite.unavailable")}
+                </AlertDescription>
+              </Alert>
+            ) : null}
+          </CardContent>
 
-            <div className="flex flex-col gap-3">
+          <CardFooter className="flex-col items-stretch gap-2 border-0 bg-transparent pt-0">
+            <Button
+              type="button"
+              size="lg"
+              className="h-11 w-full"
+              disabled={!canRespond || isMutating}
+              onClick={acceptInvite}
+            >
+              {acceptMutation.isPending ? (
+                <Spinner data-icon="inline-start" />
+              ) : isLoggedIn ? (
+                <CheckIcon data-icon="inline-start" />
+              ) : (
+                <LogInIcon data-icon="inline-start" />
+              )}
+              {isLoggedIn
+                ? t("teamInvite.accept")
+                : t("teamInvite.loginRequired")}
+            </Button>
+
+            {!isLoggedIn && googleLoginEnabled && canRespond ? (
+              <>
+                <div className="flex items-center gap-3">
+                  <Separator className="flex-1" />
+                  <span className="text-xs text-muted-foreground">
+                    {t("login.oauthSeparator")}
+                  </span>
+                  <Separator className="flex-1" />
+                </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="lg"
+                  className="w-full"
+                  disabled={isMutating}
+                  onClick={handleGoogleLogin}
+                >
+                  <GoogleLogo data-icon="inline-start" />
+                  {t("login.google")}
+                </Button>
+              </>
+            ) : null}
+
+            <div className="grid grid-cols-2 gap-2">
               <Button
                 type="button"
-                size="lg"
-                className="h-11 w-full justify-center"
-                disabled={!canRespond || isMutating}
-                onClick={acceptInvite}
-              >
-                {acceptMutation.isPending ? (
-                  <Spinner data-icon="inline-start" />
-                ) : isLoggedIn ? (
-                  <CheckIcon data-icon="inline-start" />
-                ) : (
-                  <LogInIcon data-icon="inline-start" />
-                )}
-                {isLoggedIn
-                  ? t("teamInvite.accept")
-                  : t("teamInvite.loginRequired")}
-              </Button>
-
-              {!isLoggedIn && googleLoginEnabled && canRespond ? (
-                <>
-                  <div className="flex items-center gap-3">
-                    <Separator className="flex-1" />
-                    <span className="text-xs text-muted-foreground">
-                      {t("login.oauthSeparator")}
-                    </span>
-                    <Separator className="flex-1" />
-                  </div>
-
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="lg"
-                    className="w-full justify-center"
-                    disabled={isMutating}
-                    onClick={handleGoogleLogin}
-                  >
-                    <GoogleLogo data-icon="inline-start" />
-                    {t("login.google")}
-                  </Button>
-                </>
-              ) : null}
-
-              <Button
-                type="button"
-                variant="ghost"
-                className="w-full justify-center"
+                variant="outline"
+                size="sm"
+                className="h-10 min-w-0"
                 onClick={() => navigate(redirectTo, { replace: true })}
               >
-                <ArrowRightIcon data-icon="inline-start" />
                 {t("teamInvite.continue")}
+                <ArrowRightIcon data-icon="inline-end" />
               </Button>
 
               <Button
                 type="button"
-                variant="ghost"
-                className="w-full justify-center text-destructive hover:bg-destructive/10 hover:text-destructive"
+                variant="outline"
+                size="sm"
+                className="h-10 min-w-0 border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
                 disabled={!canRespond || isMutating}
                 onClick={declineInvite}
               >
@@ -259,7 +266,7 @@ export default function TeamInvitePage() {
                 {t("teamInvite.decline")}
               </Button>
             </div>
-          </CardContent>
+          </CardFooter>
         </Card>
       </section>
     </main>
@@ -268,18 +275,19 @@ export default function TeamInvitePage() {
 
 function InviteSkeleton() {
   return (
-    <div className="flex flex-col gap-4 rounded-xl bg-muted/60 p-4">
-      <div className="flex items-center gap-3">
-        <Skeleton className="size-11 rounded-xl" />
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4">
         <div className="flex flex-1 flex-col gap-2">
           <Skeleton className="h-3 w-16" />
-          <Skeleton className="h-6 w-2/3" />
+          <Skeleton className="h-5 w-2/3" />
+          <Skeleton className="h-3 w-1/2" />
         </div>
+        <Skeleton className="h-6 w-14 rounded-full" />
       </div>
-      <div className="flex flex-col divide-y divide-border/70 border-y border-border/70">
-        <Skeleton className="my-2 h-5 w-full" />
-        <Skeleton className="my-2 h-5 w-full" />
-        <Skeleton className="my-2 h-5 w-full" />
+      <div className="flex flex-col divide-y divide-border/70 overflow-hidden rounded-xl border border-border/70 bg-background/60 px-4">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <Skeleton key={index} className="my-3 h-5 w-full" />
+        ))}
       </div>
     </div>
   )
@@ -295,22 +303,30 @@ function InviteSummary({
   const { t } = useTranslation()
 
   return (
-    <section className="overflow-hidden rounded-xl bg-muted/60">
-      <div className="flex min-w-0 items-center gap-3 px-4 py-4">
-        <div className="grid size-11 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground shadow-sm shadow-primary/20">
-          <UsersRoundIcon aria-hidden="true" />
-        </div>
+    <section className="flex flex-col gap-3">
+      <div className="flex min-w-0 items-center justify-between gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
         <div className="min-w-0 flex-1">
-          <p className="text-xs text-muted-foreground">
-            {t("teamInvite.role")}
+          <p className="text-xs font-medium text-muted-foreground">
+            {t("teamInvite.badge")}
           </p>
-          <Badge variant="secondary" className="mt-1 max-w-full truncate">
-            {invite.role_name || "-"}
-          </Badge>
+          <p className="truncate text-base leading-tight font-bold">
+            {invite.team_name || "-"}
+          </p>
+          <p className="truncate font-mono text-xs text-muted-foreground">
+            {invite.team_key || "-"}
+          </p>
         </div>
+        <Badge variant="secondary" className="max-w-28 shrink-0 truncate">
+          {invite.role_name || "-"}
+        </Badge>
       </div>
 
-      <dl className="flex flex-col divide-y divide-border/70 border-y border-border/70 bg-background/50 px-4 text-sm">
+      <dl className="flex flex-col divide-y divide-border/70 overflow-hidden rounded-xl border border-border/70 bg-background/60 px-4 text-sm">
+        <SummaryItem
+          icon={ShieldCheckIcon}
+          label={t("teamInvite.role")}
+          value={invite.role_name}
+        />
         <SummaryItem
           icon={UserRoundIcon}
           label={t("teamInvite.inviter")}
@@ -320,6 +336,7 @@ function InviteSummary({
           icon={MailIcon}
           label={t("teamInvite.email")}
           value={invite.email}
+          mono
         />
         <SummaryItem
           icon={Clock3Icon}
@@ -335,10 +352,12 @@ function SummaryItem({
   icon: Icon,
   label,
   value,
+  mono = false,
 }: {
   icon: React.ComponentType<React.SVGProps<SVGSVGElement>>
   label: string
   value?: string | null
+  mono?: boolean
 }) {
   return (
     <div className="grid min-h-11 grid-cols-[minmax(0,0.9fr)_minmax(0,1.4fr)] items-center gap-3 py-2.5">
@@ -346,7 +365,12 @@ function SummaryItem({
         <Icon className="size-4 shrink-0" aria-hidden={true} />
         <span className="truncate">{label}</span>
       </dt>
-      <dd className="min-w-0 text-right font-medium break-words">
+      <dd
+        className={cn(
+          "min-w-0 text-right font-medium break-words",
+          mono && "font-mono text-xs"
+        )}
+      >
         {value || "-"}
       </dd>
     </div>
