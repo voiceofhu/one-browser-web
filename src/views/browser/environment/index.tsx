@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import type { Column, ColumnDef } from "@tanstack/react-table"
 import {
   LaptopIcon,
+  PencilIcon,
   PlayIcon,
   PowerIcon,
   PowerOffIcon,
@@ -14,9 +15,14 @@ import { toast } from "sonner"
 
 import {
   closeBrowserEnvironment,
+  createBrowserEnvironment,
+  getBrowserEnvironment,
   listBrowserEnvironments,
+  listBrowserTeams,
+  listBrowserVersions,
   openBrowserEnvironment,
   setBrowserEnvironmentStatus,
+  updateBrowserEnvironment,
 } from "@/api/browser"
 import { OverflowTooltipText } from "@/components/overflow-tooltip-text"
 import { AnimatedSegmentedTabs } from "@/components/ui/animated-segmented-tabs"
@@ -36,6 +42,9 @@ import {
   ResourceTableColumnHeader,
 } from "@/views/system/_components/resource/table"
 import { showResourceError } from "@/views/system/_components/resource/toast"
+import { ResourceToolbarActions } from "@/views/system/_components/resource/toolbar-actions"
+
+import { EnvironmentEditorDialog } from "./editor-dialog"
 
 type EnvironmentStatusFilter =
   | "all"
@@ -45,6 +54,10 @@ type EnvironmentStatusFilter =
   | "stopping"
   | "error"
   | "1"
+
+type EnvironmentEditorState =
+  | { mode: "create"; record: null }
+  | { mode: "edit"; record: BrowserEnvironmentResource }
 
 const ENVIRONMENT_FILTERS = [
   { label: "全部", value: "all" },
@@ -64,6 +77,8 @@ export default function EnvironmentPage() {
     React.useState<EnvironmentStatusFilter>("all")
   const [pageIndex, setPageIndex] = React.useState(0)
   const [pageSize, setPageSize] = React.useState(10)
+  const [editorState, setEditorState] =
+    React.useState<EnvironmentEditorState | null>(null)
   const params = React.useMemo<BrowserListParams>(
     () => ({
       page: pageIndex + 1,
@@ -77,6 +92,14 @@ export default function EnvironmentPage() {
     queryKey: [...browserQueryKeys.environments, params],
     queryFn: () => listBrowserEnvironments(params),
     placeholderData: (previousData) => previousData,
+  })
+  const teamsQuery = useQuery({
+    queryKey: [...browserQueryKeys.teams, "environment-editor"],
+    queryFn: () => listBrowserTeams({ page: 1, page_size: 100 }),
+  })
+  const versionsQuery = useQuery({
+    queryKey: [...browserQueryKeys.assets, "versions"],
+    queryFn: () => listBrowserVersions(),
   })
   const refreshEnvironments = React.useCallback(() => {
     void queryClient.invalidateQueries({
@@ -115,6 +138,36 @@ export default function EnvironmentPage() {
     },
     onError: showResourceError,
   })
+  const createMutation = useMutation({
+    mutationFn: createBrowserEnvironment,
+    onSuccess: () => {
+      toast.success("环境已创建")
+      setEditorState(null)
+      refreshEnvironments()
+    },
+    onError: showResourceError,
+  })
+  const updateMutation = useMutation({
+    mutationFn: ({
+      environmentId,
+      payload,
+    }: {
+      environmentId: number
+      payload: Parameters<typeof updateBrowserEnvironment>[1]
+    }) => updateBrowserEnvironment(environmentId, payload),
+    onSuccess: () => {
+      toast.success("环境已更新")
+      setEditorState(null)
+      refreshEnvironments()
+    },
+    onError: showResourceError,
+  })
+  const detailMutation = useMutation({
+    mutationFn: getBrowserEnvironment,
+    onSuccess: (record) => setEditorState({ mode: "edit", record }),
+    onError: showResourceError,
+  })
+  const isSaving = createMutation.isPending || updateMutation.isPending
   const runtimePendingId =
     openMutation.isPending && typeof openMutation.variables === "number"
       ? openMutation.variables
@@ -138,6 +191,14 @@ export default function EnvironmentPage() {
         header: ({ column }) => tableHeader(column, "分组"),
         cell: ({ row }) => <TextBadge value={row.original.group_key} />,
         meta: { label: "分组", cellClassName: "w-32" },
+      },
+      {
+        accessorKey: "chromium_version",
+        header: ({ column }) => tableHeader(column, "Chromium 版本"),
+        cell: ({ row }) => (
+          <TextCell value={row.original.chromium_version || "跟随最新版本"} />
+        ),
+        meta: { label: "Chromium 版本", cellClassName: "w-40" },
       },
       {
         accessorKey: "proxy_name",
@@ -182,6 +243,11 @@ export default function EnvironmentPage() {
             record={row.original}
             runtimePending={runtimePendingId === row.original.environment_id}
             statusPending={statusPendingId === row.original.environment_id}
+            editPending={
+              detailMutation.isPending &&
+              detailMutation.variables === row.original.environment_id
+            }
+            onEdit={(environmentId) => detailMutation.mutate(environmentId)}
             onOpen={(environmentId) => openMutation.mutate(environmentId)}
             onClose={(environmentId) => closeMutation.mutate(environmentId)}
             onStatusChange={(environmentId, status) =>
@@ -194,6 +260,7 @@ export default function EnvironmentPage() {
     ],
     [
       closeMutation,
+      detailMutation,
       openMutation,
       runtimePendingId,
       statusMutation,
@@ -233,6 +300,13 @@ export default function EnvironmentPage() {
               }}
             />
           }
+          toolbarActions={
+            <ResourceToolbarActions
+              isRefreshing={query.isFetching}
+              onRefresh={() => void query.refetch()}
+              onCreate={() => setEditorState({ mode: "create", record: null })}
+            />
+          }
           isLoading={query.isLoading}
           isFetching={query.isFetching}
           error={query.error}
@@ -245,6 +319,35 @@ export default function EnvironmentPage() {
           selectionResetKey={`${statusFilter}:${debouncedSearch}`}
         />
       </div>
+
+      {editorState ? (
+        <EnvironmentEditorDialog
+          key={
+            editorState.mode === "edit"
+              ? `edit:${editorState.record.environment_id}`
+              : "create"
+          }
+          record={editorState.record}
+          teams={teamsQuery.data?.list ?? []}
+          versions={versionsQuery.data ?? []}
+          isSaving={isSaving}
+          onOpenChange={(open) => {
+            if (!open && !isSaving) {
+              setEditorState(null)
+            }
+          }}
+          onSubmit={(payload) => {
+            if (editorState.mode === "edit") {
+              updateMutation.mutate({
+                environmentId: editorState.record.environment_id,
+                payload,
+              })
+              return
+            }
+            createMutation.mutate(payload)
+          }}
+        />
+      ) : null}
     </div>
   )
 }
@@ -291,6 +394,8 @@ function EnvironmentActionCell({
   record,
   runtimePending,
   statusPending,
+  editPending,
+  onEdit,
   onOpen,
   onClose,
   onStatusChange,
@@ -298,6 +403,8 @@ function EnvironmentActionCell({
   record: BrowserEnvironmentResource
   runtimePending: boolean
   statusPending: boolean
+  editPending: boolean
+  onEdit: (environmentId: number) => void
   onOpen: (environmentId: number) => void
   onClose: (environmentId: number) => void
   onStatusChange: (environmentId: number, status: BrowserStatusFlag) => void
@@ -312,6 +419,16 @@ function EnvironmentActionCell({
 
   return (
     <div className="flex items-center justify-end gap-1">
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-sm"
+        disabled={editPending || runtimePending || transitioning}
+        aria-label="编辑环境"
+        onClick={() => onEdit(record.environment_id)}
+      >
+        {editPending ? <Spinner /> : <PencilIcon />}
+      </Button>
       <Button
         type="button"
         variant="outline"

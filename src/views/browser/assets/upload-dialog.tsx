@@ -47,6 +47,7 @@ import {
 
 const DIRECT_LIMIT_BYTES = 100 * 1024 * 1024
 const DEFAULT_CHANNEL = "stable"
+const CHROMIUM_VERSION_PATTERN = /^\d+\.\d+\.\d+\.\d+$/
 const CHROMIUM_ASSET_NAME_PATTERN =
   /^one-browser-chromium-(macos|windows)-(arm64|x64)-(\d+\.\d+\.\d+\.\d+)\.tar\.gz$/i
 
@@ -77,9 +78,18 @@ export function BrowserAssetUploadDialog({
   const [progress, setProgress] = React.useState<UploadProgress | null>(null)
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const fileInputId = React.useId()
+  const normalizedVersion = version.trim()
+  const versionError =
+    normalizedVersion && !CHROMIUM_VERSION_PATTERN.test(normalizedVersion)
+      ? "版本需为四段数字，例如 148.0.7778.178"
+      : ""
 
   const canSubmit =
-    Boolean(file) && Boolean(version.trim()) && !fileNameError && !isSubmitting
+    Boolean(file) &&
+    Boolean(normalizedVersion) &&
+    !versionError &&
+    !fileNameError &&
+    !isSubmitting
 
   function handleOpenChange(nextOpen: boolean) {
     if (isSubmitting) {
@@ -140,6 +150,9 @@ export function BrowserAssetUploadDialog({
       setError("安装包文件不能为空")
       return
     }
+    if (!CHROMIUM_VERSION_PATTERN.test(normalizedVersion)) {
+      return
+    }
     const parsed = parseChromiumAssetFileName(file.name)
     if (!parsed) {
       setFileNameError(
@@ -147,10 +160,6 @@ export function BrowserAssetUploadDialog({
       )
       return
     }
-    setPlatform(parsed.platform)
-    setArch(parsed.arch)
-    setVersion(parsed.version)
-
     setIsSubmitting(true)
     try {
       const asset =
@@ -277,15 +286,23 @@ export function BrowserAssetUploadDialog({
                   ]}
                   disabled={isSubmitting || Boolean(file)}
                 />
-                <TextField
-                  label="版本"
-                  value={version}
-                  onChange={setVersion}
-                  placeholder="例如 126.0.6478.127"
-                  disabled={isSubmitting}
-                  readOnly
+                <Field
                   className="sm:col-span-2"
-                />
+                  data-invalid={Boolean(versionError)}
+                >
+                  <FieldLabel>版本</FieldLabel>
+                  <Input
+                    value={version}
+                    onChange={(event) => setVersion(event.target.value)}
+                    placeholder="例如 126.0.6478.127"
+                    disabled={isSubmitting}
+                    required
+                    aria-invalid={Boolean(versionError)}
+                  />
+                  <FieldDescription className="text-xs/relaxed">
+                    {versionError || "默认从文件名识别，也可以手动修改。"}
+                  </FieldDescription>
+                </Field>
               </div>
 
               <Field>
@@ -399,39 +416,6 @@ function SelectField({
           </SelectGroup>
         </SelectContent>
       </Select>
-    </Field>
-  )
-}
-
-type TextFieldProps = {
-  label: string
-  value: string
-  onChange: (value: string) => void
-  placeholder?: string
-  disabled?: boolean
-  readOnly?: boolean
-  className?: string
-}
-
-function TextField({
-  label,
-  value,
-  onChange,
-  placeholder,
-  disabled,
-  readOnly,
-  className,
-}: TextFieldProps) {
-  return (
-    <Field className={className}>
-      <FieldLabel>{label}</FieldLabel>
-      <Input
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        placeholder={placeholder}
-        disabled={disabled}
-        readOnly={readOnly}
-      />
     </Field>
   )
 }

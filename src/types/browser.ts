@@ -33,6 +33,7 @@ export interface BrowserAssetListParams extends BrowserListParams {
 export interface BrowserDownloadTarget {
   platform: string
   arch: string
+  version?: string
 }
 
 export interface BrowserStatusPayload {
@@ -52,6 +53,7 @@ export interface BrowserEnvironmentPayload {
   environment_no?: string | null
   name?: string
   group_key?: string | null
+  chromium_version?: string | null
   mode?: string
   status?: BrowserStatusFlag
   remark?: string
@@ -139,6 +141,7 @@ export interface BrowserEnvironmentResource {
   environment_no: string | null
   name: string
   group_key: string | null
+  chromium_version: string | null
   mode: string
   status: BrowserStatusFlag
   runtime_status: string
@@ -154,6 +157,13 @@ export interface BrowserEnvironmentResource {
   updated_at: string | null
   remark: string
   tags: string[]
+  fingerprint_config?: Record<string, unknown> | null
+  advanced?: Record<string, unknown> | null
+}
+
+export interface BrowserVersionResource {
+  version: string
+  is_current: boolean
 }
 
 export interface BrowserProxyResource {

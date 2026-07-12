@@ -24,6 +24,7 @@ import type {
   BrowserStatusPayload,
   BrowserTeamPayload,
   BrowserTeamResource,
+  BrowserVersionResource,
 } from "@/types/browser"
 
 const BROWSER_ENVIRONMENT_PATH = "/browser/environments"
@@ -31,7 +32,8 @@ const BROWSER_PROXY_PATH = "/browser/proxies"
 const BROWSER_MEMBER_PATH = "/browser/members"
 const BROWSER_TEAM_PATH = "/browser/teams"
 const BROWSER_ASSET_PATH = "/browser/assets"
-const BROWSER_DOWNLOAD_PATH = "/browser-downloads/current"
+const BROWSER_DOWNLOAD_PATH = "/browser/download"
+const BROWSER_VERSION_PATH = "/browser/download/versions"
 const APP_DOWNLOAD_PATH = "/app-downloads/latest"
 
 export function listBrowserEnvironments(params?: BrowserListParams) {
@@ -175,6 +177,12 @@ export function listBrowserAssets(params?: BrowserAssetListParams) {
 export function getCurrentBrowserDownload(target: BrowserDownloadTarget) {
   return http.get<BrowserDownloadResource>(
     buildQueryPath(BROWSER_DOWNLOAD_PATH, target)
+  )
+}
+
+export function listBrowserVersions(target?: Partial<BrowserDownloadTarget>) {
+  return http.get<BrowserVersionResource[]>(
+    buildQueryPath(BROWSER_VERSION_PATH, target)
   )
 }
 
