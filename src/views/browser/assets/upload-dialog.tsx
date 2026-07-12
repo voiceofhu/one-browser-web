@@ -48,6 +48,7 @@ import {
 const DIRECT_LIMIT_BYTES = 100 * 1024 * 1024
 const DEFAULT_CHANNEL = "stable"
 const CHROMIUM_VERSION_PATTERN = /^\d+\.\d+\.\d+\.\d+$/
+const SHA256_PATTERN = /^[0-9a-f]{64}$/i
 const CHROMIUM_ASSET_NAME_PATTERN =
   /^one-browser-chromium-(macos|windows)-(arm64|x64)-(\d+\.\d+\.\d+\.\d+)\.tar\.gz$/i
 
@@ -73,21 +74,32 @@ export function BrowserAssetUploadDialog({
   const [remark, setRemark] = React.useState("")
   const [makeCurrent, setMakeCurrent] = React.useState(true)
   const [file, setFile] = React.useState<File | null>(null)
+  const [sha256, setSha256] = React.useState("")
+  const [checksumFileName, setChecksumFileName] = React.useState("")
+  const [checksumError, setChecksumError] = React.useState("")
   const [fileNameError, setFileNameError] = React.useState("")
   const [error, setError] = React.useState("")
   const [progress, setProgress] = React.useState<UploadProgress | null>(null)
   const [isSubmitting, setIsSubmitting] = React.useState(false)
   const fileInputId = React.useId()
   const normalizedVersion = version.trim()
+  const normalizedSha256 = sha256.trim().toLowerCase()
   const versionError =
     normalizedVersion && !CHROMIUM_VERSION_PATTERN.test(normalizedVersion)
       ? "版本需为四段数字，例如 148.0.7778.178"
+      : ""
+  const sha256Error =
+    normalizedSha256 && !SHA256_PATTERN.test(normalizedSha256)
+      ? "SHA-256 必须是 64 位十六进制字符串"
       : ""
 
   const canSubmit =
     Boolean(file) &&
     Boolean(normalizedVersion) &&
+    Boolean(normalizedSha256) &&
     !versionError &&
+    !sha256Error &&
+    !checksumError &&
     !fileNameError &&
     !isSubmitting
 
@@ -108,6 +120,9 @@ export function BrowserAssetUploadDialog({
     setRemark("")
     setMakeCurrent(true)
     setFile(null)
+    setSha256("")
+    setChecksumFileName("")
+    setChecksumError("")
     setFileNameError("")
     setError("")
     setProgress(null)
@@ -138,6 +153,37 @@ export function BrowserAssetUploadDialog({
     setVersion(parsed.version)
   }
 
+  async function handleFileSelection(files: FileList | null) {
+    const selectedFiles = Array.from(files ?? [])
+    const archive =
+      selectedFiles.find((selectedFile) =>
+        selectedFile.name.toLowerCase().endsWith(".tar.gz")
+      ) ?? null
+    const checksum = archive
+      ? selectedFiles.find(
+          (selectedFile) => selectedFile.name === `${archive.name}.sha256`
+        )
+      : undefined
+
+    handleFileChange(archive)
+    setSha256("")
+    setChecksumFileName("")
+    setChecksumError("")
+
+    if (!archive || !checksum) {
+      return
+    }
+
+    try {
+      setSha256(await readSha256Sidecar(checksum, archive.name))
+      setChecksumFileName(checksum.name)
+    } catch (error) {
+      setChecksumError(
+        error instanceof Error ? error.message : "SHA-256 文件读取失败"
+      )
+    }
+  }
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError("")
@@ -151,6 +197,9 @@ export function BrowserAssetUploadDialog({
       return
     }
     if (!CHROMIUM_VERSION_PATTERN.test(normalizedVersion)) {
+      return
+    }
+    if (!SHA256_PATTERN.test(normalizedSha256)) {
       return
     }
     const parsed = parseChromiumAssetFileName(file.name)
@@ -182,6 +231,7 @@ export function BrowserAssetUploadDialog({
     formData.set("arch", arch)
     formData.set("channel", DEFAULT_CHANNEL)
     formData.set("version", version.trim())
+    formData.set("sha256", normalizedSha256)
     formData.set("make_current", String(makeCurrent))
     formData.set("remark", remark.trim())
     formData.set("file", uploadFile)
@@ -201,6 +251,7 @@ export function BrowserAssetUploadDialog({
       version: version.trim(),
       file_name: uploadFile.name,
       file_size: uploadFile.size,
+      sha256: normalizedSha256,
       mime_type: uploadFile.type || "application/octet-stream",
       part_size: partSizeBytes,
       make_current: makeCurrent,
@@ -306,13 +357,15 @@ export function BrowserAssetUploadDialog({
               </div>
 
               <Field>
-                <FieldLabel htmlFor={fileInputId}>安装包文件</FieldLabel>
+                <FieldLabel htmlFor={fileInputId}>安装包与校验文件</FieldLabel>
                 <Input
                   id={fileInputId}
                   type="file"
+                  accept=".tar.gz,.sha256"
+                  multiple
                   disabled={isSubmitting}
                   onChange={(event) =>
-                    handleFileChange(event.currentTarget.files?.[0] ?? null)
+                    void handleFileSelection(event.currentTarget.files)
                   }
                 />
                 <FieldDescription className="text-xs/relaxed">
@@ -320,7 +373,30 @@ export function BrowserAssetUploadDialog({
                     ? fileNameError
                     : file
                       ? `${file.name} · ${formatBytes(file.size)}`
-                      : "请选择 make gz 生成的 one-browser-chromium-*.tar.gz 安装包。"}
+                      : "请同时选择 make build/build-win 生成的 .tar.gz 和同名 .sha256 文件。"}
+                </FieldDescription>
+              </Field>
+
+              <Field data-invalid={Boolean(sha256Error || checksumError)}>
+                <FieldLabel>SHA-256</FieldLabel>
+                <Input
+                  value={sha256}
+                  onChange={(event) => {
+                    setSha256(event.target.value)
+                    setChecksumFileName("")
+                    setChecksumError("")
+                  }}
+                  placeholder="64 位十六进制校验值"
+                  disabled={isSubmitting}
+                  required
+                  aria-invalid={Boolean(sha256Error || checksumError)}
+                />
+                <FieldDescription className="text-xs/relaxed">
+                  {sha256Error ||
+                    checksumError ||
+                    (checksumFileName
+                      ? `已从 ${checksumFileName} 读取。`
+                      : "可从 .sha256 文件自动读取，也可以手动粘贴。")}
                 </FieldDescription>
               </Field>
 
@@ -435,6 +511,21 @@ function parseChromiumAssetFileName(fileName: string) {
     arch: match[2].toLowerCase(),
     version: match[3],
   }
+}
+
+async function readSha256Sidecar(file: File, archiveName: string) {
+  const line = (await file.text()).trim().split(/\r?\n/, 1)[0] ?? ""
+  const match = /^([0-9a-f]{64})(?:\s+\*?(.+))?$/i.exec(line)
+  if (!match) {
+    throw new Error("SHA-256 文件格式无效")
+  }
+
+  const declaredFileName = match[2]?.trim()
+  if (declaredFileName && declaredFileName !== archiveName) {
+    throw new Error(`SHA-256 文件对应的是 ${declaredFileName}`)
+  }
+
+  return match[1].toLowerCase()
 }
 
 function formatBytes(value: number) {

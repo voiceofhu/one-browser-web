@@ -241,6 +241,7 @@ export interface BrowserAssetResource {
   file_name: string
   mime_type: string
   file_size: number
+  sha256: string
   bucket_id: string
   object_key: string
   download_url: string
@@ -260,6 +261,7 @@ export interface BrowserDownloadResource {
   version: string
   file_name: string
   file_size: number
+  sha256: string
   updated_at: string | null
 }
 
@@ -307,6 +309,7 @@ export interface BrowserAssetUploadResource {
   file_name: string
   mime_type: string
   file_size: number
+  sha256: string
   bucket_id: string
   bucket_name: string | null
   object_key: string
@@ -328,6 +331,7 @@ export interface BrowserAssetMultipartCreatePayload {
   version: string
   file_name: string
   file_size: number
+  sha256: string
   mime_type: string
   object_key?: string
   part_size?: number
