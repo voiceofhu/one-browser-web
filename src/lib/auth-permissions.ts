@@ -176,6 +176,12 @@ function getTeamPermissionList(
   if (typeof teamPermissions === "undefined") {
     return undefined
   }
+  if (
+    Array.isArray(teamPermissions) &&
+    teamPermissions.some((permission) => permission === ALL_PERMISSION)
+  ) {
+    return [ALL_PERMISSION]
+  }
   if (teamId === null || typeof teamId === "undefined") {
     return []
   }
@@ -199,11 +205,14 @@ function getTeamPermissionList(
 }
 
 function getTeamPermissionListFromEntries(
-  teamPermissions: AuthTeamPermissionEntry[],
+  teamPermissions: Array<string | AuthTeamPermissionEntry>,
   teamId: string,
   kind: "permissions" | "buttons"
 ) {
   for (const entry of teamPermissions) {
+    if (typeof entry === "string") {
+      continue
+    }
     if (String(entry.team_id) === teamId) {
       return normalizeTeamPermissionValue(entry, kind) ?? []
     }

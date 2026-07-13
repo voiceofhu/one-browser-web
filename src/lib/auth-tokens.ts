@@ -32,9 +32,11 @@ export function saveAuthTokens(payload: AuthTokenPayload) {
 
   if (!accessToken || !refreshToken) {
     console.info("[auth-debug] save auth tokens rejected missing token", {
-      accessToken,
-      refreshToken,
-      payload,
+      hasAccessToken: Boolean(accessToken),
+      hasRefreshToken: Boolean(refreshToken),
+      tokenType: payload.token_type,
+      expiresIn: payload.expires_in,
+      refreshExpiresIn: payload.refresh_expires_in,
     })
     clearAuthTokens()
     return
@@ -53,12 +55,11 @@ export function saveAuthTokens(payload: AuthTokenPayload) {
   writeAuthTokensCookie(tokens)
   removeLegacyAuthTokens()
   console.info("[auth-debug] saved auth tokens", {
-    accessToken: tokens.accessToken,
-    refreshToken: tokens.refreshToken,
+    hasAccessToken: Boolean(tokens.accessToken),
+    hasRefreshToken: Boolean(tokens.refreshToken),
     tokenType: tokens.tokenType,
     accessExpiresAt: tokens.accessExpiresAt,
     refreshExpiresAt: tokens.refreshExpiresAt,
-    payload,
   })
 }
 
@@ -92,7 +93,7 @@ export function getRefreshToken() {
 
   if (tokens.refreshExpiresAt && tokens.refreshExpiresAt <= Date.now()) {
     console.info("[auth-debug] refresh token expired in storage", {
-      refreshToken: tokens.refreshToken,
+      hasRefreshToken: Boolean(tokens.refreshToken),
       refreshExpiresAt: tokens.refreshExpiresAt,
       now: Date.now(),
     })
@@ -138,7 +139,9 @@ function writeAuthTokensCookie(tokens: StoredAuthTokens) {
   const accessMaxAge = getRemainingSeconds(tokens.accessExpiresAt)
   const refreshMaxAge = getRemainingSeconds(tokens.refreshExpiresAt)
 
-  writeCookie("access_token", tokens.accessToken ?? "", { maxAge: accessMaxAge })
+  writeCookie("access_token", tokens.accessToken ?? "", {
+    maxAge: accessMaxAge,
+  })
   writeCookie("expires_in", serializeDuration(accessMaxAge), {
     maxAge: accessMaxAge,
   })
@@ -157,7 +160,9 @@ function writeAuthTokensCookie(tokens: StoredAuthTokens) {
 function readAuthTokensCookie() {
   const accessToken = readCookie("access_token")
   const refreshToken = readCookie("refresh_token")
-  const hasSplitCookie = AUTH_TOKEN_COOKIE_NAMES.some((name) => readCookie(name))
+  const hasSplitCookie = AUTH_TOKEN_COOKIE_NAMES.some((name) =>
+    readCookie(name)
+  )
 
   if (hasSplitCookie) {
     const tokens: StoredAuthTokens = {
@@ -165,11 +170,14 @@ function readAuthTokensCookie() {
       refreshToken,
       tokenType: normalizeTokenType(readCookie("token_type")),
       accessExpiresAt: accessToken
-        ? readJwtExpiresAt(accessToken) ??
-          expiresAt(Date.now(), parseDurationCookie(readCookie("expires_in")))
+        ? (readJwtExpiresAt(accessToken) ??
+          expiresAt(Date.now(), parseDurationCookie(readCookie("expires_in"))))
         : null,
       refreshExpiresAt: refreshToken
-        ? expiresAt(Date.now(), parseDurationCookie(readCookie("refresh_expires_in")))
+        ? expiresAt(
+            Date.now(),
+            parseDurationCookie(readCookie("refresh_expires_in"))
+          )
         : null,
     }
 

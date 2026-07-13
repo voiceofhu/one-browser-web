@@ -164,7 +164,7 @@ export async function authorizeApp(payload: AppAuthorizationPayload = {}) {
   console.info("[auth-debug] authorize app request", payload)
   const callbackUrl = await http.post<string>(APP_AUTHORIZE_PATH, payload)
   console.info("[auth-debug] authorize app response", {
-    callbackUrl,
+    hasCallbackUrl: Boolean(callbackUrl),
     callbackParams: describeAppCallbackUrl(callbackUrl),
   })
 
@@ -182,9 +182,9 @@ function describeAppCallbackUrl(callbackUrl: string) {
   try {
     const parsed = new URL(callbackUrl)
     return {
-      accessToken: parsed.searchParams.get("access_token"),
-      refreshToken: parsed.searchParams.get("refresh_token"),
-      token: parsed.searchParams.get("token"),
+      hasAccessToken: Boolean(parsed.searchParams.get("access_token")),
+      hasRefreshToken: Boolean(parsed.searchParams.get("refresh_token")),
+      hasToken: Boolean(parsed.searchParams.get("token")),
       expiresIn: parsed.searchParams.get("expires_in"),
       refreshExpiresIn: parsed.searchParams.get("refresh_expires_in"),
       apiUrl: parsed.searchParams.get("api_url"),

@@ -88,15 +88,16 @@ export async function ensureFreshAccessToken(options?: { force?: boolean }) {
   if (!options?.force && !isAccessTokenStale()) {
     console.info("[auth-debug] ensure fresh access token skipped refresh", {
       force: options?.force ?? false,
-      accessToken: getAccessToken(),
+      hasAccessToken: Boolean(getAccessToken()),
+      hasRefreshToken: Boolean(getRefreshToken()),
     })
     return getAccessToken()
   }
 
   console.info("[auth-debug] ensure fresh access token refreshing", {
     force: options?.force ?? false,
-    accessToken: getAccessToken(),
-    refreshToken: getRefreshToken(),
+    hasAccessToken: Boolean(getAccessToken()),
+    hasRefreshToken: Boolean(getRefreshToken()),
   })
   try {
     await refreshAuthTokens()
@@ -257,6 +258,16 @@ async function request<T>(
 ) {
   syncAuthSessionStateFromTokens()
 
+  try {
+    await refreshAuthTokensBeforeRequest(path)
+  } catch (error) {
+    if (isUnauthorizedError(error)) {
+      expireAuthSession(path, error)
+    }
+
+    throw error
+  }
+
   const response = await sendRequest(path, init, baseUrl)
 
   if (!response.ok) {
@@ -268,8 +279,8 @@ async function request<T>(
         status: error.status,
         code: error.code,
         message: error.message,
-        accessToken: getAccessToken(),
-        refreshToken: getRefreshToken(),
+        hasAccessToken: Boolean(getAccessToken()),
+        hasRefreshToken: Boolean(getRefreshToken()),
       })
       if (!shouldRefreshAuth(path)) {
         throw error
@@ -364,11 +375,29 @@ async function refreshAndRetry<T>(
 }
 
 function shouldRefreshAuth(path: string) {
+  const pathname = getRequestPathname(path)
   return !(
-    path.includes("/auth/login") ||
-    path.includes("/auth/google/callback") ||
-    path.includes("/auth/refresh")
+    pathname.endsWith("/auth/login") ||
+    pathname.endsWith("/auth/google/callback") ||
+    pathname.endsWith("/auth/refresh")
   )
+}
+
+async function refreshAuthTokensBeforeRequest(path: string) {
+  if (!shouldRefreshAuth(path) || !isAccessTokenStale()) {
+    return
+  }
+
+  if (!getRefreshToken()) {
+    return
+  }
+
+  console.info("[auth-debug] refresh auth tokens before request", {
+    path: getRequestPathname(path),
+    hasAccessToken: Boolean(getAccessToken()),
+    hasRefreshToken: true,
+  })
+  await refreshAuthTokens()
 }
 
 async function refreshAuthTokens() {
@@ -381,14 +410,14 @@ async function refreshAuthTokens() {
   if (!refreshToken) {
     authSessionExpired = true
     console.info("[auth-debug] refresh skipped missing refresh token", {
-      accessToken: getAccessToken(),
+      hasAccessToken: Boolean(getAccessToken()),
     })
     throw new HttpError(401, "MISSING_REFRESH_TOKEN", "请重新登录")
   }
 
   console.info("[auth-debug] refresh auth tokens start", {
-    refreshToken,
-    accessToken: getAccessToken(),
+    hasRefreshToken: true,
+    hasAccessToken: Boolean(getAccessToken()),
     hasExistingPromise: Boolean(refreshPromise),
   })
   refreshPromise ??= fetchRefreshToken(refreshToken).finally(() => {
@@ -406,7 +435,7 @@ async function fetchRefreshToken(refreshToken: string) {
   const refreshUrl = buildUrl("/auth/refresh")
   console.info("[auth-debug] fetch refresh token request", {
     url: refreshUrl,
-    refreshToken,
+    hasRefreshToken: Boolean(refreshToken),
   })
   const response = await fetch(refreshUrl, {
     ...init,
@@ -415,7 +444,7 @@ async function fetchRefreshToken(refreshToken: string) {
   })
   console.info("[auth-debug] fetch refresh token response", {
     url: refreshUrl,
-    refreshToken,
+    hasRefreshToken: Boolean(refreshToken),
     status: response.status,
     ok: response.ok,
   })
@@ -424,7 +453,7 @@ async function fetchRefreshToken(refreshToken: string) {
     const error = await parseError(response)
     console.info("[auth-debug] fetch refresh token failed", {
       url: refreshUrl,
-      refreshToken,
+      hasRefreshToken: Boolean(refreshToken),
       status: error.status,
       code: error.code,
       message: error.message,
@@ -436,9 +465,9 @@ async function fetchRefreshToken(refreshToken: string) {
   const tokens = await parseResponseData<AuthTokenPayload>(response)
   console.info("[auth-debug] fetch refresh token parsed", {
     url: refreshUrl,
-    previousRefreshToken: refreshToken,
-    accessToken: tokens.access_token,
-    refreshToken: tokens.refresh_token,
+    hadPreviousRefreshToken: Boolean(refreshToken),
+    hasAccessToken: Boolean(tokens.access_token),
+    hasRefreshToken: Boolean(tokens.refresh_token),
     tokenType: tokens.token_type,
     expiresIn: tokens.expires_in,
     refreshExpiresIn: tokens.refresh_expires_in,
@@ -454,8 +483,8 @@ function expireAuthSession(path: string, error: HttpError) {
     status: error.status,
     code: error.code,
     message: error.message,
-    accessToken: getAccessToken(),
-    refreshToken: getRefreshToken(),
+    hasAccessToken: Boolean(getAccessToken()),
+    hasRefreshToken: Boolean(getRefreshToken()),
   })
   authSessionExpired = true
   refreshPromise = null
@@ -475,8 +504,20 @@ function markAuthSessionActiveIfTokenPresent() {
 }
 
 function syncAuthSessionStateFromTokens() {
-  if (authSessionExpired && getAccessToken() && getRefreshToken()) {
+  if (authSessionExpired && getRefreshToken()) {
     markAuthSessionActive()
+  }
+}
+
+function getRequestPathname(path: string) {
+  if (!/^https?:\/\//.test(path)) {
+    return path.split("?")[0] || "/"
+  }
+
+  try {
+    return new URL(path).pathname
+  } catch {
+    return path
   }
 }
 

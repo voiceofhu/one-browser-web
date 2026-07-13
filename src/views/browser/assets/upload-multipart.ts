@@ -1,8 +1,10 @@
 import { uploadBrowserAssetPart } from "@/api/browser"
+import { HttpError } from "@/lib/request"
 import type { BrowserAssetCompletePayload } from "@/types/browser"
 
 const FALLBACK_CPU_COUNT = 2
-const MAX_UPLOAD_CONCURRENCY = 6
+const MAX_PART_UPLOAD_RETRIES = 3
+const RETRY_BASE_DELAY_MS = 1_000
 const MEBIBYTE_BYTES = 1024 * 1024
 const GIBIBYTE_BYTES = 1024 * MEBIBYTE_BYTES
 const R2_MIN_PART_SIZE_BYTES = 5 * MEBIBYTE_BYTES
@@ -23,6 +25,11 @@ export type MultipartUploadProgress = {
   completedParts: number
   totalParts: number
   concurrency: number
+  retry?: {
+    partNumber: number
+    attempt: number
+    maxRetries: number
+  }
 }
 
 export function resolveMultipartPartSize(fileSize: number) {
@@ -119,14 +126,23 @@ export async function uploadPartsConcurrently({
       const chunk = uploadFile.slice(start, end)
 
       try {
-        const uploaded = await uploadBrowserAssetPart(
+        const uploaded = await uploadPartWithRetry({
           uploadId,
           partNumber,
-          chunk
-        )
-        if (!uploaded.etag) {
-          throw new Error(`第 ${partNumber} 个分片未返回 ETag`)
-        }
+          chunk,
+          onRetry: (attempt) => {
+            onProgress({
+              completedParts,
+              totalParts,
+              concurrency,
+              retry: {
+                partNumber,
+                attempt,
+                maxRetries: MAX_PART_UPLOAD_RETRIES,
+              },
+            })
+          },
+        })
 
         uploadedParts[index] = {
           part_number: partNumber,
@@ -187,7 +203,81 @@ function resolveUploadConcurrency(totalParts: number) {
       ? Math.floor(hardwareConcurrency)
       : FALLBACK_CPU_COUNT
 
-  return Math.max(1, Math.min(totalParts, MAX_UPLOAD_CONCURRENCY, cpuCount * 2))
+  return Math.max(1, Math.min(totalParts, cpuCount * 2))
+}
+
+async function uploadPartWithRetry({
+  uploadId,
+  partNumber,
+  chunk,
+  onRetry,
+}: {
+  uploadId: number
+  partNumber: number
+  chunk: Blob
+  onRetry: (attempt: number) => void
+}) {
+  let retryCount = 0
+
+  while (true) {
+    try {
+      const uploaded = await uploadBrowserAssetPart(uploadId, partNumber, chunk)
+      if (!uploaded.etag) {
+        throw new Error(`第 ${partNumber} 个分片未返回 ETag`)
+      }
+
+      return { ...uploaded, etag: uploaded.etag }
+    } catch (error) {
+      if (
+        retryCount >= MAX_PART_UPLOAD_RETRIES ||
+        !isRetryableUploadError(error)
+      ) {
+        throw createPartUploadError(partNumber, retryCount, error)
+      }
+
+      retryCount += 1
+      onRetry(retryCount)
+      await wait(RETRY_BASE_DELAY_MS * 2 ** (retryCount - 1))
+    }
+  }
+}
+
+function isRetryableUploadError(error: unknown) {
+  if (error instanceof HttpError) {
+    return (
+      error.status === 408 ||
+      error.status === 425 ||
+      error.status === 429 ||
+      error.status >= 500
+    )
+  }
+
+  if (error instanceof TypeError) {
+    return true
+  }
+
+  return (
+    typeof DOMException !== "undefined" &&
+    error instanceof DOMException &&
+    error.name !== "AbortError"
+  )
+}
+
+function createPartUploadError(
+  partNumber: number,
+  retryCount: number,
+  error: unknown
+) {
+  const reason = error instanceof Error ? error.message : "未知错误"
+  const retryDescription = retryCount > 0 ? `，已重试 ${retryCount} 次` : ""
+
+  return new Error(
+    `第 ${partNumber} 个分片上传失败${retryDescription}：${reason}`
+  )
+}
+
+function wait(delayMs: number) {
+  return new Promise<void>((resolve) => window.setTimeout(resolve, delayMs))
 }
 
 function roundUpToMebibyte(value: number) {

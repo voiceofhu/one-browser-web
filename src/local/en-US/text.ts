@@ -20,6 +20,7 @@ export const enUSTextMessages: Record<string, string> = {
   代理管理: "Proxy management",
   成员管理: "Member management",
   安装包管理: "Package management",
+  版本管理: "Version management",
   安装包: "Package",
   浏览器安装包: "Browser package",
   当前版本: "Current version",

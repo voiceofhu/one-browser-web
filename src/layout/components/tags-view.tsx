@@ -30,7 +30,10 @@ import {
 import { useTranslation } from "@/components/providers/language-context"
 import { getRouteIcon } from "@/layout/components/route-icons"
 import { cn } from "@/lib/utils"
-import type { AuthorizedRouteIconValueMap } from "@/router/access"
+import type {
+  AuthorizedRouteIconValueMap,
+  AuthorizedRouteTitleValueMap,
+} from "@/router/access"
 import {
   DEFAULT_APP_ROUTE,
   type AppRouteId,
@@ -41,6 +44,7 @@ type TagsViewProps = {
   activeRoute: AppRouteId
   isRefreshing?: boolean
   routeIconValues?: AuthorizedRouteIconValueMap
+  routeTitleValues?: AuthorizedRouteTitleValueMap
   tags: AppRouteMeta[]
   onCloseAll: () => void
   onCloseCurrent: () => void
@@ -58,6 +62,7 @@ export function TagsView({
   activeRoute,
   isRefreshing = false,
   routeIconValues,
+  routeTitleValues,
   tags,
   onCloseAll,
   onCloseCurrent,
@@ -291,7 +296,7 @@ export function TagsView({
           {tags.map((tag, index) => {
             const active = tag.id === activeRoute
             const closable = tag.id !== DEFAULT_APP_ROUTE
-            const title = t(tag.labelKey)
+            const title = routeTitleValues?.get(tag.id) ?? t(tag.labelKey)
             const previousTag = tags[index - 1]
             const separated =
               index > 0 && !active && previousTag?.id !== activeRoute

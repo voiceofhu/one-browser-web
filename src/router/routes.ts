@@ -114,9 +114,9 @@ export const APP_ROUTES: AppRouteMeta[] = [
   {
     id: "browser-assets",
     labelKey: "route.browserAssets",
-    label: "安装包管理",
-    title: "安装包管理",
-    description: "上传和管理浏览器安装包的当前下载版本。",
+    label: "版本管理",
+    title: "版本管理",
+    description: "上传和管理浏览器版本及当前下载版本。",
     path: "/browser/assets",
   },
   {

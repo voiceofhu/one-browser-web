@@ -4,13 +4,22 @@ import { stripLocaleFromPathname } from "@/local"
 import {
   APP_ROUTE_BY_ID,
   APP_ROUTE_BY_PATH,
-  APP_ROUTE_GROUPS,
   DEFAULT_APP_ROUTE,
   LEGACY_ROUTE_REDIRECTS,
   type AppRouteId,
 } from "./routes"
 
 export type AuthorizedRouteIconValueMap = Map<AppRouteId, string | null>
+export type AuthorizedRouteTitleValueMap = Map<AppRouteId, string>
+
+export type AuthorizedRouteGroup = {
+  title: string
+  showLabel?: boolean
+  routes: {
+    routeId: AppRouteId
+    title: string
+  }[]
+}
 
 const LOCAL_ROUTE_ALIASES: Record<string, string> = {
   "/system/dict/type": "/system/dict",
@@ -20,18 +29,34 @@ const LOCAL_ROUTE_ALIASES: Record<string, string> = {
 const AUTHENTICATED_LOCAL_ROUTES = new Set<AppRouteId>(["account"])
 
 export function getAuthorizedRouteIds(access: AuthPermissions | undefined) {
-  return orderRouteIds(
-    getAuthorizedRouteEntries(access).map((entry) => entry.routeId)
-  )
+  return getAuthorizedRouteEntries(access).map((entry) => entry.routeId)
 }
 
 export function getAuthorizedRouteGroups(access: AuthPermissions | undefined) {
-  const authorizedRouteIds = new Set(getAuthorizedRouteIds(access))
+  const groups: AuthorizedRouteGroup[] = []
+  const seenRouteIds = new Set<AppRouteId>()
 
-  return APP_ROUTE_GROUPS.map((group) => ({
-    ...group,
-    routes: group.routes.filter((routeId) => authorizedRouteIds.has(routeId)),
-  })).filter((group) => group.routes.length > 0)
+  for (const rootRoute of access?.routes ?? []) {
+    const routes = getVisibleAuthorizedRouteEntries(
+      rootRoute,
+      seenRouteIds
+    ).map(({ routeId, authRoute }) => ({
+      routeId,
+      title: authRoute.meta.title,
+    }))
+
+    if (routes.length === 0) {
+      continue
+    }
+
+    groups.push({
+      title: rootRoute.meta.title,
+      showLabel: rootRoute.menu_type === "M" ? undefined : false,
+      routes,
+    })
+  }
+
+  return groups
 }
 
 export function getAuthorizedRouteIconValues(
@@ -47,6 +72,17 @@ export function getAuthorizedRouteIconValues(
   })
 
   return iconValues
+}
+
+export function getAuthorizedRouteTitleValues(
+  access: AuthPermissions | undefined
+): AuthorizedRouteTitleValueMap {
+  return new Map(
+    getAuthorizedRouteEntries(access).map(({ routeId, authRoute }) => [
+      routeId,
+      authRoute.meta.title,
+    ])
+  )
 }
 
 export function getFirstAuthorizedPath(access: AuthPermissions | undefined) {
@@ -112,19 +148,6 @@ function getAuthorizedRouteEntries(access: AuthPermissions | undefined) {
   return entries
 }
 
-function orderRouteIds(routeIds: AppRouteId[]) {
-  const routeIdSet = new Set(routeIds)
-  const orderedRouteIds: AppRouteId[] = APP_ROUTE_GROUPS.flatMap((group) =>
-    group.routes.filter((routeId) => routeIdSet.has(routeId))
-  )
-  const orderedRouteIdSet = new Set(orderedRouteIds)
-
-  return [
-    ...orderedRouteIds,
-    ...routeIds.filter((routeId) => !orderedRouteIdSet.has(routeId)),
-  ]
-}
-
 function flattenAuthRoutesInOrder(routes: AuthRoute[] | undefined) {
   const flattenedRoutes: AuthRoute[] = []
 
@@ -136,6 +159,28 @@ function flattenAuthRoutesInOrder(routes: AuthRoute[] | undefined) {
 
   routes?.forEach(visit)
   return flattenedRoutes
+}
+
+function getVisibleAuthorizedRouteEntries(
+  rootRoute: AuthRoute,
+  seenRouteIds: Set<AppRouteId>
+) {
+  const entries: { routeId: AppRouteId; authRoute: AuthRoute }[] = []
+
+  function visit(authRoute: AuthRoute) {
+    if (!authRoute.hidden) {
+      const route = APP_ROUTE_BY_PATH[getRouteAccessTarget(authRoute.path)]
+      if (route && !seenRouteIds.has(route.id)) {
+        seenRouteIds.add(route.id)
+        entries.push({ routeId: route.id, authRoute })
+      }
+    }
+
+    authRoute.children?.forEach(visit)
+  }
+
+  visit(rootRoute)
+  return entries
 }
 
 function isDirectoryAuthRoute(route: AuthRoute) {

@@ -22,11 +22,12 @@ export interface CurrentUser {
 
 export type AuthTeamPermissions =
   | Record<string, string[] | AuthTeamPermissionEntry>
-  | AuthTeamPermissionEntry[]
+  | Array<string | AuthTeamPermissionEntry>
 
 export interface AuthTeamPermissionEntry {
   team_id: number | string
   permissions?: string[]
+  menus?: string[]
   buttons?: string[]
 }
 

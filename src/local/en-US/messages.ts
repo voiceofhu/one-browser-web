@@ -229,7 +229,7 @@ export const enUSMessages: Record<LocaleMessageKey, string> = {
   "route.browserEnvironments": "Environments",
   "route.browserProxies": "Proxies",
   "route.browserMembers": "Members",
-  "route.browserAssets": "Packages",
+  "route.browserAssets": "Version management",
   "route.operationLogs": "Operation logs",
   "route.loginLogs": "Login logs",
   "route.health": "Service monitor",

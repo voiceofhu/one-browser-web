@@ -1,14 +1,15 @@
 "use client"
 
 import * as React from "react"
-import { UploadIcon } from "lucide-react"
-
+import { zodResolver } from "@hookform/resolvers/zod"
+import { FolderOpenIcon, UploadIcon } from "lucide-react"
 import {
-  abortBrowserAssetUpload,
-  completeBrowserAssetUpload,
-  createBrowserAssetUpload,
-  uploadBrowserAssetDirect,
-} from "@/api/browser"
+  Controller,
+  useForm,
+  useWatch,
+  type FieldError as HookFormFieldError,
+} from "react-hook-form"
+
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {
   Dialog,
@@ -22,9 +23,16 @@ import { DialogActionButton } from "@/components/ui/dialog-action-button"
 import {
   Field,
   FieldDescription,
+  FieldError,
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "@/components/ui/input-group"
 import { Input } from "@/components/ui/input"
 import { Progress } from "@/components/ui/progress"
 import {
@@ -39,18 +47,17 @@ import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import type { BrowserAssetResource } from "@/types/browser"
 import {
-  multipartProgressValue,
-  resolveMultipartPartSize,
-  resolveMultipartUploadPlan,
-  uploadPartsConcurrently,
-} from "./upload-multipart"
-
-const DIRECT_LIMIT_BYTES = 100 * 1024 * 1024
-const DEFAULT_CHANNEL = "stable"
-const CHROMIUM_VERSION_PATTERN = /^\d+\.\d+\.\d+\.\d+$/
-const SHA256_PATTERN = /^[0-9a-f]{64}$/i
-const CHROMIUM_ASSET_NAME_PATTERN =
-  /^one-browser-chromium-(macos|windows)-(arm64|x64)-(\d+\.\d+\.\d+\.\d+)\.tar\.gz$/i
+  DEFAULT_BROWSER_ASSET_UPLOAD_FORM_VALUES,
+  browserAssetUploadSchema,
+  formatBytes,
+  parseChromiumAssetFileName,
+  readSha256Sidecar,
+  type BrowserAssetUploadFormValues,
+} from "./upload-form"
+import {
+  uploadBrowserAssetPackage,
+  type BrowserAssetUploadProgress,
+} from "./upload-request"
 
 type BrowserAssetUploadDialogProps = {
   open: boolean
@@ -58,50 +65,34 @@ type BrowserAssetUploadDialogProps = {
   onUploaded: (asset: BrowserAssetResource) => void
 }
 
-type UploadProgress = {
-  label: string
-  value: number
-}
-
 export function BrowserAssetUploadDialog({
   open,
   onOpenChange,
   onUploaded,
 }: BrowserAssetUploadDialogProps) {
-  const [platform, setPlatform] = React.useState("macos")
-  const [arch, setArch] = React.useState("arm64")
-  const [version, setVersion] = React.useState("")
-  const [remark, setRemark] = React.useState("")
-  const [makeCurrent, setMakeCurrent] = React.useState(true)
-  const [file, setFile] = React.useState<File | null>(null)
-  const [sha256, setSha256] = React.useState("")
   const [checksumFileName, setChecksumFileName] = React.useState("")
-  const [checksumError, setChecksumError] = React.useState("")
-  const [fileNameError, setFileNameError] = React.useState("")
   const [error, setError] = React.useState("")
-  const [progress, setProgress] = React.useState<UploadProgress | null>(null)
-  const [isSubmitting, setIsSubmitting] = React.useState(false)
-  const fileInputId = React.useId()
-  const normalizedVersion = version.trim()
-  const normalizedSha256 = sha256.trim().toLowerCase()
-  const versionError =
-    normalizedVersion && !CHROMIUM_VERSION_PATTERN.test(normalizedVersion)
-      ? "版本需为四段数字，例如 148.0.7778.178"
-      : ""
-  const sha256Error =
-    normalizedSha256 && !SHA256_PATTERN.test(normalizedSha256)
-      ? "SHA-256 必须是 64 位十六进制字符串"
-      : ""
-
-  const canSubmit =
-    Boolean(file) &&
-    Boolean(normalizedVersion) &&
-    Boolean(normalizedSha256) &&
-    !versionError &&
-    !sha256Error &&
-    !checksumError &&
-    !fileNameError &&
-    !isSubmitting
+  const [progress, setProgress] =
+    React.useState<BrowserAssetUploadProgress | null>(null)
+  const archiveInputRef = React.useRef<HTMLInputElement>(null)
+  const checksumInputRef = React.useRef<HTMLInputElement>(null)
+  const archiveNameInputId = React.useId()
+  const archiveFileInputId = React.useId()
+  const sha256InputId = React.useId()
+  const checksumFileInputId = React.useId()
+  const platformInputId = React.useId()
+  const archInputId = React.useId()
+  const versionInputId = React.useId()
+  const makeCurrentInputId = React.useId()
+  const remarkInputId = React.useId()
+  const form = useForm<BrowserAssetUploadFormValues>({
+    resolver: zodResolver(browserAssetUploadSchema),
+    defaultValues: DEFAULT_BROWSER_ASSET_UPLOAD_FORM_VALUES,
+  })
+  const file =
+    useWatch({ control: form.control, name: "file" }) ??
+    DEFAULT_BROWSER_ASSET_UPLOAD_FORM_VALUES.file
+  const { errors, isSubmitting } = form.formState
 
   function handleOpenChange(nextOpen: boolean) {
     if (isSubmitting) {
@@ -114,188 +105,119 @@ export function BrowserAssetUploadDialog({
   }
 
   function resetForm() {
-    setPlatform("macos")
-    setArch("arm64")
-    setVersion("")
-    setRemark("")
-    setMakeCurrent(true)
-    setFile(null)
-    setSha256("")
+    form.reset(DEFAULT_BROWSER_ASSET_UPLOAD_FORM_VALUES)
     setChecksumFileName("")
-    setChecksumError("")
-    setFileNameError("")
     setError("")
     setProgress(null)
-    setIsSubmitting(false)
   }
 
-  function handleFileChange(nextFile: File | null) {
-    setFile(nextFile)
+  function handleArchiveSelection(files: FileList | null) {
+    const nextFile = files?.item(0) ?? null
+    const shouldValidate = form.formState.submitCount > 0
+    form.setValue("file", nextFile, {
+      shouldDirty: true,
+      shouldValidate: true,
+    })
+    form.setValue("sha256", "", {
+      shouldDirty: true,
+      shouldValidate,
+    })
+    form.clearErrors("sha256")
+    setChecksumFileName("")
     setError("")
-    setFileNameError("")
+    if (checksumInputRef.current) {
+      checksumInputRef.current.value = ""
+    }
 
     if (!nextFile) {
-      setVersion("")
+      form.setValue("version", "", { shouldDirty: true, shouldValidate })
       return
     }
 
     const parsed = parseChromiumAssetFileName(nextFile.name)
     if (!parsed) {
-      setVersion("")
-      setFileNameError(
-        "文件名需符合 one-browser-chromium-{platform}-{arch}-{version}.tar.gz"
-      )
+      form.setValue("version", "", { shouldDirty: true, shouldValidate })
       return
     }
 
-    setPlatform(parsed.platform)
-    setArch(parsed.arch)
-    setVersion(parsed.version)
-  }
-
-  async function handleFileSelection(files: FileList | null) {
-    const selectedFiles = Array.from(files ?? [])
-    const archive =
-      selectedFiles.find((selectedFile) =>
-        selectedFile.name.toLowerCase().endsWith(".tar.gz")
-      ) ?? null
-    const checksum = archive
-      ? selectedFiles.find(
-          (selectedFile) => selectedFile.name === `${archive.name}.sha256`
-        )
-      : undefined
-
-    handleFileChange(archive)
-    setSha256("")
-    setChecksumFileName("")
-    setChecksumError("")
-
-    if (!archive || !checksum) {
-      return
-    }
-
-    try {
-      setSha256(await readSha256Sidecar(checksum, archive.name))
-      setChecksumFileName(checksum.name)
-    } catch (error) {
-      setChecksumError(
-        error instanceof Error ? error.message : "SHA-256 文件读取失败"
-      )
-    }
-  }
-
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setError("")
-
-    if (!file) {
-      setError("请选择安装包文件")
-      return
-    }
-    if (file.size <= 0) {
-      setError("安装包文件不能为空")
-      return
-    }
-    if (!CHROMIUM_VERSION_PATTERN.test(normalizedVersion)) {
-      return
-    }
-    if (!SHA256_PATTERN.test(normalizedSha256)) {
-      return
-    }
-    const parsed = parseChromiumAssetFileName(file.name)
-    if (!parsed) {
-      setFileNameError(
-        "文件名需符合 one-browser-chromium-{platform}-{arch}-{version}.tar.gz"
-      )
-      return
-    }
-    setIsSubmitting(true)
-    try {
-      const asset =
-        resolveUploadMode(file) === "direct"
-          ? await uploadDirect(file)
-          : await uploadMultipart(file)
-      onUploaded(asset)
-      handleOpenChange(false)
-    } catch (error) {
-      setError(error instanceof Error ? error.message : "上传失败")
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  async function uploadDirect(uploadFile: File) {
-    setProgress({ label: "正在上传", value: 15 })
-    const formData = new FormData()
-    formData.set("platform", platform)
-    formData.set("arch", arch)
-    formData.set("channel", DEFAULT_CHANNEL)
-    formData.set("version", version.trim())
-    formData.set("sha256", normalizedSha256)
-    formData.set("make_current", String(makeCurrent))
-    formData.set("remark", remark.trim())
-    formData.set("file", uploadFile)
-
-    const asset = await uploadBrowserAssetDirect(formData)
-    setProgress({ label: "已完成", value: 100 })
-    return asset
-  }
-
-  async function uploadMultipart(uploadFile: File) {
-    const partSizeBytes = resolveMultipartPartSize(uploadFile.size)
-    setProgress({ label: "正在创建分片会话", value: 3 })
-    const session = await createBrowserAssetUpload({
-      platform,
-      arch,
-      channel: DEFAULT_CHANNEL,
-      version: version.trim(),
-      file_name: uploadFile.name,
-      file_size: uploadFile.size,
-      sha256: normalizedSha256,
-      mime_type: uploadFile.type || "application/octet-stream",
-      part_size: partSizeBytes,
-      make_current: makeCurrent,
-      remark: remark.trim(),
+    form.setValue("platform", parsed.platform, {
+      shouldDirty: true,
+      shouldValidate,
     })
+    form.setValue("arch", parsed.arch, {
+      shouldDirty: true,
+      shouldValidate,
+    })
+    form.setValue("version", parsed.version, {
+      shouldDirty: true,
+      shouldValidate,
+    })
+  }
+
+  async function handleChecksumSelection(files: FileList | null) {
+    const checksumFile = files?.item(0)
+    if (!checksumFile) {
+      return
+    }
+    const archive = form.getValues("file")
+    if (!archive) {
+      form.setError("file", {
+        type: "manual",
+        message: "请先选择安装包",
+      })
+      if (checksumInputRef.current) {
+        checksumInputRef.current.value = ""
+      }
+      return
+    }
+
     try {
-      const { partSize: actualPartSize, totalParts } =
-        resolveMultipartUploadPlan({
-          fileSize: uploadFile.size,
-          requestedPartSize: partSizeBytes,
-          sessionPartSize: session.part_size,
-          sessionTotalParts: session.total_parts,
-        })
+      const sha256 = await readSha256Sidecar(checksumFile, archive.name)
+      form.setValue("sha256", sha256, {
+        shouldDirty: true,
+        shouldValidate: true,
+      })
+      form.clearErrors("sha256")
+      setChecksumFileName(checksumFile.name)
+    } catch (selectionError) {
+      setChecksumFileName(checksumFile.name)
+      form.setError("sha256", {
+        type: "manual",
+        message:
+          selectionError instanceof Error
+            ? selectionError.message
+            : "SHA-256 文件读取失败",
+      })
+    }
+  }
 
-      const parts = await uploadPartsConcurrently({
+  async function handleSubmit(values: BrowserAssetUploadFormValues) {
+    setError("")
+    const uploadFile = values.file
+    if (!uploadFile) {
+      return
+    }
+
+    try {
+      const asset = await uploadBrowserAssetPackage({
         uploadFile,
-        uploadId: session.upload_id,
-        partSizeBytes: actualPartSize,
-        totalParts,
-        onProgress: ({ completedParts, totalParts, concurrency }) => {
-          setProgress({
-            label: `正在上传分片 ${completedParts}/${totalParts}（并发 ${concurrency}）`,
-            value: multipartProgressValue(completedParts, totalParts),
-          })
-        },
+        values,
+        onProgress: setProgress,
       })
-
-      setProgress({ label: "正在完成上传", value: 96 })
-      const completed = await completeBrowserAssetUpload(session.upload_id, {
-        parts,
-      })
-      setProgress({ label: "已完成", value: 100 })
-      return completed.asset
-    } catch (error) {
-      await abortBrowserAssetUpload(session.upload_id).catch(() => undefined)
-      throw error
+      onUploaded(asset)
+      onOpenChange(false)
+      resetForm()
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : "上传失败")
     }
   }
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-h-[86svh] overflow-hidden p-0 sm:max-w-xl">
+      <DialogContent className="max-h-[86svh] overflow-hidden p-0 sm:max-w-2xl">
         <form
-          onSubmit={handleSubmit}
+          noValidate
+          onSubmit={form.handleSubmit(handleSubmit)}
           className="flex max-h-[86svh] min-h-0 flex-col"
         >
           <DialogHeader className="gap-0.5 border-b-0 bg-muted/50 px-4 py-2 pr-12 text-left">
@@ -308,7 +230,7 @@ export function BrowserAssetUploadDialog({
           </DialogHeader>
 
           <div className="min-h-0 flex-1 overflow-auto px-4 py-3">
-            <FieldGroup className="gap-3">
+            <FieldGroup className="gap-4">
               {error ? (
                 <Alert variant="destructive">
                   <AlertTitle>上传失败</AlertTitle>
@@ -316,105 +238,196 @@ export function BrowserAssetUploadDialog({
                 </Alert>
               ) : null}
 
-              <div className="grid gap-3 sm:grid-cols-2">
-                <SelectField
-                  label="运行平台"
-                  value={platform}
-                  onValueChange={setPlatform}
-                  options={[
-                    { label: "macOS", value: "macos" },
-                    { label: "Windows", value: "windows" },
-                  ]}
-                  disabled={isSubmitting || Boolean(file)}
-                />
-                <SelectField
-                  label="架构"
-                  value={arch}
-                  onValueChange={setArch}
-                  options={[
-                    { label: "arm64", value: "arm64" },
-                    { label: "x64", value: "x64" },
-                  ]}
-                  disabled={isSubmitting || Boolean(file)}
-                />
-                <Field
-                  className="sm:col-span-2"
-                  data-invalid={Boolean(versionError)}
-                >
-                  <FieldLabel>版本</FieldLabel>
-                  <Input
-                    value={version}
-                    onChange={(event) => setVersion(event.target.value)}
-                    placeholder="例如 126.0.6478.127"
-                    disabled={isSubmitting}
-                    required
-                    aria-invalid={Boolean(versionError)}
+              <Field data-invalid={Boolean(errors.file)}>
+                <RequiredFieldLabel htmlFor={archiveNameInputId} required>
+                  选择安装包
+                </RequiredFieldLabel>
+                <InputGroup>
+                  <InputGroupInput
+                    id={archiveNameInputId}
+                    value={file?.name ?? ""}
+                    placeholder="请选择 .tar.gz 安装包"
+                    readOnly
+                    aria-invalid={Boolean(errors.file)}
+                    aria-required="true"
+                    className="truncate"
                   />
-                  <FieldDescription className="text-xs/relaxed">
-                    {versionError || "默认从文件名识别，也可以手动修改。"}
-                  </FieldDescription>
-                </Field>
-              </div>
-
-              <Field>
-                <FieldLabel htmlFor={fileInputId}>安装包与校验文件</FieldLabel>
-                <Input
-                  id={fileInputId}
+                  <InputGroupAddon align="inline-end">
+                    <InputGroupButton
+                      size="sm"
+                      disabled={isSubmitting}
+                      aria-controls={archiveFileInputId}
+                      onClick={() => archiveInputRef.current?.click()}
+                    >
+                      <FolderOpenIcon data-icon="inline-start" />
+                      选择文件
+                    </InputGroupButton>
+                  </InputGroupAddon>
+                </InputGroup>
+                <input
+                  ref={archiveInputRef}
+                  id={archiveFileInputId}
                   type="file"
-                  accept=".tar.gz,.sha256"
-                  multiple
+                  accept=".tar.gz,application/gzip"
+                  className="sr-only"
                   disabled={isSubmitting}
+                  aria-label="选择安装包文件"
                   onChange={(event) =>
-                    void handleFileSelection(event.currentTarget.files)
+                    handleArchiveSelection(event.currentTarget.files)
                   }
                 />
                 <FieldDescription className="text-xs/relaxed">
-                  {fileNameError
-                    ? fileNameError
-                    : file
-                      ? `${file.name} · ${formatBytes(file.size)}`
-                      : "请同时选择 make build/build-win 生成的 .tar.gz 和同名 .sha256 文件。"}
+                  {file
+                    ? `${file.name} · ${formatBytes(file.size)}`
+                    : "支持 make build/build-win 生成的 .tar.gz 文件。"}
                 </FieldDescription>
+                <FieldError errors={[errors.file]} />
               </Field>
 
-              <Field data-invalid={Boolean(sha256Error || checksumError)}>
-                <FieldLabel>SHA-256</FieldLabel>
-                <Input
-                  value={sha256}
-                  onChange={(event) => {
-                    setSha256(event.target.value)
-                    setChecksumFileName("")
-                    setChecksumError("")
-                  }}
-                  placeholder="64 位十六进制校验值"
-                  disabled={isSubmitting}
-                  required
-                  aria-invalid={Boolean(sha256Error || checksumError)}
-                />
-                <FieldDescription className="text-xs/relaxed">
-                  {sha256Error ||
-                    checksumError ||
-                    (checksumFileName
-                      ? `已从 ${checksumFileName} 读取。`
-                      : "可从 .sha256 文件自动读取，也可以手动粘贴。")}
-                </FieldDescription>
-              </Field>
+              <Controller
+                control={form.control}
+                name="sha256"
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <RequiredFieldLabel htmlFor={sha256InputId} required>
+                      SHA-256
+                    </RequiredFieldLabel>
+                    <InputGroup>
+                      <InputGroupInput
+                        {...field}
+                        id={sha256InputId}
+                        placeholder="64 位十六进制校验值"
+                        disabled={isSubmitting}
+                        aria-invalid={fieldState.invalid}
+                        aria-required="true"
+                        onChange={(event) => {
+                          field.onChange(event)
+                          form.clearErrors("sha256")
+                          setChecksumFileName("")
+                        }}
+                      />
+                      <InputGroupAddon align="inline-end">
+                        <InputGroupButton
+                          size="sm"
+                          disabled={isSubmitting}
+                          aria-controls={checksumFileInputId}
+                          onClick={() => checksumInputRef.current?.click()}
+                        >
+                          <FolderOpenIcon data-icon="inline-start" />
+                          选择文件
+                        </InputGroupButton>
+                      </InputGroupAddon>
+                    </InputGroup>
+                    <input
+                      ref={checksumInputRef}
+                      id={checksumFileInputId}
+                      type="file"
+                      accept=".sha256,text/plain"
+                      className="sr-only"
+                      disabled={isSubmitting}
+                      aria-label="选择 SHA-256 校验文件"
+                      onChange={(event) =>
+                        void handleChecksumSelection(event.currentTarget.files)
+                      }
+                    />
+                    <FieldDescription className="text-xs/relaxed">
+                      {checksumFileName
+                        ? `已从 ${checksumFileName} 读取，可继续手动修改。`
+                        : "可以手动输入，也可以选择同名 .sha256 文件自动读取。"}
+                    </FieldDescription>
+                    <FieldError errors={[fieldState.error]} />
+                  </Field>
+                )}
+              />
 
-              <Field orientation="horizontal" className="items-center gap-2">
-                <Switch
-                  checked={makeCurrent}
-                  onCheckedChange={setMakeCurrent}
-                  disabled={isSubmitting}
-                  size="sm"
+              <FieldGroup className="grid gap-3 sm:grid-cols-2">
+                <Controller
+                  control={form.control}
+                  name="platform"
+                  render={({ field, fieldState }) => (
+                    <SelectField
+                      id={platformInputId}
+                      label="运行平台"
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      options={[
+                        { label: "macOS", value: "macos" },
+                        { label: "Windows", value: "windows" },
+                      ]}
+                      disabled={isSubmitting}
+                      error={fieldState.error}
+                      required
+                    />
+                  )}
                 />
-                <FieldLabel>设为当前版本</FieldLabel>
-              </Field>
+                <Controller
+                  control={form.control}
+                  name="arch"
+                  render={({ field, fieldState }) => (
+                    <SelectField
+                      id={archInputId}
+                      label="架构"
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      options={[
+                        { label: "arm64", value: "arm64" },
+                        { label: "x64", value: "x64" },
+                      ]}
+                      disabled={isSubmitting}
+                      error={fieldState.error}
+                      required
+                    />
+                  )}
+                />
+                <Field
+                  className="sm:col-span-2"
+                  data-invalid={Boolean(errors.version)}
+                >
+                  <RequiredFieldLabel htmlFor={versionInputId} required>
+                    版本
+                  </RequiredFieldLabel>
+                  <Input
+                    id={versionInputId}
+                    {...form.register("version")}
+                    placeholder="例如 148.0.7778.178"
+                    disabled={isSubmitting}
+                    aria-invalid={Boolean(errors.version)}
+                    aria-required="true"
+                  />
+                  <FieldDescription className="text-xs/relaxed">
+                    从安装包文件名自动识别，也可以手动修改。
+                  </FieldDescription>
+                  <FieldError errors={[errors.version]} />
+                </Field>
+              </FieldGroup>
+
+              <Controller
+                control={form.control}
+                name="makeCurrent"
+                render={({ field }) => (
+                  <Field
+                    orientation="horizontal"
+                    className="items-center gap-2"
+                  >
+                    <Switch
+                      id={makeCurrentInputId}
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      disabled={isSubmitting}
+                      size="sm"
+                    />
+                    <FieldLabel htmlFor={makeCurrentInputId}>
+                      设为当前版本
+                    </FieldLabel>
+                  </Field>
+                )}
+              />
 
               <Field>
-                <FieldLabel>备注</FieldLabel>
+                <FieldLabel htmlFor={remarkInputId}>备注</FieldLabel>
                 <Textarea
-                  value={remark}
-                  onChange={(event) => setRemark(event.target.value)}
+                  id={remarkInputId}
+                  {...form.register("remark")}
                   disabled={isSubmitting}
                   placeholder="可选"
                   className="min-h-16 resize-none"
@@ -422,7 +435,7 @@ export function BrowserAssetUploadDialog({
               </Field>
 
               {progress ? (
-                <div className="flex flex-col gap-2">
+                <Field className="gap-2">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground">
                       {progress.label}
@@ -430,7 +443,7 @@ export function BrowserAssetUploadDialog({
                     <span>{progress.value}%</span>
                   </div>
                   <Progress value={progress.value} />
-                </div>
+                </Field>
               ) : null}
             </FieldGroup>
           </div>
@@ -446,7 +459,7 @@ export function BrowserAssetUploadDialog({
             </DialogActionButton>
             <DialogActionButton
               type="submit"
-              disabled={!canSubmit}
+              disabled={isSubmitting}
               loading={isSubmitting}
               loadingText="上传中"
             >
@@ -461,25 +474,38 @@ export function BrowserAssetUploadDialog({
 }
 
 type SelectFieldProps = {
+  id: string
   label: string
   value: string
   onValueChange: (value: string) => void
   options: readonly { label: string; value: string }[]
   disabled?: boolean
+  error?: HookFormFieldError
+  required?: boolean
 }
 
 function SelectField({
+  id,
   label,
   value,
   onValueChange,
   options,
   disabled,
+  error,
+  required,
 }: SelectFieldProps) {
   return (
-    <Field>
-      <FieldLabel>{label}</FieldLabel>
+    <Field data-invalid={Boolean(error)}>
+      <RequiredFieldLabel htmlFor={id} required={required}>
+        {label}
+      </RequiredFieldLabel>
       <Select value={value} onValueChange={onValueChange} disabled={disabled}>
-        <SelectTrigger className="w-full">
+        <SelectTrigger
+          id={id}
+          className="w-full"
+          aria-invalid={Boolean(error)}
+          aria-required={required}
+        >
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -492,54 +518,24 @@ function SelectField({
           </SelectGroup>
         </SelectContent>
       </Select>
+      <FieldError errors={[error]} />
     </Field>
   )
 }
 
-function resolveUploadMode(file: File) {
-  return file.size <= DIRECT_LIMIT_BYTES ? "direct" : "multipart"
-}
-
-function parseChromiumAssetFileName(fileName: string) {
-  const match = CHROMIUM_ASSET_NAME_PATTERN.exec(fileName.trim())
-  if (!match) {
-    return null
-  }
-
-  return {
-    platform: match[1].toLowerCase(),
-    arch: match[2].toLowerCase(),
-    version: match[3],
-  }
-}
-
-async function readSha256Sidecar(file: File, archiveName: string) {
-  const line = (await file.text()).trim().split(/\r?\n/, 1)[0] ?? ""
-  const match = /^([0-9a-f]{64})(?:\s+\*?(.+))?$/i.exec(line)
-  if (!match) {
-    throw new Error("SHA-256 文件格式无效")
-  }
-
-  const declaredFileName = match[2]?.trim()
-  if (declaredFileName && declaredFileName !== archiveName) {
-    throw new Error(`SHA-256 文件对应的是 ${declaredFileName}`)
-  }
-
-  return match[1].toLowerCase()
-}
-
-function formatBytes(value: number) {
-  if (!Number.isFinite(value) || value <= 0) {
-    return "0 B"
-  }
-
-  const units = ["B", "KiB", "MiB", "GiB", "TiB"] as const
-  let size = value
-  let unitIndex = 0
-  while (size >= 1024 && unitIndex < units.length - 1) {
-    size /= 1024
-    unitIndex += 1
-  }
-
-  return `${size.toFixed(size >= 10 || unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`
+function RequiredFieldLabel({
+  children,
+  required,
+  ...props
+}: React.ComponentProps<typeof FieldLabel> & { required?: boolean }) {
+  return (
+    <FieldLabel {...props}>
+      {children}
+      {required ? (
+        <span className="text-destructive" aria-hidden="true">
+          *
+        </span>
+      ) : null}
+    </FieldLabel>
+  )
 }

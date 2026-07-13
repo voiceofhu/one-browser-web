@@ -39,12 +39,12 @@ export function AppSidebar({
   const { locale, t } = useTranslation()
   const routeIconValues = getAuthorizedRouteIconValues(authPermissions)
   const navGroups = getAuthorizedRouteGroups(authPermissions).map((group) => ({
-    label: t(group.labelKey),
-    showLabel: group.routes[0] === "overview" ? false : undefined,
-    items: group.routes.map((routeId) => {
+    label: group.title,
+    showLabel: group.showLabel,
+    items: group.routes.map(({ routeId, title }) => {
       const route = APP_ROUTE_BY_ID[routeId]
       return {
-        title: t(route.labelKey),
+        title,
         url: localizedPath(locale, route.path),
         icon: getRouteIcon(routeIconValues.get(route.id), route.id),
       }

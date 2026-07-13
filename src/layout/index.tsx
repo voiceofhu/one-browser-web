@@ -46,6 +46,7 @@ import { visitedTagIdsAtom } from "@/layout/stores/tags-view"
 import {
   getAuthorizedRouteIds,
   getAuthorizedRouteIconValues,
+  getAuthorizedRouteTitleValues,
   getFirstAuthorizedPath,
   getRouteAccessTarget,
 } from "@/router/access"
@@ -93,6 +94,10 @@ export default function AppLayout() {
   )
   const routeIconValues = useMemo(
     () => getAuthorizedRouteIconValues(authPermissions.data),
+    [authPermissions.data]
+  )
+  const routeTitleValues = useMemo(
+    () => getAuthorizedRouteTitleValues(authPermissions.data),
     [authPermissions.data]
   )
 
@@ -281,6 +286,7 @@ export default function AppLayout() {
             activeRoute={routeMeta.id}
             isRefreshing={refreshing}
             routeIconValues={routeIconValues}
+            routeTitleValues={routeTitleValues}
             tags={visitedTags}
             onCloseAll={handleCloseAll}
             onCloseCurrent={handleCloseCurrent}
