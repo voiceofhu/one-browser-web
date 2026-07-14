@@ -1,7 +1,7 @@
 import { type I18nKey } from "@/local"
-import type { BrowserDownloadTarget } from "@/types/browser"
+import type { AppDownloadTarget } from "@/types/download"
 
-export type TargetOption = BrowserDownloadTarget & {
+export type TargetOption = AppDownloadTarget & {
   labelKey: I18nKey
   archLabelKey: I18nKey
 }
@@ -70,7 +70,7 @@ export const PLATFORM_OPTIONS: PlatformOption[] = [
 ]
 
 export function getTargetLabel(
-  target: BrowserDownloadTarget,
+  target: AppDownloadTarget,
   t: (key: I18nKey) => string
 ) {
   const option = TARGET_OPTIONS.find((item) => sameTarget(item, target))
@@ -84,7 +84,7 @@ export function getTargetsForPlatform(platform: string) {
 
 export function getDefaultTargetForPlatform(
   platform: string,
-  preferredTarget: BrowserDownloadTarget
+  preferredTarget: AppDownloadTarget
 ) {
   const platformTargets = getTargetsForPlatform(platform)
 
@@ -96,22 +96,19 @@ export function getDefaultTargetForPlatform(
   )
 }
 
-export function normalizeTarget(target: BrowserDownloadTarget) {
+export function normalizeTarget(target: AppDownloadTarget) {
   return getDefaultTargetForPlatform(target.platform, target)
 }
 
-export function targetKey(target: BrowserDownloadTarget) {
+export function targetKey(target: AppDownloadTarget) {
   return `${target.platform}:${target.arch}`
 }
 
-export function sameTarget(
-  left: BrowserDownloadTarget,
-  right: BrowserDownloadTarget
-) {
+export function sameTarget(left: AppDownloadTarget, right: AppDownloadTarget) {
   return left.platform === right.platform && left.arch === right.arch
 }
 
-export function detectBrowserTargetSync(): BrowserDownloadTarget {
+export function detectBrowserTargetSync(): AppDownloadTarget {
   if (typeof navigator === "undefined") {
     return { platform: "macos", arch: "arm64" }
   }
@@ -132,7 +129,7 @@ export function detectBrowserTargetSync(): BrowserDownloadTarget {
   }
 }
 
-export async function detectBrowserTarget(): Promise<BrowserDownloadTarget> {
+export async function detectBrowserTarget(): Promise<AppDownloadTarget> {
   const fallback = detectBrowserTargetSync()
   const userAgentData = getUserAgentData()
 

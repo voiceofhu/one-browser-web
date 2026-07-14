@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { AlertCircleIcon, DownloadIcon, RefreshCwIcon } from "lucide-react"
 
-import { getLatestAppDownload } from "@/api/browser"
+import { getLatestAppDownload } from "@/api/download"
 import { useTranslation } from "@/components/providers/language-context"
 import { ThemeToggleButton } from "@/components/theme/theme-toggle-button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
@@ -14,7 +14,7 @@ import { LanguageSwitcher } from "@/layout/components/language-switcher"
 import { type I18nKey, type Locale } from "@/local"
 import { appDownloadQueryKeys } from "@/lib/query-keys"
 import { HttpError } from "@/lib/request"
-import type { AppDownloadResource } from "@/types/browser"
+import type { AppDownloadResource } from "@/types/download"
 import {
   PLATFORM_OPTIONS,
   detectBrowserTarget,

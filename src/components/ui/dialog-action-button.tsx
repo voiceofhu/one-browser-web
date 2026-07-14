@@ -7,7 +7,6 @@ import {
 import { Button } from "@/components/ui/button"
 import { Kbd, KbdGroup } from "@/components/ui/kbd"
 import { Spinner } from "@/components/ui/spinner"
-import { cn } from "@/lib/utils"
 
 type DialogActionKind = "confirm" | "cancel"
 type DialogActionTone = DialogActionKind | "destructive"
@@ -190,12 +189,9 @@ function DialogShortcutHint({
   }
 
   return (
-    <KbdGroup className="ml-1">
+    <KbdGroup className="ml-0.5">
       {keys.map((key) => (
-        <Kbd
-          key={key}
-          className={cn("h-5 min-w-5 px-1 text-[0.65rem]", getKbdTone(tone))}
-        >
+        <Kbd key={key} className={getKbdTone(tone)}>
           {key}
         </Kbd>
       ))}

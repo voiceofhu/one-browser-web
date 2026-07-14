@@ -32,7 +32,6 @@ import {
 } from "@/hooks/use-auth"
 import {
   authQueryKeys,
-  browserQueryKeys,
   monitorQueryKeys,
   systemQueryKeys,
 } from "@/lib/query-keys"
@@ -348,16 +347,6 @@ function getRefreshQueryKeys(routeId: AppRouteMeta["id"]) {
       return [systemQueryKeys.dictTypes, systemQueryKeys.dictData]
     case "notices":
       return [systemQueryKeys.notices]
-    case "browser-teams":
-      return [browserQueryKeys.teams]
-    case "browser-environments":
-      return [browserQueryKeys.environments]
-    case "browser-proxies":
-      return [browserQueryKeys.proxies]
-    case "browser-members":
-      return [browserQueryKeys.members]
-    case "browser-assets":
-      return [browserQueryKeys.assets]
     case "operation-logs":
       return [systemQueryKeys.operationLogs]
     case "login-logs":

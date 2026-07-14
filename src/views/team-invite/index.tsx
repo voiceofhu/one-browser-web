@@ -43,7 +43,7 @@ import { localizedPath, localizedPublicPath, type Locale } from "@/local"
 import type { TeamInvite } from "@/types/admin"
 import { InteractiveGridBackground } from "@/views/login/interactive-grid-background"
 
-const DEFAULT_TEAM_REDIRECT = "/browser/team"
+const DEFAULT_TEAM_REDIRECT = "/index"
 
 export default function TeamInvitePage() {
   const location = useLocation()

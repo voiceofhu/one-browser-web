@@ -11,11 +11,6 @@ const IndexPage = lazy(() => import("@/views/index"))
 const HealthPage = lazy(() => import("@/views/monitor/health"))
 const JobsPage = lazy(() => import("@/views/monitor/job"))
 const OnlineUsersPage = lazy(() => import("@/views/monitor/online"))
-const BrowserTeamPage = lazy(() => import("@/views/browser/team"))
-const BrowserEnvironmentPage = lazy(() => import("@/views/browser/environment"))
-const BrowserProxyPage = lazy(() => import("@/views/browser/proxy"))
-const BrowserMemberPage = lazy(() => import("@/views/browser/member"))
-const BrowserAssetsPage = lazy(() => import("@/views/browser/assets"))
 const UserPage = lazy(() => import("@/views/system/user"))
 const RolePage = lazy(() => import("@/views/system/role"))
 const MenuPage = lazy(() => import("@/views/system/menu"))
@@ -44,11 +39,6 @@ const APP_ROUTE_ELEMENTS: Record<AppRouteId, ReactNode> = {
   menus: <MenuPage />,
   dict: <DictTypePage />,
   notices: <NoticePage />,
-  "browser-teams": <BrowserTeamPage />,
-  "browser-environments": <BrowserEnvironmentPage />,
-  "browser-proxies": <BrowserProxyPage />,
-  "browser-members": <BrowserMemberPage />,
-  "browser-assets": <BrowserAssetsPage />,
   "operation-logs": <OperationLogPage />,
   "login-logs": <LoginLogPage />,
   health: <HealthPage />,

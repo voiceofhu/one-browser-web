@@ -20,24 +20,10 @@ export interface CurrentUser {
   user_type: string
 }
 
-export type AuthTeamPermissions =
-  | Record<string, string[] | AuthTeamPermissionEntry>
-  | Array<string | AuthTeamPermissionEntry>
-
-export interface AuthTeamPermissionEntry {
-  team_id: number | string
-  permissions?: string[]
-  menus?: string[]
-  buttons?: string[]
-}
-
 export interface AuthPermissions {
   roles: string[]
   permissions: string[]
-  global_permissions?: string[]
-  buttons?: string[]
-  global_buttons?: string[]
-  team_permissions?: AuthTeamPermissions
+  buttons: string[]
   routes: AuthRoute[]
 }
 

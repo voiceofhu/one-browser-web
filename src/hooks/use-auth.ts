@@ -15,11 +15,7 @@ import {
   type TeamInviteLookup,
 } from "@/api/auth"
 import { clearAuthTokens, saveAuthTokens } from "@/lib/auth-tokens"
-import {
-  authQueryKeys,
-  browserQueryKeys,
-  systemQueryKeys,
-} from "@/lib/query-keys"
+import { authQueryKeys, systemQueryKeys } from "@/lib/query-keys"
 import { HttpError } from "@/lib/request"
 
 export { authQueryKeys } from "@/lib/query-keys"
@@ -88,7 +84,6 @@ export function useAcceptTeamInviteMutation() {
       queryClient.invalidateQueries({
         queryKey: authQueryKeys.teamInvite(lookup.token),
       })
-      queryClient.invalidateQueries({ queryKey: browserQueryKeys.all })
       queryClient.invalidateQueries({ queryKey: systemQueryKeys.all })
     },
   })
@@ -127,7 +122,6 @@ export function useBindReferralMutation() {
       queryClient.invalidateQueries({
         queryKey: authQueryKeys.referralCodeCheck(payload.aff),
       })
-      queryClient.invalidateQueries({ queryKey: browserQueryKeys.all })
       queryClient.invalidateQueries({ queryKey: systemQueryKeys.all })
     },
   })
