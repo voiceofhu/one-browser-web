@@ -14,9 +14,13 @@ import {
   type BindReferralPayload,
   type TeamInviteLookup,
 } from "@/api/auth"
-import { clearAuthTokens, saveAuthTokens } from "@/lib/auth-tokens"
+import {
+  clearAuthTokens,
+  hasAuthTokens,
+  saveAuthTokens,
+} from "@/lib/auth-tokens"
 import { authQueryKeys, systemQueryKeys } from "@/lib/query-keys"
-import { HttpError } from "@/lib/request"
+import { clearAuthExpiredNotice, HttpError } from "@/lib/request"
 
 export { authQueryKeys } from "@/lib/query-keys"
 
@@ -28,10 +32,11 @@ function shouldRetryAuth(failureCount: number, error: Error) {
   return failureCount < 3
 }
 
-export function useCurrentUser() {
+export function useCurrentUser(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: authQueryKeys.currentUser,
     queryFn: getCurrentUser,
+    enabled: options?.enabled ?? hasAuthTokens(),
     retry: shouldRetryAuth,
   })
 }
@@ -40,7 +45,7 @@ export function useAuthPermissions(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: authQueryKeys.permissions,
     queryFn: getAuthPermissions,
-    enabled: options?.enabled ?? true,
+    enabled: options?.enabled ?? hasAuthTokens(),
     retry: shouldRetryAuth,
   })
 }
@@ -51,6 +56,7 @@ export function useLoginMutation() {
   return useMutation({
     mutationFn: login,
     onSuccess: (response) => {
+      clearAuthExpiredNotice()
       saveAuthTokens(response)
       queryClient.invalidateQueries({ queryKey: authQueryKeys.currentUser })
       queryClient.invalidateQueries({ queryKey: authQueryKeys.permissions })

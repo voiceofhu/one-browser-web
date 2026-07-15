@@ -14,6 +14,10 @@ type StoredAuthTokens = {
   refreshExpiresAt: number | null
 }
 
+type SaveAuthTokensOptions = {
+  replaceSession?: boolean
+}
+
 const LEGACY_AUTH_TOKENS_KEY = "one-browser:auth-tokens"
 const AUTH_TOKENS_COOKIE_PATH = "/"
 const LEGACY_AUTH_TOKENS_COOKIE_NAME = "one_browser_auth_tokens"
@@ -25,8 +29,16 @@ const AUTH_TOKEN_COOKIE_NAMES = [
   "token_type",
 ] as const
 let memoryTokens: StoredAuthTokens | null = null
+let authSessionGeneration = 0
 
-export function saveAuthTokens(payload: AuthTokenPayload) {
+export function getAuthSessionGeneration() {
+  return authSessionGeneration
+}
+
+export function saveAuthTokens(
+  payload: AuthTokenPayload,
+  options: SaveAuthTokensOptions = {}
+) {
   const accessToken = payload.access_token
   const refreshToken = payload.refresh_token
 
@@ -54,6 +66,9 @@ export function saveAuthTokens(payload: AuthTokenPayload) {
   memoryTokens = tokens
   writeAuthTokensCookie(tokens)
   removeLegacyAuthTokens()
+  if (options.replaceSession ?? true) {
+    authSessionGeneration += 1
+  }
   console.info("[auth-debug] saved auth tokens", {
     hasAccessToken: Boolean(tokens.accessToken),
     hasRefreshToken: Boolean(tokens.refreshToken),
@@ -68,6 +83,7 @@ export function clearAuthTokens() {
   memoryTokens = null
   deleteAuthTokensCookie()
   removeLegacyAuthTokens()
+  authSessionGeneration += 1
 }
 
 export function getAccessToken() {

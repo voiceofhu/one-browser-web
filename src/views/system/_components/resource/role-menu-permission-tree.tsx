@@ -4,8 +4,9 @@ import * as React from "react"
 import { useQuery } from "@tanstack/react-query"
 import { ChevronDownIcon, ChevronRightIcon } from "lucide-react"
 
-import { getRoleMenuIds } from "@/api/system/role"
+import { listAppPermissions } from "@/api/system/app-permission"
 import { listMenus } from "@/api/system/menu"
+import { getRolePermissions } from "@/api/system/role"
 import { useTranslation } from "@/components/providers/language-context"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -15,131 +16,168 @@ import { Spinner } from "@/components/ui/spinner"
 import { translateAdminText } from "@/local"
 import { systemQueryKeys } from "@/lib/query-keys"
 import { cn } from "@/lib/utils"
-import type { MenuResource } from "@/types/admin"
+import type { MenuTypeFlag } from "@/types/admin"
 
 type CheckedState = boolean | "indeterminate"
+type PermissionTreeSource = "system" | "system-app"
 
-type MenuTreeNode = {
-  menu: MenuResource
-  children: MenuTreeNode[]
+type PermissionTreeEntry = {
+  id: number
+  name: string
+  parentId: number | null
+  order: number
+  type: MenuTypeFlag
+  assignable: boolean
+}
+
+type PermissionTreeNode = {
+  permission: PermissionTreeEntry
+  children: PermissionTreeNode[]
 }
 
 type RoleMenuPermissionTreeProps = {
   value: number[]
   roleId?: number
+  source?: PermissionTreeSource
   disabled: boolean
   invalid: boolean
-  forceAllSelected?: boolean
-  onChange: (menuIds: number[]) => void
+  onChange: (permissionIds: number[]) => void
 }
 
 export function RoleMenuPermissionTree({
   value,
   roleId,
+  source = "system",
   disabled,
   invalid,
-  forceAllSelected = false,
   onChange,
 }: RoleMenuPermissionTreeProps) {
   const { locale } = useTranslation()
   const [expandedIds, setExpandedIds] = React.useState<Set<number>>(new Set())
   const [linked, setLinked] = React.useState(true)
-  const menusQuery = useQuery({
-    queryKey: [...systemQueryKeys.menus, "permission-tree"],
-    queryFn: () => listMenus({ page: 1, page_size: 1_000 }),
+  const permissionsQuery = useQuery({
+    queryKey:
+      source !== "system"
+        ? [...systemQueryKeys.appPermissions, "permission-tree"]
+        : [...systemQueryKeys.menus, "permission-tree"],
+    queryFn: async (): Promise<PermissionTreeEntry[]> => {
+      if (source !== "system") {
+        return (await listAppPermissions()).map((permission) => ({
+          id: permission.permission_id,
+          name: permission.permission_name,
+          parentId: permission.parent_id,
+          order: permission.order_num,
+          type: permission.permission_type,
+          assignable: permission.assignable,
+        }))
+      }
+
+      const response = await listMenus({ page: 1, page_size: 1_000 })
+      return response.list.map((menu) => ({
+        id: menu.menu_id,
+        name: menu.menu_name,
+        parentId: menu.parent_id,
+        order: menu.order_num,
+        type: menu.menu_type,
+        assignable: true,
+      }))
+    },
     staleTime: 30_000,
   })
-  const roleMenusQuery = useQuery({
-    queryKey: [...systemQueryKeys.roles, "menus", roleId],
-    queryFn: () => getRoleMenuIds(roleId ?? 0),
-    enabled: roleId != null && !forceAllSelected,
+  const rolePermissionsQuery = useQuery({
+    queryKey: [...systemQueryKeys.roles, source, "permissions", roleId],
+    queryFn: async () => {
+      const permissions = await getRolePermissions(roleId ?? 0)
+      return {
+        ids:
+          source === "system-app"
+            ? permissions.app_permission_ids
+            : permissions.menu_ids,
+      }
+    },
+    enabled: roleId != null,
     staleTime: 30_000,
   })
   const onChangeRef = React.useRef(onChange)
-  const appliedRoleMenuIdsKeyRef = React.useRef<string | null>(null)
-  const menus = React.useMemo(
-    () => menusQuery.data?.list ?? [],
-    [menusQuery.data]
+  const appliedRolePermissionIdsKeyRef = React.useRef<string | null>(null)
+  const permissions = React.useMemo(
+    () => permissionsQuery.data ?? [],
+    [permissionsQuery.data]
   )
-  const tree = React.useMemo(() => buildMenuTree(menus), [menus])
-  const allMenuIds = React.useMemo(
-    () => menus.map((menu) => menu.menu_id),
-    [menus]
+  const tree = React.useMemo(
+    () => buildPermissionTree(permissions),
+    [permissions]
   )
-  const parentById = React.useMemo(() => buildParentMap(menus), [menus])
+  const allAssignableIds = React.useMemo(
+    () =>
+      permissions
+        .filter((permission) => permission.assignable)
+        .map((permission) => permission.id),
+    [permissions]
+  )
+  const assignableIds = React.useMemo(
+    () => new Set(allAssignableIds),
+    [allAssignableIds]
+  )
+  const parentById = React.useMemo(
+    () => buildParentMap(permissions),
+    [permissions]
+  )
   const childrenById = React.useMemo(() => buildChildrenMap(tree), [tree])
   const expandableIds = React.useMemo(
     () =>
       Array.from(childrenById.entries())
         .filter(([, childIds]) => childIds.length > 0)
-        .map(([menuId]) => menuId),
+        .map(([permissionId]) => permissionId),
     [childrenById]
   )
   const effectiveValue = React.useMemo(
     () =>
-      forceAllSelected
-        ? allMenuIds
-        : value.filter((item) => typeof item === "number"),
-    [allMenuIds, forceAllSelected, value]
+      value.filter(
+        (item): item is number =>
+          typeof item === "number" && assignableIds.has(item)
+      ),
+    [assignableIds, value]
   )
   const selectedIds = React.useMemo(
     () => new Set(effectiveValue),
     [effectiveValue]
   )
   const allSelected =
-    allMenuIds.length > 0 && allMenuIds.every((id) => selectedIds.has(id))
+    allAssignableIds.length > 0 &&
+    allAssignableIds.every((id) => selectedIds.has(id))
   const allExpanded =
     expandableIds.length > 0 && expandableIds.every((id) => expandedIds.has(id))
-  const isLoading = menusQuery.isLoading || roleMenusQuery.isLoading
-  const isReadOnly = disabled || forceAllSelected
+  const isLoading = permissionsQuery.isLoading || rolePermissionsQuery.isLoading
 
   React.useEffect(() => {
     onChangeRef.current = onChange
   }, [onChange])
 
   React.useEffect(() => {
-    if (!forceAllSelected) {
+    if (!rolePermissionsQuery.data) {
+      appliedRolePermissionIdsKeyRef.current = null
       return
     }
 
-    const nextKey = `all:${allMenuIds.join(",")}`
-    if (
-      allMenuIds.length === 0 ||
-      appliedRoleMenuIdsKeyRef.current === nextKey
-    ) {
+    const nextIds = normalizePermissionIds(rolePermissionsQuery.data.ids)
+    const nextKey = `${source}:${roleId ?? "create"}:${nextIds.join(",")}`
+    if (appliedRolePermissionIdsKeyRef.current === nextKey) {
       return
     }
 
-    appliedRoleMenuIdsKeyRef.current = nextKey
-    if (createMenuIdsKey(value) !== allMenuIds.join(",")) {
-      onChangeRef.current(allMenuIds)
-    }
-  }, [allMenuIds, forceAllSelected, value])
-
-  React.useEffect(() => {
-    if (forceAllSelected) {
-      return
-    }
-
-    if (!roleMenusQuery.data) {
-      appliedRoleMenuIdsKeyRef.current = null
-      return
-    }
-
-    const nextIds = normalizeMenuIds(roleMenusQuery.data.ids)
-    const nextKey = `${roleId ?? "create"}:${nextIds.join(",")}`
-    if (appliedRoleMenuIdsKeyRef.current === nextKey) {
-      return
-    }
-
-    appliedRoleMenuIdsKeyRef.current = nextKey
-    if (createMenuIdsKey(value) !== nextIds.join(",")) {
+    appliedRolePermissionIdsKeyRef.current = nextKey
+    if (createPermissionIdsKey(value) !== nextIds.join(",")) {
       onChangeRef.current(nextIds)
     }
-  }, [forceAllSelected, roleId, roleMenusQuery.data, value])
+  }, [roleId, rolePermissionsQuery.data, source, value])
 
   function updateSelection(next: Set<number>) {
-    onChange(Array.from(next).sort((left, right) => left - right))
+    onChange(
+      Array.from(next)
+        .filter((id) => assignableIds.has(id))
+        .sort((left, right) => left - right)
+    )
   }
 
   function toggleExpandAll(checked: boolean) {
@@ -147,46 +185,54 @@ export function RoleMenuPermissionTree({
   }
 
   function toggleSelectAll(checked: boolean) {
-    updateSelection(checked ? new Set(allMenuIds) : new Set())
+    updateSelection(checked ? new Set(allAssignableIds) : new Set())
   }
 
   function toggleLinked(checked: boolean) {
     setLinked(checked)
     if (checked) {
-      updateSelection(normalizeLinkedSelection(selectedIds, tree, parentById))
+      updateSelection(
+        normalizeLinkedSelection(selectedIds, tree, parentById, assignableIds)
+      )
     }
   }
 
-  function toggleExpanded(menuId: number) {
+  function toggleExpanded(permissionId: number) {
     setExpandedIds((current) => {
       const next = new Set(current)
-      if (next.has(menuId)) {
-        next.delete(menuId)
+      if (next.has(permissionId)) {
+        next.delete(permissionId)
       } else {
-        next.add(menuId)
+        next.add(permissionId)
       }
       return next
     })
   }
 
-  function toggleNode(node: MenuTreeNode, checked: boolean) {
+  function toggleNode(node: PermissionTreeNode, checked: boolean) {
     const next = new Set(selectedIds)
-    const nodeIds = collectNodeIds(node)
+    const nodeIds = collectAssignableNodeIds(node)
+    const toggledIds =
+      linked || !node.permission.assignable ? nodeIds : [node.permission.id]
 
-    if (linked) {
-      if (checked) {
-        nodeIds.forEach((id) => next.add(id))
-        getAncestorIds(node.menu.menu_id, parentById).forEach((id) =>
-          next.add(id)
-        )
-      } else {
-        nodeIds.forEach((id) => next.delete(id))
-        removeEmptyAncestors(next, node.menu.menu_id, parentById, childrenById)
+    if (checked) {
+      toggledIds.forEach((id) => next.add(id))
+      if (linked && node.permission.assignable) {
+        getAncestorIds(node.permission.id, parentById)
+          .filter((id) => assignableIds.has(id))
+          .forEach((id) => next.add(id))
       }
-    } else if (checked) {
-      next.add(node.menu.menu_id)
     } else {
-      next.delete(node.menu.menu_id)
+      toggledIds.forEach((id) => next.delete(id))
+      if (linked) {
+        removeEmptyAncestors(
+          next,
+          node.permission.id,
+          parentById,
+          childrenById,
+          assignableIds
+        )
+      }
     }
 
     updateSelection(next)
@@ -201,19 +247,19 @@ export function RoleMenuPermissionTree({
         <CheckboxOption
           label={translateAdminText(locale, "展开/折叠")}
           checked={allExpanded}
-          disabled={isReadOnly || isLoading || expandableIds.length === 0}
+          disabled={disabled || isLoading || expandableIds.length === 0}
           onCheckedChange={toggleExpandAll}
         />
         <CheckboxOption
           label={translateAdminText(locale, "全选/全不选")}
           checked={allSelected}
-          disabled={isReadOnly || isLoading || allMenuIds.length === 0}
+          disabled={disabled || isLoading || allAssignableIds.length === 0}
           onCheckedChange={toggleSelectAll}
         />
         <CheckboxOption
           label={translateAdminText(locale, "父子联动")}
           checked={linked}
-          disabled={isReadOnly || isLoading}
+          disabled={disabled || isLoading}
           onCheckedChange={toggleLinked}
         />
       </div>
@@ -226,13 +272,13 @@ export function RoleMenuPermissionTree({
             </div>
           ) : tree.length > 0 ? (
             tree.map((node) => (
-              <MenuTreeItem
-                key={node.menu.menu_id}
+              <PermissionTreeItem
+                key={node.permission.id}
                 node={node}
                 depth={0}
                 selectedIds={selectedIds}
                 expandedIds={expandedIds}
-                disabled={isReadOnly}
+                disabled={disabled}
                 onToggleNode={toggleNode}
                 onToggleExpanded={toggleExpanded}
               />
@@ -271,7 +317,7 @@ function CheckboxOption({
         checked={checked}
         disabled={disabled}
         className="data-checked:disabled:opacity-100"
-        onCheckedChange={(value) => onCheckedChange(value === true)}
+        onCheckedChange={(nextChecked) => onCheckedChange(nextChecked === true)}
       />
       <span className={cn(disabled && !checked && "text-muted-foreground")}>
         {label}
@@ -280,7 +326,7 @@ function CheckboxOption({
   )
 }
 
-function MenuTreeItem({
+function PermissionTreeItem({
   node,
   depth,
   selectedIds,
@@ -289,19 +335,21 @@ function MenuTreeItem({
   onToggleNode,
   onToggleExpanded,
 }: {
-  node: MenuTreeNode
+  node: PermissionTreeNode
   depth: number
   selectedIds: Set<number>
   expandedIds: Set<number>
   disabled: boolean
-  onToggleNode: (node: MenuTreeNode, checked: boolean) => void
-  onToggleExpanded: (menuId: number) => void
+  onToggleNode: (node: PermissionTreeNode, checked: boolean) => void
+  onToggleExpanded: (permissionId: number) => void
 }) {
-  const hasChildren = node.children.length > 0
-  const expanded = expandedIds.has(node.menu.menu_id)
-  const checked = getNodeCheckedState(node, selectedIds)
-  const inputId = React.useId()
   const { locale } = useTranslation()
+  const hasChildren = node.children.length > 0
+  const assignableNodeIds = collectAssignableNodeIds(node)
+  const nodeDisabled = disabled || assignableNodeIds.length === 0
+  const expanded = expandedIds.has(node.permission.id)
+  const checked = getNodeCheckedState(assignableNodeIds, selectedIds)
+  const inputId = React.useId()
 
   return (
     <div>
@@ -319,7 +367,7 @@ function MenuTreeItem({
               ? translateAdminText(locale, "收起权限节点")
               : translateAdminText(locale, "展开权限节点")
           }
-          onClick={() => onToggleExpanded(node.menu.menu_id)}
+          onClick={() => onToggleExpanded(node.permission.id)}
         >
           {hasChildren ? (
             expanded ? (
@@ -332,27 +380,32 @@ function MenuTreeItem({
         <Checkbox
           id={inputId}
           checked={checked}
-          disabled={disabled}
+          disabled={nodeDisabled}
           className="data-checked:disabled:opacity-100"
-          onCheckedChange={(value) => onToggleNode(node, value === true)}
+          onCheckedChange={(nextChecked) =>
+            onToggleNode(node, nextChecked === true)
+          }
         />
         <label
           htmlFor={inputId}
           className={cn(
             "flex min-w-0 flex-1 cursor-pointer items-center gap-2 py-1",
-            disabled && "cursor-not-allowed text-muted-foreground"
+            nodeDisabled && "cursor-not-allowed text-muted-foreground"
           )}
         >
-          <span className="truncate">{node.menu.menu_name}</span>
+          <span className="truncate">{node.permission.name}</span>
           <Badge variant="outline">
-            {translateAdminText(locale, menuTypeLabel(node.menu.menu_type))}
+            {translateAdminText(
+              locale,
+              permissionTypeLabel(node.permission.type)
+            )}
           </Badge>
         </label>
       </div>
       {hasChildren && expanded
         ? node.children.map((child) => (
-            <MenuTreeItem
-              key={child.menu.menu_id}
+            <PermissionTreeItem
+              key={child.permission.id}
               node={child}
               depth={depth + 1}
               selectedIds={selectedIds}
@@ -368,68 +421,71 @@ function MenuTreeItem({
 }
 
 function getNodeCheckedState(
-  node: MenuTreeNode,
+  assignableNodeIds: number[],
   selectedIds: Set<number>
 ): CheckedState {
-  if (selectedIds.has(node.menu.menu_id)) {
+  if (assignableNodeIds.length === 0) {
+    return false
+  }
+  const selectedCount = assignableNodeIds.filter((id) =>
+    selectedIds.has(id)
+  ).length
+  if (selectedCount === assignableNodeIds.length) {
     return true
   }
-  if (node.children.some((child) => getNodeCheckedState(child, selectedIds))) {
-    return "indeterminate"
-  }
-  return false
+  return selectedCount > 0 ? "indeterminate" : false
 }
 
-function buildMenuTree(menus: MenuResource[]) {
-  const nodeMap = new Map<number, MenuTreeNode>()
-  const roots: MenuTreeNode[] = []
+function buildPermissionTree(permissions: PermissionTreeEntry[]) {
+  const nodeMap = new Map<number, PermissionTreeNode>()
+  const roots: PermissionTreeNode[] = []
 
-  menus.forEach((menu) => {
-    nodeMap.set(menu.menu_id, { menu, children: [] })
+  permissions.forEach((permission) => {
+    nodeMap.set(permission.id, { permission, children: [] })
   })
 
-  menus.forEach((menu) => {
-    const node = nodeMap.get(menu.menu_id)
+  permissions.forEach((permission) => {
+    const node = nodeMap.get(permission.id)
     if (!node) {
       return
     }
-    if (menu.parent_id && nodeMap.has(menu.parent_id)) {
-      nodeMap.get(menu.parent_id)?.children.push(node)
+    if (permission.parentId && nodeMap.has(permission.parentId)) {
+      nodeMap.get(permission.parentId)?.children.push(node)
     } else {
       roots.push(node)
     }
   })
 
-  sortMenuTree(roots)
+  sortPermissionTree(roots)
   return roots
 }
 
-function sortMenuTree(nodes: MenuTreeNode[]) {
+function sortPermissionTree(nodes: PermissionTreeNode[]) {
   nodes.sort((left, right) => {
-    if (left.menu.order_num !== right.menu.order_num) {
-      return left.menu.order_num - right.menu.order_num
+    if (left.permission.order !== right.permission.order) {
+      return left.permission.order - right.permission.order
     }
-    return left.menu.menu_id - right.menu.menu_id
+    return left.permission.id - right.permission.id
   })
-  nodes.forEach((node) => sortMenuTree(node.children))
+  nodes.forEach((node) => sortPermissionTree(node.children))
 }
 
-function buildParentMap(menus: MenuResource[]) {
+function buildParentMap(permissions: PermissionTreeEntry[]) {
   const parentById = new Map<number, number>()
-  menus.forEach((menu) => {
-    if (menu.parent_id) {
-      parentById.set(menu.menu_id, menu.parent_id)
+  permissions.forEach((permission) => {
+    if (permission.parentId) {
+      parentById.set(permission.id, permission.parentId)
     }
   })
   return parentById
 }
 
-function buildChildrenMap(tree: MenuTreeNode[]) {
+function buildChildrenMap(tree: PermissionTreeNode[]) {
   const childrenById = new Map<number, number[]>()
-  function walk(node: MenuTreeNode) {
+  function walk(node: PermissionTreeNode) {
     childrenById.set(
-      node.menu.menu_id,
-      node.children.map((child) => child.menu.menu_id)
+      node.permission.id,
+      node.children.map((child) => child.permission.id)
     )
     node.children.forEach(walk)
   }
@@ -437,27 +493,27 @@ function buildChildrenMap(tree: MenuTreeNode[]) {
   return childrenById
 }
 
-function collectNodeIds(node: MenuTreeNode): number[] {
+function collectAssignableNodeIds(node: PermissionTreeNode): number[] {
   return [
-    node.menu.menu_id,
-    ...node.children.flatMap((child) => collectNodeIds(child)),
+    ...(node.permission.assignable ? [node.permission.id] : []),
+    ...node.children.flatMap((child) => collectAssignableNodeIds(child)),
   ]
 }
 
-function normalizeMenuIds(ids: number[]) {
+function normalizePermissionIds(ids: number[]) {
   return Array.from(new Set(ids)).sort((left, right) => left - right)
 }
 
-function createMenuIdsKey(ids: number[]) {
-  return normalizeMenuIds(ids).join(",")
+function createPermissionIdsKey(ids: number[]) {
+  return normalizePermissionIds(ids).join(",")
 }
 
 function getAncestorIds(
-  menuId: number,
+  permissionId: number,
   parentById: Map<number, number>
 ): number[] {
   const ancestorIds: number[] = []
-  let parentId = parentById.get(menuId)
+  let parentId = parentById.get(permissionId)
   while (parentId) {
     ancestorIds.push(parentId)
     parentId = parentById.get(parentId)
@@ -467,51 +523,58 @@ function getAncestorIds(
 
 function normalizeLinkedSelection(
   selectedIds: Set<number>,
-  tree: MenuTreeNode[],
-  parentById: Map<number, number>
+  tree: PermissionTreeNode[],
+  parentById: Map<number, number>,
+  assignableIds: Set<number>
 ): Set<number> {
   const next = new Set(selectedIds)
 
-  function walk(node: MenuTreeNode) {
-    if (selectedIds.has(node.menu.menu_id)) {
-      collectNodeIds(node).forEach((id) => next.add(id))
+  function walk(node: PermissionTreeNode) {
+    if (node.permission.assignable && selectedIds.has(node.permission.id)) {
+      collectAssignableNodeIds(node).forEach((id) => next.add(id))
     }
     node.children.forEach(walk)
   }
 
   tree.forEach(walk)
   selectedIds.forEach((id) => {
-    getAncestorIds(id, parentById).forEach((ancestorId) => next.add(ancestorId))
+    getAncestorIds(id, parentById)
+      .filter((ancestorId) => assignableIds.has(ancestorId))
+      .forEach((ancestorId) => next.add(ancestorId))
   })
   return next
 }
 
 function removeEmptyAncestors(
   selectedIds: Set<number>,
-  menuId: number,
+  permissionId: number,
   parentById: Map<number, number>,
-  childrenById: Map<number, number[]>
+  childrenById: Map<number, number[]>,
+  assignableIds: Set<number>
 ) {
-  getAncestorIds(menuId, parentById).forEach((ancestorId) => {
-    if (!hasSelectedDescendant(ancestorId, selectedIds, childrenById)) {
+  getAncestorIds(permissionId, parentById).forEach((ancestorId) => {
+    if (
+      assignableIds.has(ancestorId) &&
+      !hasSelectedDescendant(ancestorId, selectedIds, childrenById)
+    ) {
       selectedIds.delete(ancestorId)
     }
   })
 }
 
 function hasSelectedDescendant(
-  menuId: number,
+  permissionId: number,
   selectedIds: Set<number>,
   childrenById: Map<number, number[]>
 ): boolean {
-  return (childrenById.get(menuId) ?? []).some(
+  return (childrenById.get(permissionId) ?? []).some(
     (childId) =>
       selectedIds.has(childId) ||
       hasSelectedDescendant(childId, selectedIds, childrenById)
   )
 }
 
-function menuTypeLabel(type: MenuResource["menu_type"]) {
+function permissionTypeLabel(type: MenuTypeFlag) {
   if (type === "M") {
     return "目录"
   }

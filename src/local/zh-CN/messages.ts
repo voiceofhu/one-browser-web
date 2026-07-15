@@ -295,7 +295,7 @@ export const zhCNMessages = {
   "resource.resetPassword.help": "至少 10 位，保存后立即生效。",
   "resource.resetPassword.confirm": "确认重置",
   "resource.assignRoles.title": "重新分配角色",
-  "resource.assignRoles.description": "调整“{name}”拥有的系统角色。",
+  "resource.assignRoles.description": "调整“{name}”拥有的全局角色。",
   "resource.assignRoles.loadFailed": "角色绑定加载失败，请稍后重试。",
   "resource.assignRoles.reload": "重新加载",
   "resource.assignRoles.roleRequired": "请至少选择一个角色",

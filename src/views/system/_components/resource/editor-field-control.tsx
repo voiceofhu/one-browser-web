@@ -42,9 +42,8 @@ import type {
 } from "./form"
 import { MenuIconSelect } from "./menu-icon-select"
 import { MenuParentSelect } from "./menu-parent-select"
-import { RoleMultiSelect } from "./role-multi-select"
+import { RoleSelect } from "./role-multi-select"
 import { RoleMenuPermissionTree } from "./role-menu-permission-tree"
-import { isSuperAdminRoleKey } from "./protected-records"
 
 type ResourceFieldControlProps = {
   field: ResourceField
@@ -385,21 +384,24 @@ function renderControl({
     )
   }
 
-  if (field.type === "menu-permission-tree") {
+  if (
+    field.type === "menu-permission-tree" ||
+    field.type === "system-app-permission-tree"
+  ) {
     const value = watch(field.name)
-    const roleKey = watch("role_key")
     const menuIds = Array.isArray(value)
       ? value.filter((item): item is number => typeof item === "number")
       : []
-    const forceAllSelected = isSuperAdminRoleKey(roleKey)
 
     return (
       <RoleMenuPermissionTree
         value={menuIds}
         roleId={mode === "edit" ? recordId : undefined}
+        source={
+          field.type === "system-app-permission-tree" ? "system-app" : "system"
+        }
         disabled={isDisabled}
         invalid={invalid}
-        forceAllSelected={forceAllSelected}
         onChange={(nextValue) =>
           setValue(field.name, nextValue, {
             shouldDirty: true,
@@ -410,15 +412,13 @@ function renderControl({
     )
   }
 
-  if (field.type === "role-multi-select") {
+  if (field.type === "role-select") {
     const value = watch(field.name)
-    const roleIds = Array.isArray(value)
-      ? value.filter((item): item is number => typeof item === "number")
-      : []
+    const roleId = typeof value === "number" ? value : null
 
     return (
-      <RoleMultiSelect
-        value={roleIds}
+      <RoleSelect
+        value={roleId}
         disabled={isDisabled}
         invalid={invalid}
         onChange={(nextValue) =>

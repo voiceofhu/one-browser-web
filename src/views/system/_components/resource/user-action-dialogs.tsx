@@ -26,8 +26,10 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
+import { translateAdminText } from "@/local"
+import type { UserRoleBindings } from "@/types/admin"
 
-import { RoleMultiSelect } from "./role-multi-select"
+import { RoleSelect } from "./role-multi-select"
 import { showResourceError } from "./toast"
 
 type RecordDialogProps<TData> = {
@@ -73,10 +75,7 @@ export function ResetPasswordDialog<TData>({
   return (
     <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
       <ResponsiveDialogContent>
-        <form
-          className="flex min-h-0 flex-1 flex-col gap-0 md:gap-4"
-          onSubmit={handleSubmit}
-        >
+        <form className="flex min-h-0 flex-1 flex-col" onSubmit={handleSubmit}>
           <ResponsiveDialogHeader>
             <ResponsiveDialogTitle>
               {t("resource.resetPassword.title")}
@@ -153,19 +152,19 @@ export function RoleAssignmentDialog<TData>({
   open,
   record,
   getName,
-  getRoleIds,
+  getRoleBindings,
   isSubmitting,
   onOpenChange,
   onSubmit,
 }: RecordDialogProps<TData> & {
-  getRoleIds: (record: TData) => Promise<number[]>
+  getRoleBindings: (record: TData) => Promise<UserRoleBindings>
   isSubmitting: boolean
-  onSubmit: (record: TData, roleIds: number[]) => Promise<void>
+  onSubmit: (record: TData, bindings: UserRoleBindings) => Promise<void>
 }) {
   const { locale, t } = useTranslation()
   const rolesQuery = useQuery({
     queryKey: ["system", "users", "role-assignment", record],
-    queryFn: () => getRoleIds(record as TData),
+    queryFn: () => getRoleBindings(record as TData),
     enabled: open && record != null,
   })
 
@@ -196,9 +195,9 @@ export function RoleAssignmentDialog<TData>({
           </ResponsiveDialogBody>
         ) : record && rolesQuery.data ? (
           <RoleAssignmentForm
-            key={rolesQuery.data.join("-")}
+            key={rolesQuery.data.role_id}
             record={record}
-            initialRoleIds={rolesQuery.data}
+            initialBindings={rolesQuery.data}
             isSubmitting={isSubmitting}
             onSubmit={onSubmit}
             locale={locale}
@@ -215,46 +214,44 @@ export function RoleAssignmentDialog<TData>({
 
 function RoleAssignmentForm<TData>({
   record,
-  initialRoleIds,
+  initialBindings,
   isSubmitting,
   onSubmit,
   locale,
 }: {
   record: TData
-  initialRoleIds: number[]
+  initialBindings: UserRoleBindings
   isSubmitting: boolean
-  onSubmit: (record: TData, roleIds: number[]) => Promise<void>
+  onSubmit: (record: TData, bindings: UserRoleBindings) => Promise<void>
   locale: ReturnType<typeof useTranslation>["locale"]
 }) {
   const { t } = useTranslation()
-  const [roleIds, setRoleIds] = React.useState(initialRoleIds)
-
+  const [roleId, setRoleId] = React.useState<number | null>(
+    initialBindings.role_id
+  )
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (roleIds.length === 0) {
+    if (roleId == null) {
       toast.error(t("resource.assignRoles.roleRequired"), { duration: 5_000 })
       return
     }
 
     try {
-      await onSubmit(record, roleIds)
+      await onSubmit(record, { role_id: roleId })
     } catch (submitError) {
       showResourceError(submitError, locale)
     }
   }
 
   return (
-    <form
-      className="flex min-h-0 flex-1 flex-col gap-0 md:gap-4"
-      onSubmit={handleSubmit}
-    >
+    <form className="flex min-h-0 flex-1 flex-col" onSubmit={handleSubmit}>
       <ResponsiveDialogBody>
         <Field>
-          <FieldLabel>{t("resource.assignRoles.role")}</FieldLabel>
-          <RoleMultiSelect
-            value={roleIds}
+          <FieldLabel>{translateAdminText(locale, "全局角色")}</FieldLabel>
+          <RoleSelect
+            value={roleId}
             disabled={isSubmitting}
-            onChange={setRoleIds}
+            onChange={setRoleId}
           />
         </Field>
       </ResponsiveDialogBody>

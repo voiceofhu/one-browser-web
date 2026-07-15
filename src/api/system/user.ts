@@ -4,14 +4,11 @@ import type {
   ListParams,
   PageResponse,
   ResourceMutationResult,
+  UserRoleBindings,
   UserResource,
 } from "@/types/admin"
 
 type UserPayload = Record<string, unknown>
-type IdsPayload = {
-  ids: number[]
-}
-
 const USER_PATH = "/system/users"
 
 export function listUsers(params?: ListParams) {
@@ -34,12 +31,14 @@ export function deleteUser(userId: number) {
   return http.del<void>(`${USER_PATH}/${userId}`)
 }
 
-export function getUserRoleIds(userId: number) {
-  return http.get<IdsPayload>(`${USER_PATH}/${userId}/roles`)
+export function getUserRoleBindings(userId: number) {
+  return http.get<UserRoleBindings>(`${USER_PATH}/${userId}/roles`)
 }
 
-export function setUserRoleIds(userId: number, roleIds: number[]) {
-  return http.put<void>(`${USER_PATH}/${userId}/roles`, { ids: roleIds })
+export function setUserRoleBindings(userId: number, roleId: number) {
+  return http.put<void>(`${USER_PATH}/${userId}/roles`, {
+    role_id: roleId,
+  })
 }
 
 export function setUserStatus(userId: number, status: "0" | "1") {

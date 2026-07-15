@@ -8,7 +8,9 @@ import {
 import {
   clearAuthTokens,
   getAccessToken,
+  getAuthSessionGeneration,
   getRefreshToken,
+  hasAuthTokens,
   isAccessTokenStale,
   saveAuthTokens,
   type AuthTokenPayload,
@@ -50,7 +52,8 @@ const APP_BASE_URL = import.meta.env.VITE_BASE_URL || "/"
 const AUTH_EXPIRED_NOTICE_KEY = "one-browser:auth-expired-notice"
 let authSessionExpired = false
 let isRedirectingToLogin = false
-let refreshPromise: Promise<AuthTokenPayload> | null = null
+let expiredSessionGeneration: number | null = null
+let refreshPromise: Promise<void> | null = null
 
 export function isUnauthorizedError(error: unknown): error is HttpError {
   return error instanceof HttpError && error.status === 401
@@ -70,6 +73,18 @@ export function consumeAuthExpiredNotice() {
   }
 }
 
+export function clearAuthExpiredNotice() {
+  if (typeof window === "undefined") {
+    return
+  }
+
+  try {
+    window.sessionStorage.removeItem(AUTH_EXPIRED_NOTICE_KEY)
+  } catch {
+    // A fresh session should still be accepted if storage is unavailable.
+  }
+}
+
 export function markAuthRedirectNotice(message: string) {
   if (typeof window === "undefined") {
     return
@@ -84,6 +99,7 @@ export function markAuthRedirectNotice(message: string) {
 
 export async function ensureFreshAccessToken(options?: { force?: boolean }) {
   syncAuthSessionStateFromTokens()
+  const sessionGeneration = getAuthSessionGeneration()
 
   if (!options?.force && !isAccessTokenStale()) {
     console.info("[auth-debug] ensure fresh access token skipped refresh", {
@@ -103,7 +119,7 @@ export async function ensureFreshAccessToken(options?: { force?: boolean }) {
     await refreshAuthTokens()
   } catch (error) {
     if (isUnauthorizedError(error)) {
-      expireAuthSession("", error)
+      expireAuthSession("", error, sessionGeneration)
     }
 
     throw error
@@ -254,21 +270,37 @@ async function parseError(response: Response) {
 async function request<T>(
   path: string,
   init: RequestInit = {},
-  baseUrl = API_BASE_URL
+  baseUrl = API_BASE_URL,
+  retriedForNewSession = false
 ) {
   syncAuthSessionStateFromTokens()
+  const refreshGeneration = getAuthSessionGeneration()
 
   try {
     await refreshAuthTokensBeforeRequest(path)
   } catch (error) {
     if (isUnauthorizedError(error)) {
-      expireAuthSession(path, error)
+      expireAuthSession(path, error, refreshGeneration)
     }
 
     throw error
   }
 
+  const requestGeneration = getAuthSessionGeneration()
+
   const response = await sendRequest(path, init, baseUrl)
+  if (requestGeneration !== getAuthSessionGeneration()) {
+    if (!retriedForNewSession && hasAuthTokens()) {
+      console.info("[auth-debug] ignoring response from older auth session", {
+        path,
+        requestGeneration,
+        currentGeneration: getAuthSessionGeneration(),
+      })
+      return request<T>(path, init, baseUrl, true)
+    }
+
+    throw new Error("登录状态已更新，请重试")
+  }
 
   if (!response.ok) {
     const error = await parseError(response)
@@ -282,11 +314,23 @@ async function request<T>(
         hasAccessToken: Boolean(getAccessToken()),
         hasRefreshToken: Boolean(getRefreshToken()),
       })
+      if (requestGeneration !== getAuthSessionGeneration()) {
+        if (!retriedForNewSession && hasAuthTokens()) {
+          console.info("[auth-debug] retrying with newer auth session", {
+            path,
+            requestGeneration,
+            currentGeneration: getAuthSessionGeneration(),
+          })
+          return request<T>(path, init, baseUrl, true)
+        }
+
+        throw error
+      }
       if (!shouldRefreshAuth(path)) {
         throw error
       }
       if (authSessionExpired || isRedirectingToLogin) {
-        expireAuthSession(path, error)
+        expireAuthSession(path, error, requestGeneration)
         throw error
       }
 
@@ -299,7 +343,7 @@ async function request<T>(
         "refreshError" in refreshed &&
         isUnauthorizedError(refreshed.refreshError)
       ) {
-        expireAuthSession(path, refreshed.refreshError)
+        expireAuthSession(path, refreshed.refreshError, requestGeneration)
       }
 
       if (
@@ -307,6 +351,18 @@ async function request<T>(
         refreshed.refreshError instanceof Error
       ) {
         throw refreshed.refreshError
+      }
+
+      if (
+        "retryError" in refreshed &&
+        refreshed.retryError instanceof Error &&
+        requestGeneration !== getAuthSessionGeneration()
+      ) {
+        if (!retriedForNewSession && hasAuthTokens()) {
+          return request<T>(path, init, baseUrl, true)
+        }
+
+        throw refreshed.retryError
       }
 
       if ("retryError" in refreshed && refreshed.retryError instanceof Error) {
@@ -414,20 +470,26 @@ async function refreshAuthTokens() {
     })
     throw new HttpError(401, "MISSING_REFRESH_TOKEN", "请重新登录")
   }
+  const sessionGeneration = getAuthSessionGeneration()
 
   console.info("[auth-debug] refresh auth tokens start", {
     hasRefreshToken: true,
     hasAccessToken: Boolean(getAccessToken()),
     hasExistingPromise: Boolean(refreshPromise),
   })
-  refreshPromise ??= fetchRefreshToken(refreshToken).finally(() => {
-    refreshPromise = null
-  })
+  refreshPromise ??= fetchRefreshToken(refreshToken, sessionGeneration).finally(
+    () => {
+      refreshPromise = null
+    }
+  )
 
   return refreshPromise
 }
 
-async function fetchRefreshToken(refreshToken: string) {
+async function fetchRefreshToken(
+  refreshToken: string,
+  sessionGeneration: number
+) {
   const init: RequestInit = {
     method: "POST",
     body: JSON.stringify({ refresh_token: refreshToken }),
@@ -449,6 +511,15 @@ async function fetchRefreshToken(refreshToken: string) {
     ok: response.ok,
   })
 
+  if (sessionGeneration !== getAuthSessionGeneration()) {
+    console.info("[auth-debug] ignored refresh result from older session", {
+      sessionGeneration,
+      currentGeneration: getAuthSessionGeneration(),
+      status: response.status,
+    })
+    return
+  }
+
   if (!response.ok) {
     const error = await parseError(response)
     console.info("[auth-debug] fetch refresh token failed", {
@@ -463,6 +534,13 @@ async function fetchRefreshToken(refreshToken: string) {
   }
 
   const tokens = await parseResponseData<AuthTokenPayload>(response)
+  if (sessionGeneration !== getAuthSessionGeneration()) {
+    console.info("[auth-debug] ignored parsed refresh from older session", {
+      sessionGeneration,
+      currentGeneration: getAuthSessionGeneration(),
+    })
+    return
+  }
   console.info("[auth-debug] fetch refresh token parsed", {
     url: refreshUrl,
     hadPreviousRefreshToken: Boolean(refreshToken),
@@ -472,12 +550,28 @@ async function fetchRefreshToken(refreshToken: string) {
     expiresIn: tokens.expires_in,
     refreshExpiresIn: tokens.refresh_expires_in,
   })
-  saveAuthTokens(tokens)
+  saveAuthTokens(tokens, { replaceSession: false })
   markAuthSessionActive()
-  return tokens
 }
 
-function expireAuthSession(path: string, error: HttpError) {
+function expireAuthSession(
+  path: string,
+  error: HttpError,
+  sessionGeneration: number
+) {
+  if (sessionGeneration !== getAuthSessionGeneration()) {
+    console.info("[auth-debug] ignored auth failure from older session", {
+      path,
+      sessionGeneration,
+      currentGeneration: getAuthSessionGeneration(),
+    })
+    return
+  }
+
+  if (authSessionExpired && expiredSessionGeneration === sessionGeneration) {
+    return
+  }
+
   console.info("[auth-debug] expire auth session", {
     path,
     status: error.status,
@@ -487,13 +581,14 @@ function expireAuthSession(path: string, error: HttpError) {
     hasRefreshToken: Boolean(getRefreshToken()),
   })
   authSessionExpired = true
-  refreshPromise = null
   clearAuthTokens()
+  expiredSessionGeneration = getAuthSessionGeneration()
   redirectToLogin(path, error)
 }
 
 function markAuthSessionActive() {
   authSessionExpired = false
+  expiredSessionGeneration = null
   isRedirectingToLogin = false
 }
 

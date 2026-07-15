@@ -118,7 +118,7 @@ function ResponsiveDialogContent({
 
   return (
     <DialogContent
-      className={className}
+      className={cn("gap-0 overflow-hidden p-0", className)}
       showCloseButton={showCloseButton}
       {...props}
     >
@@ -164,7 +164,9 @@ function ResponsiveDialogBody({
     <div
       data-slot="responsive-dialog-body"
       className={cn(
-        mode === "drawer" ? "min-h-0 flex-1 overflow-y-auto p-4" : "min-h-0",
+        mode === "drawer"
+          ? "min-h-0 flex-1 overflow-y-auto p-4"
+          : "min-h-0 p-4",
         className
       )}
       {...props}

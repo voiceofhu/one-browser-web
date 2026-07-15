@@ -135,11 +135,11 @@ export function JobEditorDialog({
   return (
     <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
       <ResponsiveDialogContent
-        className="gap-4 sm:max-w-3xl"
+        className="sm:max-w-3xl"
         onInteractOutside={(event) => event.preventDefault()}
       >
         <form
-          className="flex min-h-0 flex-1 flex-col gap-0 md:gap-3"
+          className="flex min-h-0 flex-1 flex-col"
           onSubmit={form.handleSubmit(
             (values) => onSubmit(toJobPayload(values)),
             handleInvalidSubmit

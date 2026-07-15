@@ -45,6 +45,7 @@ type LoginFormValues = {
 
 type LoginFormProps = Omit<React.ComponentProps<"div">, "onSubmit"> & {
   isSubmitting?: boolean
+  notice?: string | null
   error?: unknown
   googleLoginEnabled?: boolean
   onGoogleLogin?: () => void
@@ -55,6 +56,7 @@ type LoginFormProps = Omit<React.ComponentProps<"div">, "onSubmit"> & {
 export function LoginForm({
   className,
   isSubmitting = false,
+  notice,
   error,
   googleLoginEnabled = false,
   onGoogleLogin,
@@ -341,6 +343,12 @@ export function LoginForm({
                     onError={handleTurnstileError}
                   />
                 </Field>
+              ) : null}
+
+              {notice ? (
+                <Alert data-login-reveal aria-live="polite">
+                  <AlertDescription>{notice}</AlertDescription>
+                </Alert>
               ) : null}
 
               {displayError ? (

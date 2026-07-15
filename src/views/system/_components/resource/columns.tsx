@@ -45,11 +45,15 @@ import type {
 } from "@/types/admin"
 import { ResourceTableColumnHeader } from "./table"
 import { findMenuIconOption } from "./menu-icons"
-import { isSuperAdminRole } from "./protected-records"
 import { showResourceError } from "./toast"
 
 export const userColumns: ColumnDef<UserResource>[] = [
-  textColumn("user_name", "用户名"),
+  {
+    accessorKey: "user_name",
+    header: ({ column }) => tableHeader(column, "用户名"),
+    cell: ({ row }) => <UserNameCell user={row.original} />,
+    meta: { label: "用户名", cellClassName: "max-w-64" },
+  },
   textColumn("nick_name", "昵称"),
   textColumn("email", "邮箱"),
   textColumn("phone_number", "手机号"),
@@ -79,7 +83,6 @@ export const userColumns: ColumnDef<UserResource>[] = [
 export const roleColumns: ColumnDef<RoleResource>[] = [
   textColumn("role_name", "角色名称"),
   textColumn("role_key", "权限标识"),
-  numberColumn("role_sort", "排序"),
   {
     accessorKey: "data_scope",
     header: ({ column }) => tableHeader(column, "数据范围"),
@@ -203,18 +206,6 @@ function textColumn<TData, TKey extends keyof TData & string>(
   }
 }
 
-function numberColumn<TData, TKey extends keyof TData & string>(
-  key: TKey,
-  label: string
-): ColumnDef<TData> {
-  return {
-    accessorKey: key,
-    header: ({ column }) => tableHeader(column, label),
-    cell: ({ getValue }) => <TextCell value={getValue()} />,
-    meta: { label },
-  }
-}
-
 function dateColumn<
   TData extends Record<TKey, string | null>,
   TKey extends keyof TData & string,
@@ -292,6 +283,21 @@ function TranslatedBadge({ label }: { label: string }) {
   const { locale } = useTranslation()
 
   return <Badge variant="outline">{translateText(locale, label)}</Badge>
+}
+
+function UserNameCell({ user }: { user: UserResource }) {
+  const { locale } = useTranslation()
+
+  return (
+    <div className="flex min-w-0 items-center gap-2">
+      <span className="truncate">{user.user_name}</span>
+      {user.is_super_admin ? (
+        <Badge variant="secondary" className="shrink-0">
+          {translateText(locale, "超级管理员")}
+        </Badge>
+      ) : null}
+    </div>
+  )
 }
 
 function MenuNameCell({ menu }: { menu: MenuResource }) {
@@ -390,9 +396,7 @@ function RoleStatusSwitch({ role }: { role: RoleResource }) {
   return (
     <ResourceStatusSwitch
       checked={enabled}
-      disabled={
-        !canChangeStatus || isSuperAdminRole(role) || mutation.isPending
-      }
+      disabled={!canChangeStatus || role.protected || mutation.isPending}
       label={getStatusSwitchLabel(locale, enabled, "角色", role.role_name)}
       onCheckedChange={(checked) => mutation.mutate(checked ? "0" : "1")}
     />

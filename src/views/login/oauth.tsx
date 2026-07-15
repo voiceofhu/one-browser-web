@@ -17,6 +17,7 @@ import { authQueryKeys } from "@/hooks/use-auth"
 import { localizedPath, stripLocaleFromPathname } from "@/local"
 import { saveAuthTokens } from "@/lib/auth-tokens"
 import { shouldUseDocumentRedirect } from "@/lib/login-source"
+import { clearAuthExpiredNotice } from "@/lib/request"
 import { useQueryClient } from "@tanstack/react-query"
 
 type OAuthCallbackFailureStage =
@@ -132,6 +133,7 @@ export default function OAuthCallbackPage() {
           refreshExpiresIn: response.refresh_expires_in,
           responseRedirect: response.redirect,
         })
+        clearAuthExpiredNotice()
         saveAuthTokens(response)
 
         await queryClient.invalidateQueries({

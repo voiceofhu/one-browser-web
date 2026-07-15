@@ -185,12 +185,30 @@ export interface RoleResource {
   role_id: number
   role_name: string
   role_key: string
+  system_role: boolean
+  protected: boolean
   role_sort: number
   data_scope: DataScopeFlag
   status: StatusFlag
   created_at: string
   updated_at: string | null
   remark: string | null
+}
+
+export interface AppPermissionResource {
+  permission_id: number
+  permission_name: string
+  parent_id: number | null
+  order_num: number
+  permission_type: MenuTypeFlag
+  permission_scope: "T" | "G"
+  status: StatusFlag
+  permission_code: string | null
+  assignable: boolean
+}
+
+export interface UserRoleBindings {
+  role_id: number
 }
 
 export interface MenuResource {

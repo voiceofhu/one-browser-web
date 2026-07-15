@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { Navigate, useNavigate, useSearchParams } from "react-router"
 import { toast } from "sonner"
 
@@ -13,6 +13,7 @@ import {
   stripLocaleFromPathname,
   type Locale,
 } from "@/local"
+import { hasAuthTokens } from "@/lib/auth-tokens"
 import { consumeAuthExpiredNotice } from "@/lib/request"
 import { useCurrentUser, useLoginMutation } from "@/hooks/use-auth"
 import { InteractiveGridBackground } from "./interactive-grid-background"
@@ -45,7 +46,9 @@ export default function LoginPage() {
   const googleLoginEnabled = isGoogleLoginEnabled()
   const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY || undefined
   const loginMutation = useLoginMutation()
-  const currentUser = useCurrentUser()
+  const hasSession = hasAuthTokens()
+  const currentUser = useCurrentUser({ enabled: hasSession })
+  const [authNotice, setAuthNotice] = useState<string | null>(null)
   const handleGoogleLogin = useCallback(() => {
     console.info("[auth-debug][google] login button clicked", {
       redirectTo,
@@ -60,17 +63,18 @@ export default function LoginPage() {
   }, [redirectTo, t])
 
   useEffect(() => {
-    const authNotice = consumeAuthExpiredNotice()
-    if (authNotice !== null) {
-      if (isAppAuthorizationRedirect(redirectTo)) {
-        toast.message(t("appAuth.loginRequiredToast"))
-        return
+    const noticeTimer = window.setTimeout(() => {
+      const notice = consumeAuthExpiredNotice()
+      if (notice !== null) {
+        setAuthNotice(
+          isAppAuthorizationRedirect(redirectTo)
+            ? t("appAuth.loginRequiredToast")
+            : notice || t("auth.expired.description")
+        )
       }
+    }, 0)
 
-      toast.warning(t("auth.expired.title"), {
-        description: authNotice || t("auth.expired.description"),
-      })
-    }
+    return () => window.clearTimeout(noticeTimer)
   }, [redirectTo, t])
 
   if (currentUser.isSuccess) {
@@ -87,6 +91,7 @@ export default function LoginPage() {
       <section className="relative z-10 grid flex-1 place-items-center py-6 sm:py-8 lg:py-10">
         <LoginForm
           className="w-full max-w-[25rem]"
+          notice={authNotice}
           isSubmitting={loginMutation.isPending}
           error={
             loginMutation.error ||
@@ -97,6 +102,7 @@ export default function LoginPage() {
           turnstileSiteKey={turnstileSiteKey}
           onSubmit={async (values) => {
             await loginMutation.mutateAsync(values)
+            setAuthNotice(null)
             navigate(redirectTo, { replace: true })
           }}
         />

@@ -33,7 +33,8 @@ export type ResourceField = {
     | "menu-parent-select"
     | "menu-type-tabs"
     | "menu-permission-tree"
-    | "role-multi-select"
+    | "system-app-permission-tree"
+    | "role-select"
     | "status-switch"
     | "switch"
   placeholder?: string
@@ -53,7 +54,10 @@ export type ResourceField = {
 const requiredText = (label: string) =>
   z.string().trim().min(1, `${label}不能为空`)
 
-const optionalText = z.string().trim().optional()
+const optionalText = z.preprocess(
+  (value) => (value == null ? "" : value),
+  z.string().trim()
+)
 const optionalNullableNumber = z
   .number()
   .int()
@@ -104,7 +108,10 @@ const userBaseSchema = z.object({
   user_name: requiredText("用户名").max(64, "用户名不能超过 64 个字符"),
   nick_name: requiredText("昵称").max(64, "昵称不能超过 64 个字符"),
   user_type: optionalText,
-  role_ids: z.array(z.number().int()).min(1, "至少选择一个角色"),
+  role_id: z
+    .number({ error: "请选择一个角色" })
+    .int()
+    .positive("请选择一个角色"),
   email: z
     .string()
     .trim()
@@ -129,9 +136,9 @@ export const userUpdateSchema = userBaseSchema.extend({
 export const roleSchema = z.object({
   role_name: requiredText("角色名称").max(64, "角色名称不能超过 64 个字符"),
   role_key: requiredText("权限标识").max(64, "权限标识不能超过 64 个字符"),
-  role_sort: requiredNumber.optional().default(0),
   data_scope: dataScope.default("1"),
   menu_ids: z.array(z.number().int()).default([]),
+  app_permission_ids: z.array(z.number().int()).default([]),
   status: status.optional().default("0"),
   remark: optionalText,
 })
@@ -216,7 +223,7 @@ export const resourceFields = {
     passwordField("password", "用户密码", undefined, true, true),
     radioField("sex", "用户性别", sexOptions),
     statusSwitchField("status", "状态", { hiddenOnCreate: true }),
-    roleMultiSelectField("role_ids", "角色", true),
+    roleSelectField("role_id", "全局角色", true),
     textareaField("remark", "备注"),
   ],
   roles: [
@@ -228,10 +235,8 @@ export const resourceFields = {
       true,
       "控制器中定义的权限字符，例如：admin、system:role:list"
     ),
-    numberField("role_sort", "角色顺序", undefined, true, {
-      hiddenOnCreate: true,
-    }),
-    menuPermissionTreeField("menu_ids", "权限范围"),
+    menuPermissionTreeField("menu_ids", "Web 菜单与权限"),
+    systemAppPermissionTreeField("app_permission_ids", "App 全局权限"),
     textareaField("remark", "备注"),
   ],
   menus: [
@@ -287,7 +292,7 @@ export const defaultValues = {
     nick_name: "",
     password: "",
     user_type: "system",
-    role_ids: [],
+    role_id: null,
     email: "",
     phone_number: "",
     sex: "2" satisfies SexFlag,
@@ -298,9 +303,9 @@ export const defaultValues = {
   roles: {
     role_name: "",
     role_key: "",
-    role_sort: 0,
     data_scope: "1" satisfies DataScopeFlag,
     menu_ids: [],
+    app_permission_ids: [],
     status: "0" satisfies StatusFlag,
     remark: "",
   },
@@ -409,16 +414,6 @@ function passwordField(
   return { name, label, type: "password", description, hiddenOnEdit, required }
 }
 
-function numberField(
-  name: string,
-  label: string,
-  description?: string,
-  required?: boolean,
-  options?: Pick<ResourceField, "hiddenOnCreate" | "hiddenOnEdit">
-): ResourceField {
-  return { name, label, type: "number", description, required, ...options }
-}
-
 function textareaField(
   name: string,
   label: string,
@@ -478,12 +473,19 @@ function menuPermissionTreeField(name: string, label: string): ResourceField {
   return { name, label, type: "menu-permission-tree", colSpan: "full" }
 }
 
-function roleMultiSelectField(
+function systemAppPermissionTreeField(
+  name: string,
+  label: string
+): ResourceField {
+  return { name, label, type: "system-app-permission-tree", colSpan: "full" }
+}
+
+function roleSelectField(
   name: string,
   label: string,
   required?: boolean
 ): ResourceField {
-  return { name, label, type: "role-multi-select", required }
+  return { name, label, type: "role-select", required }
 }
 
 function statusSwitchField(

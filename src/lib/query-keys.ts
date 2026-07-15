@@ -30,6 +30,7 @@ export const systemQueryKeys = {
   all: ["system"] as const,
   users: ["system", "users"] as const,
   roles: ["system", "roles"] as const,
+  appPermissions: ["system", "app-permissions"] as const,
   menus: ["system", "menus"] as const,
   dictTypes: ["system", "dict-types"] as const,
   dictData: ["system", "dict-data"] as const,

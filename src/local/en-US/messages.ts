@@ -324,7 +324,7 @@ export const enUSMessages: Record<LocaleMessageKey, string> = {
   "resource.resetPassword.confirm": "Reset password",
   "resource.assignRoles.title": "Reassign roles",
   "resource.assignRoles.description":
-    'Adjust the system roles assigned to "{name}".',
+    'Adjust the global role assigned to "{name}".',
   "resource.assignRoles.loadFailed":
     "Failed to load role bindings. Try again later.",
   "resource.assignRoles.reload": "Reload",

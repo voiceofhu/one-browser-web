@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/responsive-dialog"
 import { FieldGroup } from "@/components/ui/field"
 
-import { getUserRoleIds } from "@/api/system/user"
+import { getUserRoleBindings } from "@/api/system/user"
 import { formatResourceActionText, translateText } from "@/local"
 import { systemQueryKeys } from "@/lib/query-keys"
 import { cn } from "@/lib/utils"
@@ -70,12 +70,10 @@ export function ResourceEditorDialog({
   })
   const { reset } = form
   const watchedValues = useWatch({ control: form.control })
-  const hasRoleField = fields.some(
-    (field) => field.type === "role-multi-select"
-  )
+  const hasRoleField = fields.some((field) => field.type === "role-select")
   const roleIdsQuery = useQuery({
     queryKey: [...systemQueryKeys.users, "roles", recordId],
-    queryFn: () => getUserRoleIds(recordId ?? 0),
+    queryFn: () => getUserRoleBindings(recordId ?? 0),
     enabled: open && mode === "edit" && hasRoleField && recordId != null,
   })
 
@@ -83,7 +81,7 @@ export function ResourceEditorDialog({
     if (open) {
       reset({
         ...values,
-        ...(roleIdsQuery.data ? { role_ids: roleIdsQuery.data.ids } : {}),
+        ...(roleIdsQuery.data ? { role_id: roleIdsQuery.data.role_id } : {}),
       })
     }
   }, [open, reset, roleIdsQuery.data, values])
@@ -116,16 +114,22 @@ export function ResourceEditorDialog({
   const isLoadingBinding = isLoadingRoleBinding
   const isCompactForm =
     visibleFields.length <= 3 &&
-    !visibleFields.some((field) => ["role-multi-select"].includes(field.type))
+    !visibleFields.some((field) =>
+      [
+        "role-select",
+        "menu-permission-tree",
+        "system-app-permission-tree",
+      ].includes(field.type)
+    )
 
   return (
     <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
       <ResponsiveDialogContent
-        className={cn("gap-4", isCompactForm ? "sm:max-w-md" : "sm:max-w-3xl")}
+        className={isCompactForm ? "sm:max-w-md" : "sm:max-w-3xl"}
         onInteractOutside={(event) => event.preventDefault()}
       >
         <form
-          className="flex min-h-0 flex-1 flex-col gap-0 md:gap-3"
+          className="flex min-h-0 flex-1 flex-col"
           onSubmit={form.handleSubmit(
             (formValues) => onSubmit(formValues),
             handleInvalidSubmit

@@ -26,6 +26,7 @@ import {
   formatResourceSearchPlaceholder,
   translateText,
 } from "@/local"
+import type { UserRoleBindings } from "@/types/admin"
 
 import type { DashboardResourceConfig } from "./configs"
 import type { ResourceFormValues } from "./form"
@@ -56,6 +57,7 @@ import {
 type ResourceManagerProps<TData, TDetail extends TData = TData> = {
   config: DashboardResourceConfig<TData, TDetail>
   renderInlineRowActions?: (record: TData) => React.ReactNode
+  toolbarLeading?: React.ReactNode
 }
 
 type EditorState<TDetail> =
@@ -70,6 +72,7 @@ type BulkDeleteState<TData> = {
 export function ResourceManager<TData, TDetail extends TData = TData>({
   config,
   renderInlineRowActions,
+  toolbarLeading,
 }: ResourceManagerProps<TData, TDetail>) {
   const queryClient = useQueryClient()
   const { locale, t } = useTranslation()
@@ -218,15 +221,15 @@ export function ResourceManager<TData, TDetail extends TData = TData>({
   const assignRolesMutation = useMutation({
     mutationFn: async ({
       record,
-      roleIds,
+      bindings,
     }: {
       record: TData
-      roleIds: number[]
+      bindings: UserRoleBindings
     }) => {
       if (!config.userActions) {
         throw new Error(t("resource.unsupportedAssignRoles"))
       }
-      await config.userActions.setRoleIds(record, roleIds)
+      await config.userActions.setRoleBindings(record, bindings)
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: config.queryKey })
@@ -349,22 +352,27 @@ export function ResourceManager<TData, TDetail extends TData = TData>({
           setPageIndex(0)
         }}
         toolbarLeading={
-          config.statusFilters ? (
-            <ResourceStatusFilterTabs
-              label={t("resource.statusFilter", { noun: translatedNoun })}
-              options={config.statusFilters.map((option) => ({
-                ...option,
-                label:
-                  typeof option.label === "string"
-                    ? translateText(locale, option.label)
-                    : option.label,
-              }))}
-              value={statusFilter}
-              onValueChange={(value) => {
-                setStatusFilter(value)
-                setPageIndex(0)
-              }}
-            />
+          toolbarLeading || config.statusFilters ? (
+            <div className="flex flex-wrap items-center gap-2">
+              {toolbarLeading}
+              {config.statusFilters ? (
+                <ResourceStatusFilterTabs
+                  label={t("resource.statusFilter", { noun: translatedNoun })}
+                  options={config.statusFilters.map((option) => ({
+                    ...option,
+                    label:
+                      typeof option.label === "string"
+                        ? translateText(locale, option.label)
+                        : option.label,
+                  }))}
+                  value={statusFilter}
+                  onValueChange={(value) => {
+                    setStatusFilter(value)
+                    setPageIndex(0)
+                  }}
+                />
+              ) : null}
+            </div>
           ) : null
         }
         isLoading={query.isLoading}
@@ -436,7 +444,7 @@ export function ResourceManager<TData, TDetail extends TData = TData>({
                           : undefined
                       }
                       onResetPassword={
-                        config.userActions && canResetPassword
+                        config.userActions && canResetPassword && !isProtected
                           ? () => setResettingRecord(record)
                           : undefined
                       }
@@ -619,15 +627,15 @@ export function ResourceManager<TData, TDetail extends TData = TData>({
             open={Boolean(assigningRoleRecord)}
             record={assigningRoleRecord}
             getName={config.getName}
-            getRoleIds={config.userActions.getRoleIds}
+            getRoleBindings={config.userActions.getRoleBindings}
             isSubmitting={assignRolesMutation.isPending}
             onOpenChange={(open) => {
               if (!open && !assignRolesMutation.isPending) {
                 setAssigningRoleRecord(null)
               }
             }}
-            onSubmit={(record, roleIds) =>
-              assignRolesMutation.mutateAsync({ record, roleIds })
+            onSubmit={(record, bindings) =>
+              assignRolesMutation.mutateAsync({ record, bindings })
             }
           />
         </>

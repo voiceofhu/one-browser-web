@@ -28,7 +28,7 @@ import {
 import { authQueryKeys, useCurrentUser } from "@/hooks/use-auth"
 import { localizedPublicPath } from "@/local"
 import { isUnauthorizedError, markAuthRedirectNotice } from "@/lib/request"
-import { clearAuthTokens } from "@/lib/auth-tokens"
+import { clearAuthTokens, hasAuthTokens } from "@/lib/auth-tokens"
 import { cn } from "@/lib/utils"
 import {
   AppAuthorizationPending,
@@ -41,7 +41,8 @@ export default function OAuthAuthorizationPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { locale, t } = useTranslation()
-  const currentUser = useCurrentUser()
+  const hasSession = hasAuthTokens()
+  const currentUser = useCurrentUser({ enabled: hasSession })
   const turnstileRef = useRef<TurnstileWidgetHandle>(null)
   const authorizeInFlightRef = useRef(false)
   const authorizationRequestIdRef = useRef(0)
@@ -79,10 +80,10 @@ export default function OAuthAuthorizationPage() {
   }, [t])
 
   useEffect(() => {
-    if (isUnauthorizedError(currentUser.error)) {
+    if (!hasSession || isUnauthorizedError(currentUser.error)) {
       redirectToLogin()
     }
-  }, [currentUser.error, redirectToLogin])
+  }, [currentUser.error, hasSession, redirectToLogin])
 
   useEffect(() => {
     if (
@@ -150,6 +151,10 @@ export default function OAuthAuthorizationPage() {
 
   if (appAuthorizationUrl) {
     return <AppAuthorizationSuccess appUrl={appAuthorizationUrl} />
+  }
+
+  if (!hasSession) {
+    return <AppAuthorizationPending />
   }
 
   if (

@@ -34,17 +34,17 @@ import {
   deleteRole,
   getRole,
   listRoles,
-  setRoleMenuIds,
+  setRolePermissions,
   updateRole,
 } from "@/api/system/role"
 import {
   createUser,
   deleteUser,
   getUser,
-  getUserRoleIds,
+  getUserRoleBindings,
   listUsers,
   resetUserPassword,
-  setUserRoleIds,
+  setUserRoleBindings,
   updateUser,
 } from "@/api/system/user"
 import { systemQueryKeys } from "@/lib/query-keys"
@@ -85,10 +85,10 @@ import type {
   PageResponse,
   RoleResource,
   UserResource,
+  UserRoleBindings,
 } from "@/types/admin"
 import type { ResourceStatusFilterOption } from "./status-filter-tabs"
 import type { ResourceTreeConfig } from "./tree"
-import { isSuperAdminRole } from "./protected-records"
 
 export type DashboardResourceConfig<TData, TDetail extends TData = TData> = {
   queryKey: readonly unknown[]
@@ -113,8 +113,11 @@ export type DashboardResourceConfig<TData, TDetail extends TData = TData> = {
   statusFilters?: readonly ResourceStatusFilterOption[]
   permissions?: ResourceActionPermissions
   userActions?: {
-    getRoleIds: (record: TData) => Promise<number[]>
-    setRoleIds: (record: TData, roleIds: number[]) => Promise<void>
+    getRoleBindings: (record: TData) => Promise<UserRoleBindings>
+    setRoleBindings: (
+      record: TData,
+      bindings: UserRoleBindings
+    ) => Promise<void>
     resetPassword: (record: TData, password: string) => Promise<void>
   }
 }
@@ -164,19 +167,23 @@ export const RESOURCE_CONFIGS = {
     detail: (record) => getUser(record.user_id),
     create: async (values) => {
       const result = await createUser(userPayload(values, true))
-      await setUserRoleIds(result.id, idsPayload(values, "role_ids"))
+      await setUserRoleBindings(result.id, numberPayload(values, "role_id"))
       return result
     },
     update: async (record, values) => {
       const user = await updateUser(record.user_id, userPayload(values))
-      await setUserRoleIds(record.user_id, idsPayload(values, "role_ids"))
+      await setUserRoleBindings(
+        record.user_id,
+        numberPayload(values, "role_id")
+      )
       return user
     },
     remove: (record) => deleteUser(record.user_id),
     isProtected: (record) => record.is_super_admin,
     userActions: {
-      getRoleIds: async (record) => (await getUserRoleIds(record.user_id)).ids,
-      setRoleIds: (record, roleIds) => setUserRoleIds(record.user_id, roleIds),
+      getRoleBindings: (record) => getUserRoleBindings(record.user_id),
+      setRoleBindings: (record, bindings) =>
+        setUserRoleBindings(record.user_id, bindings.role_id),
       resetPassword: (record, password) =>
         resetUserPassword(record.user_id, password),
     },
@@ -201,16 +208,22 @@ export const RESOURCE_CONFIGS = {
     detail: (record) => getRole(record.role_id),
     create: async (values) => {
       const result = await createRole(rolePayload(values))
-      await setRoleMenuIds(result.id, idsPayload(values, "menu_ids"))
+      await setRolePermissions(result.id, {
+        menu_ids: idsPayload(values, "menu_ids"),
+        app_permission_ids: idsPayload(values, "app_permission_ids"),
+      })
       return result
     },
     update: async (record, values) => {
       const role = await updateRole(record.role_id, rolePayload(values))
-      await setRoleMenuIds(record.role_id, idsPayload(values, "menu_ids"))
+      await setRolePermissions(record.role_id, {
+        menu_ids: idsPayload(values, "menu_ids"),
+        app_permission_ids: idsPayload(values, "app_permission_ids"),
+      })
       return role
     },
     remove: (record) => deleteRole(record.role_id),
-    isProtected: isSuperAdminRole,
+    isProtected: (record) => record.protected,
   },
   menus: {
     queryKey: systemQueryKeys.menus,
@@ -353,7 +366,6 @@ function rolePayload(values: ResourceFormValues) {
   return {
     role_name: textPayload(values, "role_name"),
     role_key: textPayload(values, "role_key"),
-    role_sort: numberPayload(values, "role_sort"),
     data_scope: textPayload(values, "data_scope", "1"),
     status: textPayload(values, "status", "0"),
     remark: nullableTextPayload(values, "remark"),

@@ -13,6 +13,7 @@ import {
 import { Spinner } from "@/components/ui/spinner"
 import { useLanguage } from "@/components/providers/language-context"
 import { localizedPath, localizedPublicPath } from "@/local"
+import { hasAuthTokens } from "@/lib/auth-tokens"
 import { isUnauthorizedError } from "@/lib/request"
 import { useAuthPermissions, useCurrentUser } from "@/hooks/use-auth"
 import { getFirstAuthorizedPath, isAuthorizedPath } from "@/router/access"
@@ -21,13 +22,24 @@ import { RouteLoading } from "@/router/route-loading"
 export function RequireAuth({ children }: React.PropsWithChildren) {
   const location = useLocation()
   const { locale, t } = useLanguage()
-  const currentUser = useCurrentUser()
-  const authPermissions = useAuthPermissions()
+  const hasSession = hasAuthTokens()
+  const currentUser = useCurrentUser({ enabled: hasSession })
+  const authPermissions = useAuthPermissions({ enabled: hasSession })
   const isAuthRefreshing = currentUser.isFetching || authPermissions.isFetching
+  const loginRedirect = `${location.pathname}${location.search}${location.hash}`
 
   function retryAuthState() {
     void currentUser.refetch()
     void authPermissions.refetch()
+  }
+
+  if (!hasSession) {
+    return (
+      <Navigate
+        to={`${localizedPublicPath(locale, "login")}?redirect=${encodeURIComponent(loginRedirect)}`}
+        replace
+      />
+    )
   }
 
   if (currentUser.isLoading || authPermissions.isLoading) {
@@ -38,11 +50,9 @@ export function RequireAuth({ children }: React.PropsWithChildren) {
     isUnauthorizedError(currentUser.error) ||
     isUnauthorizedError(authPermissions.error)
   ) {
-    const redirect = `${location.pathname}${location.search}${location.hash}`
-
     return (
       <Navigate
-        to={`${localizedPublicPath(locale, "login")}?redirect=${encodeURIComponent(redirect)}`}
+        to={`${localizedPublicPath(locale, "login")}?redirect=${encodeURIComponent(loginRedirect)}`}
         replace
       />
     )
