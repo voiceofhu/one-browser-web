@@ -11,6 +11,12 @@ export const enUSMessages: Record<LocaleMessageKey, string> = {
   "theme.system": "Follow system",
   "theme.light": "Light",
   "theme.dark": "Dark",
+  "updateAvailable.title": "New version available",
+  "updateAvailable.description":
+    "Refresh the page to start using the latest version.",
+  "updateAvailable.refresh": "Refresh now",
+  "updateAvailable.refreshing": "Refreshing…",
+  "updateAvailable.close": "Close update notice",
   "login.title": "Sign in",
   "login.failed": "Sign-in failed",
   "login.username": "Username",

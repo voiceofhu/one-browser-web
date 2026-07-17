@@ -3,6 +3,7 @@ import { LanguageProvider } from "@/components/providers/language"
 import { ThemeProvider } from "@/components/theme/provider"
 import { Toaster } from "@/components/ui/sonner"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { AppUpdateChecker } from "./app-update-checker"
 import { QueryProvider } from "./query"
 
 export function Providers({ children }: React.PropsWithChildren) {
@@ -18,6 +19,7 @@ export function Providers({ children }: React.PropsWithChildren) {
             closeButton
           />
           <BuildInfo />
+          <AppUpdateChecker />
         </ThemeProvider>
       </LanguageProvider>
     </QueryProvider>
