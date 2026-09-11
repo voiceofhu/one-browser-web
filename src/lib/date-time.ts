@@ -1,5 +1,4 @@
 import {
-  addMonths,
   format,
   formatDistanceStrict,
   isValid,
@@ -27,7 +26,7 @@ export function formatDisplayDateTime(
   if (
     isWithinInterval(date, {
       start: subMonths(now, 1),
-      end: addMonths(now, 1),
+      end: now,
     })
   ) {
     return formatDistanceStrict(date, now, {

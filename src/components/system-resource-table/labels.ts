@@ -51,5 +51,5 @@ export const fieldLabels: Record<string, string> = {
   title: '操作',
   updated_at: '更新时间',
   user_id: '用户 ID',
-  user_name: '用户名',
+  user_name: '用户',
 };
