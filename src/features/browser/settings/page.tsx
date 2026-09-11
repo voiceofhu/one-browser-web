@@ -1,3 +1,8 @@
+import { DialogActionButton } from '@/components/ui/dialog-action-button';
+import {
+  ResponsiveDialogClose,
+  ResponsiveDialogFooter,
+} from '@/components/responsive-dialog';
 import { LoadingState } from '@/components/loading-state';
 import {
   ResponsiveDialog,
@@ -46,6 +51,13 @@ export function SettingsDialog({
         <ResponsiveDialogBody className="overflow-hidden p-0">
           <SettingsPanel />
         </ResponsiveDialogBody>
+        <ResponsiveDialogFooter>
+          <ResponsiveDialogClose asChild>
+            <DialogActionButton action="cancel" type="button">
+              关闭
+            </DialogActionButton>
+          </ResponsiveDialogClose>
+        </ResponsiveDialogFooter>
       </ResponsiveDialogContent>
     </ResponsiveDialog>
   );

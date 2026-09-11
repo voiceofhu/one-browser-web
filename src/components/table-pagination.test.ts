@@ -3,11 +3,13 @@ import { describe, expect, it } from 'vitest';
 import { getPaginationItems, resolveTablePagination } from './table-pagination';
 
 describe('resolveTablePagination', () => {
-  it('hides pagination when all records fit on one page', () => {
+  it('hides below the minimum option, independently of the selected page size', () => {
     expect(resolveTablePagination(undefined, 15, 1)).toBeNull();
     expect(resolveTablePagination(Number.NaN, 15, 1)).toBeNull();
-    expect(resolveTablePagination(14, 15, 1)).toBeNull();
-    expect(resolveTablePagination(15, 15, 1)).toBeNull();
+    expect(resolveTablePagination(9, 15, 1)).toBeNull();
+    expect(resolveTablePagination(10, 50, 1)).not.toBeNull();
+    expect(resolveTablePagination(19, 50, 1, 20)).toBeNull();
+    expect(resolveTablePagination(20, 50, 1, 20)).not.toBeNull();
   });
 
   it('returns a clamped multi-page range', () => {

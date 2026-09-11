@@ -49,19 +49,20 @@ export function UpdateAvailableNotice({
         aria-live="polite"
         aria-atomic="true"
         aria-label={title}
-        className="animate-in fade-in slide-in-from-bottom-3 bg-card gap-0 rounded-lg border-0 p-3 shadow-sm ring-0 duration-300 motion-reduce:animate-none"
+        className="relative animate-in fade-in slide-in-from-bottom-3 bg-card gap-0 rounded-xl border-0 px-3 py-3 shadow-md ring-1 ring-foreground/5 duration-300 motion-reduce:animate-none"
       >
-        <div className="flex items-center gap-3">
-          <div className="min-w-0 flex-1">
-            <p className="text-sm leading-5 font-medium">{title}</p>
-            <p className="text-muted-foreground mt-1 text-xs leading-4">
+        <div className="relative pr-32">
+          <div className="min-w-0">
+            <p className="text-sm leading-5 font-semibold">{title}</p>
+            <p className="text-muted-foreground mt-0.5 text-xs leading-4">
               {description}
             </p>
           </div>
-          <div className="flex shrink-0 items-center gap-1">
+          <div className="absolute right-0 top-1/2 flex -translate-y-1/2 items-center gap-1">
             <Button
               type="button"
               size="sm"
+              className="h-7 px-2.5 text-xs"
               onClick={() => void handleUpdate()}
               disabled={updating}
               aria-busy={updating || undefined}
@@ -77,7 +78,7 @@ export function UpdateAvailableNotice({
               type="button"
               size="icon-sm"
               variant="ghost"
-              className="text-muted-foreground/60 hover:text-muted-foreground"
+              className="size-7 text-muted-foreground/60 hover:text-muted-foreground"
               onClick={() => onOpenChange(false)}
               disabled={updating}
               aria-label={closeLabel}

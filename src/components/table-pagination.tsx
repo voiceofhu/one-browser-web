@@ -32,7 +32,12 @@ export function TablePagination({
   pageSizeOptions?: readonly number[];
   total?: number | null;
 }) {
-  const pagination = resolveTablePagination(total, pageSize, currentPage);
+  const pagination = resolveTablePagination(
+    total,
+    pageSize,
+    currentPage,
+    pageSizeOptions?.length ? Math.min(...pageSizeOptions) : 10,
+  );
   const visible = Boolean(pagination);
   const page = pagination?.page ?? 0;
   const containerRef = React.useRef<HTMLDivElement>(null);
@@ -177,11 +182,12 @@ export function resolveTablePagination(
   total: number | null | undefined,
   pageSize: number,
   currentPage: number,
+  minimumPageSize = 10,
 ) {
   if (
     typeof total !== 'number' ||
     !Number.isFinite(total) ||
-    total <= pageSize
+    total < minimumPageSize
   ) {
     return null;
   }

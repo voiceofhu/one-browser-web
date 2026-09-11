@@ -11,7 +11,7 @@ import {
 const APP_UPDATE_CHECKER_WORKER_URL = '/app-update-checker.worker.js';
 
 type AppUpdateCheckerWorkerMessage = {
-  type: 'unchanged' | 'changed' | 'error';
+  type: 'baseline' | 'unchanged' | 'changed' | 'unavailable' | 'error';
   message?: string;
 };
 
@@ -55,11 +55,9 @@ export function AppUpdateChecker() {
         type: 'check',
         source,
         url: new URL(
-          'app-version.json',
+          '',
           new URL(import.meta.env.BASE_URL, window.location.origin),
         ).toString(),
-        buildId: __APP_BUILD_ID__,
-        version: __APP_VERSION__,
       });
     };
 
@@ -89,9 +87,14 @@ export function AppUpdateChecker() {
 
     worker.addEventListener('message', handleWorkerMessage);
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    const onOnline = () => requestCheck('online');
+    window.addEventListener('online', onOnline);
+    const interval = window.setInterval(() => requestCheck('interval'), 60_000);
     requestCheck('mount');
 
     return () => {
+      window.clearInterval(interval);
+      window.removeEventListener('online', onOnline);
       worker.removeEventListener('message', handleWorkerMessage);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       worker.terminate();
@@ -157,10 +160,6 @@ export function AppUpdateChecker() {
         open={pageUpdateAvailable}
         onOpenChange={setPageUpdateAvailable}
         onUpdate={reloadWithTimestamp}
-        title="网页有更新"
-        description="刷新页面即可加载新版界面。"
-        updateLabel="刷新页面"
-        updatingLabel="正在刷新…"
       />
       <UpdateAvailableNotice
         open={desktopUpdate !== null}

@@ -1,3 +1,8 @@
+import { DialogActionButton } from '@/components/ui/dialog-action-button';
+import {
+  ResponsiveDialogClose,
+  ResponsiveDialogFooter,
+} from '@/components/responsive-dialog';
 import {
   ResponsiveDialog,
   ResponsiveDialogBody,
@@ -103,6 +108,13 @@ export function WebDesktopActions() {
           <ResponsiveDialogBody>
             <AppDownloadCard className="ring-0" showHeader={false} />
           </ResponsiveDialogBody>
+          <ResponsiveDialogFooter>
+            <ResponsiveDialogClose asChild>
+              <DialogActionButton action="cancel" type="button">
+                关闭
+              </DialogActionButton>
+            </ResponsiveDialogClose>
+          </ResponsiveDialogFooter>
         </ResponsiveDialogContent>
       </ResponsiveDialog>
     </>

@@ -1,3 +1,4 @@
+import { DialogActionButton } from '@/components/ui/dialog-action-button';
 import { LoadingState } from '@/components/loading-state';
 import { TablePagination } from '@/components/table-pagination';
 import {
@@ -304,9 +305,14 @@ function OperationLogDetailDialog({
           ) : null}
         </ResponsiveDialogBody>
         <ResponsiveDialogFooter>
-          <Button type="button" variant="outline" onClick={onClose}>
+          <DialogActionButton
+            action="cancel"
+            type="button"
+            variant="outline"
+            onClick={onClose}
+          >
             关闭
-          </Button>
+          </DialogActionButton>
         </ResponsiveDialogFooter>
       </ResponsiveDialogContent>
     </ResponsiveDialog>

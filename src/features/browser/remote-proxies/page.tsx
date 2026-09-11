@@ -289,7 +289,7 @@ export function RemoteProxiesPage() {
         columnVisibility={columnVisibility}
         onColumnVisibilityChange={setColumnVisibility}
         showHeaderRefresh={false}
-        onRefresh={() => void proxiesQuery.refetch()}
+        onRefresh={() => proxiesQuery.refetch()}
         onCheck={(proxyId) => void actions.checkProxy(proxyId)}
         onCheckMany={(proxyIds) => void actions.checkMany(proxyIds)}
         onEdit={actions.openEdit}

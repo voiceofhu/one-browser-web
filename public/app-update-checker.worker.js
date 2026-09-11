@@ -1,65 +1,108 @@
-let inFlight = false;
+const baselines = new Map()
+const inFlightUrls = new Set()
 
-self.addEventListener('message', (event) => {
-  const message = event.data;
-  if (
-    !message ||
-    message.type !== 'check' ||
-    typeof message.url !== 'string' ||
-    typeof message.buildId !== 'string' ||
-    !message.buildId ||
-    inFlight
-  ) {
-    return;
+self.addEventListener("message", (event) => {
+  const message = event.data
+  if (!message || message.type !== "check" || typeof message.url !== "string") {
+    return
   }
 
-  void checkForUpdate(message);
-});
+  void checkForUpdate(message)
+})
 
 async function checkForUpdate(message) {
-  inFlight = true;
+  const url = normalizeUrl(message.url)
+  if (!url || inFlightUrls.has(url)) {
+    return
+  }
+
+  inFlightUrls.add(url)
+
   try {
-    const url = new URL(message.url);
-    url.searchParams.set('t', Date.now().toString());
-    const response = await fetch(url.toString(), {
-      cache: 'no-store',
-      credentials: 'same-origin',
-    });
-    if (!response.ok) {
-      throw new Error(`Update check failed with HTTP ${response.status}`);
+    const current = await readValidators(url)
+    if (!current.etag) {
+      postResult({ type: "unavailable", url, source: message.source })
+      return
     }
-    const current = await response.json();
-    if (!current || typeof current.buildId !== 'string' || !current.buildId) {
-      throw new Error('Update manifest has no build identifier');
+
+    const previous = baselines.get(url)
+    if (!previous) {
+      baselines.set(url, current)
+      postResult({ type: "baseline", url, source: message.source, current })
+      return
     }
-    self.postMessage({
-      type: isNewerVersion(current.version, message.version)
-        ? 'changed'
-        : 'unchanged',
-    });
+
+    if (isSameValidator(previous, current)) {
+      postResult({ type: "unchanged", url, source: message.source, current })
+      return
+    }
+
+    postResult({
+      type: "changed",
+      url,
+      source: message.source,
+      previous,
+      current,
+    })
   } catch (error) {
-    self.postMessage({
-      type: 'error',
+    postResult({
+      type: "error",
+      url,
+      source: message.source,
       message: error instanceof Error ? error.message : String(error),
-    });
+    })
   } finally {
-    inFlight = false;
+    inFlightUrls.delete(url)
   }
 }
 
-function isNewerVersion(latest, installed) {
-  const parse = (value) => {
-    if (typeof value !== 'string') return null;
-    const normalized = value.trim().replace(/^v/i, '');
-    if (!/^\d+\.\d+\.\d+$/.test(normalized)) return null;
-    const parts = normalized.split('.').map(Number);
-    return parts.every(Number.isSafeInteger) ? parts : null;
-  };
-  const left = parse(latest);
-  const right = parse(installed);
-  if (!left || !right) throw new Error('Invalid release version');
-  for (let index = 0; index < left.length; index += 1) {
-    if (left[index] !== right[index]) return left[index] > right[index];
+async function readValidators(url) {
+  let response = await fetchDocument(url, "HEAD")
+
+  if (response.status === 405 || response.status === 501) {
+    response = await fetchDocument(url, "GET")
+    await response.body?.cancel()
   }
-  return false;
+
+  if (!response.ok && response.status !== 304) {
+    throw new Error(`Update check failed with HTTP ${response.status}`)
+  }
+
+  return {
+    etag: response.headers.get("etag"),
+  }
+}
+
+function fetchDocument(url, method) {
+  return fetch(url, {
+    method,
+    cache: "no-store",
+    credentials: "same-origin",
+    redirect: "follow",
+    headers: { "Cache-Control": "no-cache", Pragma: "no-cache" },
+  })
+}
+
+function normalizeUrl(value) {
+  try {
+    const url = new URL(value)
+    if (url.origin !== self.location.origin) {
+      return null
+    }
+    url.hash = ""
+    url.search = ""
+    return url.toString()
+  } catch {
+    return null
+  }
+}
+
+function isSameValidator(previous, current) {
+  return (
+    previous.etag === current.etag
+  )
+}
+
+function postResult(message) {
+  self.postMessage(message)
 }

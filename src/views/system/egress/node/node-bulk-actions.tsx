@@ -1,3 +1,4 @@
+import { DialogActionButton } from '@/components/ui/dialog-action-button';
 import {
   ResponsiveDialog,
   ResponsiveDialogBody,
@@ -175,15 +176,17 @@ export function NodeBulkActions({
             </Select>
           </ResponsiveDialogBody>
           <ResponsiveDialogFooter>
-            <Button
+            <DialogActionButton
+              action="cancel"
               type="button"
               variant="outline"
               disabled={mutation.isPending}
               onClick={() => setOpen(false)}
             >
               取消
-            </Button>
-            <Button
+            </DialogActionButton>
+            <DialogActionButton
+              action="confirm"
               type="button"
               className="min-w-24"
               disabled={mutation.isPending || eligibleNodes.length === 0}
@@ -195,7 +198,7 @@ export function NodeBulkActions({
                 <HugeiconsIcon icon={Upload01Icon} strokeWidth={2} />
               )}
               {mutation.isPending ? '排队中' : '确认升级'}
-            </Button>
+            </DialogActionButton>
           </ResponsiveDialogFooter>
         </ResponsiveDialogContent>
       </ResponsiveDialog>

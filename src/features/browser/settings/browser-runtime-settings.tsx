@@ -140,7 +140,7 @@ export function BrowserRuntimeSettings({
               onChange={(event) => setDefaultStartUrl(event.target.value)}
               onBlur={saveDefaultStartUrl}
               onKeyDown={blurOnEnter}
-              placeholder="https://ip.net.coffee/"
+              placeholder="https://ip.huzhihui.com/"
               className="font-mono text-[12px] font-normal md:text-[12px]"
             />
           </InputGroup>

@@ -1,7 +1,7 @@
 import {
   addMonths,
   format,
-  formatDistance,
+  formatDistanceStrict,
   isValid,
   isWithinInterval,
   subMonths,
@@ -30,7 +30,11 @@ export function formatDisplayDateTime(
       end: addMonths(now, 1),
     })
   ) {
-    return formatDistance(date, now, { addSuffix: true, locale: zhCN });
+    return formatDistanceStrict(date, now, {
+      addSuffix: true,
+      roundingMethod: 'floor',
+      locale: zhCN,
+    });
   }
 
   return format(date, DATE_TIME_FORMAT, { locale: zhCN });

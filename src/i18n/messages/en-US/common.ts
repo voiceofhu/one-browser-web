@@ -68,9 +68,9 @@ export const commonMessages = {
     'Website files changed. Refresh the current page now?',
   发现新版本: 'New version available',
   '新版本已经准备好，更新后即可使用。':
-    'The new version is ready. Update to start using it.',
+    'The new version is ready to use after updating.',
   '正在更新…': 'Updating…',
-  关闭更新提示: 'Close update notice',
+  关闭更新提示: 'Dismiss update notice',
   发现客户端新版本: 'New app version available',
   '当前客户端暂未签名，无法自动更新，请前往官网下载安装最新版本。':
     'This app is currently unsigned and cannot update automatically. Download and install the latest version from the official website.',

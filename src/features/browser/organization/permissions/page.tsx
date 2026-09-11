@@ -1,3 +1,4 @@
+import { ChevronsDownUp, ChevronsUpDown } from "lucide-react";
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/features/auth/auth-gate';
 import {
@@ -18,8 +19,6 @@ import {
 } from '@/features/browser/components/table-toolbar';
 import {
   Add01Icon,
-  ListChevronsDownUpIcon,
-  ListTreeIcon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import type {
@@ -353,11 +352,7 @@ export function RemotePermissionsPage() {
                 setExpandedIds(allExpanded ? new Set() : new Set(expandableIds))
               }
             >
-              <HugeiconsIcon
-                icon={allExpanded ? ListChevronsDownUpIcon : ListTreeIcon}
-                strokeWidth={2}
-                data-icon="inline-start"
-              />
+              {allExpanded ? <ChevronsDownUp aria-hidden="true" data-icon="inline-start" /> : <ChevronsUpDown aria-hidden="true" data-icon="inline-start" />}
               {allExpanded ? '全部收起' : '全部展开'}
             </Button>
             <BrowserTableColumnVisibilityMenu

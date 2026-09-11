@@ -10,6 +10,7 @@ import {
 import {
   AlertDialogActionButton,
   AlertDialogCancelButton,
+  DialogActionButton,
 } from '@/components/ui/dialog-action-button';
 import {
   Empty,
@@ -18,7 +19,6 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '@/components/ui/empty';
-import { Button } from '@/components/ui/button';
 import {
   ResponsiveDialog,
   ResponsiveDialogBody,
@@ -128,22 +128,24 @@ export function MemberDisableDialog({
           </p>
         </ResponsiveDialogBody>
         <ResponsiveDialogFooter>
-          <Button
+          <DialogActionButton
+            action="cancel"
             type="button"
             variant="outline"
             disabled={isSaving}
             onClick={() => onOpenChange(false)}
           >
             取消
-          </Button>
-          <Button
+          </DialogActionButton>
+          <DialogActionButton
+            action="confirm"
             type="button"
             variant="destructive"
             disabled={isSaving || !target}
             onClick={onConfirm}
           >
             {isSaving ? '停用中…' : '确认停用'}
-          </Button>
+          </DialogActionButton>
         </ResponsiveDialogFooter>
       </ResponsiveDialogContent>
     </ResponsiveDialog>

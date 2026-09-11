@@ -1,3 +1,4 @@
+import { DialogActionButton } from '@/components/ui/dialog-action-button';
 import {
   ResponsiveDialog,
   ResponsiveDialogBody,
@@ -93,7 +94,10 @@ import type {
 const QUERY_KEY = ['system', 'egress-nodes'] as const;
 const RELEASE_QUERY_KEY = ['system', 'egress-releases'] as const;
 const PAGE_SIZE_OPTIONS = [15, 30, 50] as const;
-const STATUS_OPTIONS: Array<{ value: 'all' | EgressNodeStatus; label: string }> = [
+const STATUS_OPTIONS: Array<{
+  value: 'all' | EgressNodeStatus;
+  label: string;
+}> = [
   { value: 'all', label: '全部状态' },
   { value: 'pending', label: '待接入' },
   { value: 'installing', label: '安装中' },
@@ -235,7 +239,9 @@ export default function EgressNodePage() {
         header: '节点',
         cell: ({ row }) => (
           <div className="min-w-44">
-            <div className="truncate font-medium">{row.original.display_name}</div>
+            <div className="truncate font-medium">
+              {row.original.display_name}
+            </div>
             <code className="text-muted-foreground block truncate text-xs">
               {row.original.egress_id}
             </code>
@@ -449,12 +455,20 @@ export default function EgressNodePage() {
               Object.fromEntries(egressIds.map((egressId) => [egressId, true])),
             )
           }
-          onUpdated={() => queryClient.invalidateQueries({ queryKey: QUERY_KEY })}
+          onUpdated={() =>
+            queryClient.invalidateQueries({ queryKey: QUERY_KEY })
+          }
         />
       ) : null}
 
       <NodeEditorDialog
-        key={editor ? editor.mode === 'create' ? 'create' : `${editor.mode}:${editor.node.egress_id}` : 'closed'}
+        key={
+          editor
+            ? editor.mode === 'create'
+              ? 'create'
+              : `${editor.mode}:${editor.node.egress_id}`
+            : 'closed'
+        }
         state={editor}
         onClose={() => setEditor(null)}
         onSaved={() => queryClient.invalidateQueries({ queryKey: QUERY_KEY })}
@@ -495,7 +509,9 @@ function NodeRuntime({ node }: { node: EgressNodeResource }) {
           {upgradeStatusLabel(upgrade.status)} · {upgrade.target_version}
         </span>
       ) : node.self_upgrade ? (
-        <span className="text-muted-foreground text-[0.625rem]">支持远程升级</span>
+        <span className="text-muted-foreground text-[0.625rem]">
+          支持远程升级
+        </span>
       ) : (
         <span className="text-warning text-[0.625rem]">不支持远程升级</span>
       )}
@@ -521,9 +537,15 @@ function NodeStatus({ node }: { node: EgressNodeResource }) {
   return (
     <div className="flex items-center gap-1.5">
       <span
-        className={node.online ? 'bg-success size-1.5 rounded-full' : 'bg-muted-foreground/40 size-1.5 rounded-full'}
+        className={
+          node.online
+            ? 'bg-success size-1.5 rounded-full'
+            : 'bg-muted-foreground/40 size-1.5 rounded-full'
+        }
       />
-      <Badge variant={statusVariant(node.status)}>{statusLabel(node.status)}</Badge>
+      <Badge variant={statusVariant(node.status)}>
+        {statusLabel(node.status)}
+      </Badge>
       <Badge variant="outline">
         {node.environment === 'production' ? '正式' : '开发'}
       </Badge>
@@ -587,7 +609,11 @@ function NodeActions({
           ) : null}
           {canDelete ? <DropdownMenuSeparator /> : null}
           {canDelete ? (
-            <DropdownMenuItem variant="destructive" disabled={disabled} onSelect={onDelete}>
+            <DropdownMenuItem
+              variant="destructive"
+              disabled={disabled}
+              onSelect={onDelete}
+            >
               <HugeiconsIcon icon={Delete02Icon} strokeWidth={2} />
               删除节点
             </DropdownMenuItem>
@@ -609,7 +635,9 @@ function NodeEditorDialog({
 }) {
   const node = state && state.mode !== 'create' ? state.node : null;
   const [domain, setDomain] = React.useState(node?.domain ?? '');
-  const [displayName, setDisplayName] = React.useState(node?.display_name ?? '');
+  const [displayName, setDisplayName] = React.useState(
+    node?.display_name ?? '',
+  );
   const [maxConnections, setMaxConnections] = React.useState(
     String(node?.max_connections ?? 256),
   );
@@ -649,42 +677,80 @@ function NodeEditorDialog({
   });
 
   return (
-    <ResponsiveDialog open={Boolean(state)} onOpenChange={(open) => !open && !mutation.isPending && onClose()}>
+    <ResponsiveDialog
+      open={Boolean(state)}
+      onOpenChange={(open) => !open && !mutation.isPending && onClose()}
+    >
       <ResponsiveDialogContent className="sm:max-w-2xl">
         <ResponsiveDialogHeader>
           <ResponsiveDialogTitle>
-            {state?.mode === 'edit' ? '修改节点' : state?.mode === 'enroll' ? '重新接入节点' : '新增节点'}
+            {state?.mode === 'edit'
+              ? '修改节点'
+              : state?.mode === 'enroll'
+                ? '重新接入节点'
+                : '新增节点'}
           </ResponsiveDialogTitle>
           <ResponsiveDialogDescription>
-            {result ? '复制一种安装命令到目标服务器执行。' : '配置节点身份和容量。'}
+            {result
+              ? '复制一种安装命令到目标服务器执行。'
+              : '配置节点身份和容量。'}
           </ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
         <ResponsiveDialogBody className="flex flex-col gap-3">
           {result ? (
             <>
-              <CommandField title="Native 安装" command={result.native_install_command} />
-              <CommandField title="Docker 安装" command={result.docker_install_command} />
+              <CommandField
+                title="Native 安装"
+                command={result.native_install_command}
+              />
+              <CommandField
+                title="Docker 安装"
+                command={result.docker_install_command}
+              />
               <p className="text-muted-foreground text-xs">
-                命令有效期至 {formatDisplayDateTime(result.expires_at)}，请勿公开接入令牌。
+                命令有效期至 {formatDisplayDateTime(result.expires_at)}
+                ，请勿公开接入令牌。
               </p>
             </>
           ) : (
             <>
               {state?.mode !== 'edit' ? (
                 <Field label="接入域名">
-                  <Input value={domain} disabled={state?.mode === 'enroll'} onChange={(event) => setDomain(event.target.value)} placeholder="egress.example.com" />
+                  <Input
+                    value={domain}
+                    disabled={state?.mode === 'enroll'}
+                    onChange={(event) => setDomain(event.target.value)}
+                    placeholder="egress.example.com"
+                  />
                 </Field>
               ) : null}
               <Field label="节点名称">
-                <Input value={displayName} onChange={(event) => setDisplayName(event.target.value)} />
+                <Input
+                  value={displayName}
+                  onChange={(event) => setDisplayName(event.target.value)}
+                />
               </Field>
               {state?.mode !== 'edit' ? (
                 <div className="grid gap-3 sm:grid-cols-2">
                   <Field label="最大连接数">
-                    <Input type="number" min={1} max={16384} value={maxConnections} onChange={(event) => setMaxConnections(event.target.value)} />
+                    <Input
+                      type="number"
+                      min={1}
+                      max={16384}
+                      value={maxConnections}
+                      onChange={(event) =>
+                        setMaxConnections(event.target.value)
+                      }
+                    />
                   </Field>
                   <Field label="最大流数量">
-                    <Input type="number" min={1} max={65535} value={maxStreams} onChange={(event) => setMaxStreams(event.target.value)} />
+                    <Input
+                      type="number"
+                      min={1}
+                      max={65535}
+                      value={maxStreams}
+                      onChange={(event) => setMaxStreams(event.target.value)}
+                    />
                   </Field>
                 </div>
               ) : null}
@@ -692,16 +758,30 @@ function NodeEditorDialog({
           )}
         </ResponsiveDialogBody>
         <ResponsiveDialogFooter>
-          <Button variant="outline" disabled={mutation.isPending} onClick={onClose}>
+          <DialogActionButton
+            action="cancel"
+            variant="outline"
+            disabled={mutation.isPending}
+            onClick={onClose}
+          >
             {result ? '完成' : '取消'}
-          </Button>
+          </DialogActionButton>
           {!result ? (
-            <Button
-              disabled={mutation.isPending || !displayName.trim() || (state?.mode !== 'edit' && !domain.trim())}
+            <DialogActionButton
+              action="confirm"
+              disabled={
+                mutation.isPending ||
+                !displayName.trim() ||
+                (state?.mode !== 'edit' && !domain.trim())
+              }
               onClick={() => mutation.mutate()}
             >
-              {mutation.isPending ? '保存中…' : state?.mode === 'edit' ? '保存' : '生成接入命令'}
-            </Button>
+              {mutation.isPending
+                ? '保存中…'
+                : state?.mode === 'edit'
+                  ? '保存'
+                  : '生成接入命令'}
+            </DialogActionButton>
           ) : null}
         </ResponsiveDialogFooter>
       </ResponsiveDialogContent>
@@ -714,14 +794,23 @@ function CommandField({ title, command }: { title: string; command: string }) {
     <div>
       <div className="mb-1 flex items-center justify-between">
         <Label>{title}</Label>
-        <CopyButton text={command} size="xs">复制</CopyButton>
+        <CopyButton text={command} size="xs">
+          复制
+        </CopyButton>
       </div>
-      <Textarea readOnly value={command} className="min-h-24 font-mono text-xs" />
+      <Textarea
+        readOnly
+        value={command}
+        className="min-h-24 font-mono text-xs"
+      />
     </div>
   );
 }
 
-function Field({ label, children }: React.PropsWithChildren<{ label: string }>) {
+function Field({
+  label,
+  children,
+}: React.PropsWithChildren<{ label: string }>) {
   return (
     <div>
       <Label className="mb-1.5">{label}</Label>
@@ -742,7 +831,10 @@ function DeleteNodeDialog({
   onConfirm: () => void;
 }) {
   return (
-    <ResponsiveDialog open={Boolean(node)} onOpenChange={(open) => !open && !pending && onClose()}>
+    <ResponsiveDialog
+      open={Boolean(node)}
+      onOpenChange={(open) => !open && !pending && onClose()}
+    >
       <ResponsiveDialogContent className="sm:max-w-md">
         <ResponsiveDialogHeader>
           <ResponsiveDialogTitle>确认删除节点</ResponsiveDialogTitle>
@@ -754,10 +846,22 @@ function DeleteNodeDialog({
           <p className="text-sm">确定删除「{node?.display_name ?? ''}」吗？</p>
         </ResponsiveDialogBody>
         <ResponsiveDialogFooter>
-          <Button variant="outline" disabled={pending} onClick={onClose}>取消</Button>
-          <Button variant="destructive" disabled={pending} onClick={onConfirm}>
+          <DialogActionButton
+            action="cancel"
+            variant="outline"
+            disabled={pending}
+            onClick={onClose}
+          >
+            取消
+          </DialogActionButton>
+          <DialogActionButton
+            action="confirm"
+            variant="destructive"
+            disabled={pending}
+            onClick={onConfirm}
+          >
             {pending ? '删除中…' : '确认删除'}
-          </Button>
+          </DialogActionButton>
         </ResponsiveDialogFooter>
       </ResponsiveDialogContent>
     </ResponsiveDialog>
@@ -766,15 +870,26 @@ function DeleteNodeDialog({
 
 function statusLabel(status: EgressNodeStatus) {
   const labels: Record<EgressNodeStatus, string> = {
-    pending: '待接入', installing: '安装中', expired: '已过期', init: '初始化',
-    healthy: '健康', degraded: '降级', draining: '排空中', unhealthy: '异常', disabled: '已禁用',
+    pending: '待接入',
+    installing: '安装中',
+    expired: '已过期',
+    init: '初始化',
+    healthy: '健康',
+    degraded: '降级',
+    draining: '排空中',
+    unhealthy: '异常',
+    disabled: '已禁用',
   };
   return labels[status];
 }
 
-function statusVariant(status: EgressNodeStatus): React.ComponentProps<typeof Badge>['variant'] {
+function statusVariant(
+  status: EgressNodeStatus,
+): React.ComponentProps<typeof Badge>['variant'] {
   if (status === 'healthy') return 'success';
-  if (status === 'degraded' || status === 'draining' || status === 'installing') return 'secondary';
-  if (status === 'unhealthy' || status === 'disabled' || status === 'expired') return 'destructive';
+  if (status === 'degraded' || status === 'draining' || status === 'installing')
+    return 'secondary';
+  if (status === 'unhealthy' || status === 'disabled' || status === 'expired')
+    return 'destructive';
   return 'outline';
 }

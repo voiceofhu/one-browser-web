@@ -1,3 +1,4 @@
+import { DialogActionButton } from '@/components/ui/dialog-action-button';
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -310,14 +311,16 @@ function ScopedRolePage({
             </ResponsiveDialogDescription>
           </ResponsiveDialogHeader>
           <ResponsiveDialogFooter>
-            <Button
+            <DialogActionButton
+              action="cancel"
               variant="outline"
               disabled={mutation.isPending}
               onClick={() => setConfirmation(null)}
             >
               取消
-            </Button>
-            <Button
+            </DialogActionButton>
+            <DialogActionButton
+              action="confirm"
               variant="destructive"
               disabled={mutation.isPending}
               onClick={() => {
@@ -331,7 +334,7 @@ function ScopedRolePage({
               }}
             >
               确认
-            </Button>
+            </DialogActionButton>
           </ResponsiveDialogFooter>
         </ResponsiveDialogContent>
       </ResponsiveDialog>

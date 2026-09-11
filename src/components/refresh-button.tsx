@@ -24,14 +24,17 @@ export function RefreshButton({
   successMessage = '刷新成功',
   iconOnly = false,
   disabled,
+  className,
   'aria-label': ariaLabel,
   ...buttonProps
 }: RefreshButtonProps) {
   const [isInteracting, setIsInteracting] = React.useState(false);
   const busy = isRefreshing || isInteracting;
+  const refreshLock = React.useRef(false);
 
   async function refresh() {
-    if (busy) return;
+    if (busy || refreshLock.current) return;
+    refreshLock.current = true;
     const startedAt = Date.now();
     setIsInteracting(true);
     let succeeded = false;
@@ -52,11 +55,13 @@ export function RefreshButton({
     } else {
       toast.error('刷新失败，请稍后重试');
     }
+    refreshLock.current = false;
     setIsInteracting(false);
   }
 
   return (
     <Button
+      className={['order-last', className].filter(Boolean).join(' ')}
       type="button"
       disabled={disabled || busy}
       aria-busy={busy || undefined}
@@ -75,11 +80,12 @@ export function RefreshButton({
   );
 }
 
-function isFailedRefreshResult(result: unknown) {
+function isFailedRefreshResult(result: unknown): boolean {
+  if (Array.isArray(result)) return result.some(isFailedRefreshResult);
   return (
     typeof result === 'object' &&
     result !== null &&
-    'isError' in result &&
-    result.isError === true
+    (('isError' in result && result.isError === true) ||
+      ('status' in result && result.status === 'rejected'))
   );
 }

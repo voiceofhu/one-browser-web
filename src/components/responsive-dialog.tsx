@@ -1,5 +1,6 @@
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -9,6 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import {
   Drawer,
+  DrawerClose,
   DrawerContent,
   DrawerDescription,
   DrawerFooter,
@@ -193,4 +195,11 @@ export function ResponsiveDialogFooter({
       {children}
     </DialogFooter>
   );
+}
+
+export function ResponsiveDialogClose(
+  props: React.ComponentProps<typeof DialogClose>,
+) {
+  const isMobile = useIsMobile();
+  return isMobile ? <DrawerClose {...props} /> : <DialogClose {...props} />;
 }

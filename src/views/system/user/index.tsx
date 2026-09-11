@@ -1,3 +1,6 @@
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { DialogActionButton } from '@/components/ui/dialog-action-button';
 import {
   ResponsiveDialog,
   ResponsiveDialogBody,
@@ -96,6 +99,35 @@ export default function UserPage() {
 
   const renderCell = React.useCallback(
     (field: string, value: unknown, record: SystemRecord) => {
+      if (field === 'user_name') {
+        const user = record as UserResource;
+        return (
+          <div className="flex min-w-52 items-center gap-3">
+            <Avatar className="size-9 shrink-0">
+              <AvatarImage
+                src={user.avatar || undefined}
+                alt={user.nick_name || user.user_name}
+              />
+              <AvatarFallback className="bg-primary/10 text-primary">
+                {(user.nick_name || user.user_name).slice(0, 1).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="truncate font-medium">
+                  {user.nick_name || user.user_name}
+                </span>
+                {user.user_id === currentUser.user_id && (
+                  <Badge variant="secondary">当前身份</Badge>
+                )}
+              </div>
+              <p className="text-muted-foreground truncate text-xs">
+                @{user.user_name}
+              </p>
+            </div>
+          </div>
+        );
+      }
       if (field === 'created_at') {
         const dateTime = typeof value === 'string' ? value : null;
         return (
@@ -127,7 +159,7 @@ export default function UserPage() {
         />
       );
     },
-    [canUpdateStatus, statusMutation],
+    [canUpdateStatus, statusMutation, currentUser.user_id],
   );
 
   const renderRowActions = React.useCallback(
@@ -158,7 +190,7 @@ export default function UserPage() {
           description: '查看 One Browser 用户、账号状态和系统角色。',
           endpoint: '/system/users',
           serverPagination: true,
-          columns: ['user_name', 'nick_name', 'email', 'status', 'created_at'],
+          columns: ['user_name', 'email', 'status', 'created_at'],
         }}
         renderCell={renderCell}
         renderRowActions={
@@ -337,19 +369,21 @@ function UserProfileDialog({
           </UserField>
         </ResponsiveDialogBody>
         <ResponsiveDialogFooter>
-          <Button
+          <DialogActionButton
+            action="cancel"
             variant="outline"
             disabled={mutation.isPending}
             onClick={onClose}
           >
             取消
-          </Button>
-          <Button
+          </DialogActionButton>
+          <DialogActionButton
+            action="confirm"
             disabled={mutation.isPending || !values.nick_name.trim()}
             onClick={() => mutation.mutate()}
           >
             {mutation.isPending ? '保存中…' : '保存'}
-          </Button>
+          </DialogActionButton>
         </ResponsiveDialogFooter>
       </ResponsiveDialogContent>
     </ResponsiveDialog>
@@ -424,14 +458,16 @@ function UserRoleDialog({
           </UserField>
         </ResponsiveDialogBody>
         <ResponsiveDialogFooter>
-          <Button
+          <DialogActionButton
+            action="cancel"
             variant="outline"
             disabled={mutation.isPending}
             onClick={onClose}
           >
             取消
-          </Button>
-          <Button
+          </DialogActionButton>
+          <DialogActionButton
+            action="confirm"
             disabled={
               mutation.isPending ||
               rolesQuery.isError ||
@@ -441,7 +477,7 @@ function UserRoleDialog({
             onClick={() => mutation.mutate()}
           >
             {mutation.isPending ? '保存中…' : '保存'}
-          </Button>
+          </DialogActionButton>
         </ResponsiveDialogFooter>
       </ResponsiveDialogContent>
     </ResponsiveDialog>
@@ -472,16 +508,22 @@ function DisableUserDialog({
           </ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
         <ResponsiveDialogFooter>
-          <Button variant="outline" disabled={isPending} onClick={onClose}>
+          <DialogActionButton
+            action="cancel"
+            variant="outline"
+            disabled={isPending}
+            onClick={onClose}
+          >
             取消
-          </Button>
-          <Button
+          </DialogActionButton>
+          <DialogActionButton
+            action="confirm"
             variant="destructive"
             disabled={isPending}
             onClick={onConfirm}
           >
             {isPending ? '停用中…' : '确认停用'}
-          </Button>
+          </DialogActionButton>
         </ResponsiveDialogFooter>
       </ResponsiveDialogContent>
     </ResponsiveDialog>

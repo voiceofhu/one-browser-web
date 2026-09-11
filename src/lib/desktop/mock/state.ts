@@ -11,7 +11,7 @@ export const mockNow = new Date(0).toISOString();
 export const mockSettings: AppSettings = {
   chromiumPath: null,
   profileRoot: '/tmp/one-browser/profiles',
-  defaultStartUrl: 'https://ip.net.coffee/',
+  defaultStartUrl: 'https://ip.huzhihui.com/',
   egressSelectionMode: 'auto',
   preferredEgressId: null,
   apiEnabled: true,

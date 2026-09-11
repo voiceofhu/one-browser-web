@@ -6,7 +6,6 @@ import {
   ResponsiveDialogHeader,
   ResponsiveDialogTitle,
 } from '@/components/responsive-dialog';
-import { Button } from '@/components/ui/button';
 import { DialogActionButton } from '@/components/ui/dialog-action-button';
 import { Spinner } from '@/components/ui/spinner';
 import type {
@@ -261,14 +260,15 @@ export function ProxyBatchImportDialog({
           >
             取消
           </DialogActionButton>
-          <Button
+          <DialogActionButton
+            action="confirm"
             variant="outline"
             onClick={() => void checkRows()}
             disabled={!checkableRows.length || isChecking || isImporting}
           >
             {isChecking ? <Spinner data-icon="inline-start" /> : null}
             {isChecking ? '检测中' : `检测 ${checkableRows.length} 个代理`}
-          </Button>
+          </DialogActionButton>
           <DialogActionButton
             onClick={() => void importRows()}
             disabled={!displayRows.length || isChecking || isImporting}
