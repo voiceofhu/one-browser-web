@@ -17,7 +17,8 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { logout } from '@/features/auth/api';
+import { logout, prepareWebLoginUrl } from '@/features/auth/api';
+import { desktopInvoke, isTauriRuntime } from '@/lib/desktop';
 import { useAuth } from '@/features/auth/auth-gate';
 import {
   hasAnyTeamPermission,
@@ -114,26 +115,45 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     hasPermission(access, 'browser:team:list') ||
     hasAnyTeamPermission(access, 'browser:team:list');
 
-  async function handleLogout() {
+  async function handleLogout(switchAccount = false) {
     if (isLoggingOut) {
       return;
     }
 
     setIsLoggingOut(true);
     try {
-      await logout();
-      toast.success('已退出登录');
+      const loginUrl = switchAccount
+        ? await prepareWebLoginUrl('/dashboard')
+        : undefined;
+      try {
+        await logout();
+      } finally {
+        if (isTauriRuntime()) {
+          http.updateTokens(null);
+          await queryClient.cancelQueries();
+          queryClient.clear();
+          router.replace('/login');
+        }
+      }
+      if (isTauriRuntime()) {
+        if (loginUrl) {
+          await desktopInvoke('open_external_url', {
+            request: { url: loginUrl },
+          });
+        }
+      } else {
+        http.updateTokens(null);
+        await queryClient.cancelQueries();
+        queryClient.clear();
+        window.location.replace(loginUrl ?? '/login');
+      }
     } catch (error) {
       toast.error(
         error instanceof Error
-          ? `退出登录请求失败，已清除本地登录：${error.message}`
-          : '退出登录请求失败，已清除本地登录',
+          ? error.message
+          : '账号操作失败，请重试',
       );
     } finally {
-      http.updateTokens(null);
-      await queryClient.cancelQueries();
-      queryClient.clear();
-      router.replace('/login');
       setIsLoggingOut(false);
     }
   }
@@ -162,6 +182,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           user={user}
           isLoggingOut={isLoggingOut}
           onLogout={() => void handleLogout()}
+          onSwitchAccount={() => void handleLogout(true)}
         />
       </SidebarFooter>
     </Sidebar>

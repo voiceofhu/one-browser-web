@@ -91,6 +91,12 @@ export const authAccountMessages = {
   '有个浏览器正在准备工作区。': 'One Browser is preparing your workspace.',
   重试连接: 'Retry connection',
   已退出登录: 'Signed out',
+  切换账号: 'Switch account',
+  退出当前应用: 'Sign out of this app',
+  '退出当前应用？': 'Sign out of this app?',
+  '退出 One Browser 后，One User 和其他应用将保持登录。再次登录时可选择账号。':
+    'Sign out of One Browser. One User and other apps stay signed in. You can choose an account when you sign in again.',
+  '账号操作失败，请重试': 'Account action failed. Please try again.',
   '退出登录请求失败，已清除本地登录':
     'Sign-out request failed. Local sign-in data has been cleared',
   '退出后需要重新通过网页登录授权才能继续使用。':

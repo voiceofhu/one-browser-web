@@ -88,10 +88,12 @@ const accountMenuItems = [
 export function AppNavUser({
   isLoggingOut,
   onLogout,
+  onSwitchAccount,
   user,
 }: {
   isLoggingOut?: boolean;
   onLogout: () => void;
+  onSwitchAccount: () => void;
   user: CurrentUser;
 }) {
   const { isMobile } = useSidebar();
@@ -259,12 +261,19 @@ export function AppNavUser({
               <DropdownMenuSeparator />
               <DropdownMenuGroup>
                 <DropdownMenuItem
+                  disabled={isLoggingOut}
+                  onSelect={onSwitchAccount}
+                >
+                  <HugeiconsIcon icon={UserIcon} strokeWidth={2} />
+                  切换账号
+                </DropdownMenuItem>
+                <DropdownMenuItem
                   variant="destructive"
                   disabled={isLoggingOut}
                   onSelect={() => setConfirmOpen(true)}
                 >
                   <HugeiconsIcon icon={Logout03Icon} strokeWidth={2} />
-                  退出登录
+                  退出当前应用
                 </DropdownMenuItem>
               </DropdownMenuGroup>
             </DropdownMenuContent>
@@ -291,9 +300,9 @@ export function AppNavUser({
             <AlertDialogMedia>
               <HugeiconsIcon icon={Logout03Icon} strokeWidth={2} />
             </AlertDialogMedia>
-            <AlertDialogTitle>确认退出登录？</AlertDialogTitle>
+            <AlertDialogTitle>退出当前应用？</AlertDialogTitle>
             <AlertDialogDescription>
-              退出后需要重新通过网页登录授权才能继续使用。
+              退出 One Browser 后，One User 和其他应用将保持登录。再次登录时可选择账号。
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
