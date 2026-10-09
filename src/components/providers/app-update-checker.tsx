@@ -167,13 +167,9 @@ export function AppUpdateChecker() {
           if (!open) setDesktopUpdate(null);
         }}
         onUpdate={openDesktopDownloadPage}
-        title="客户端有更新"
-        description={
-          desktopUpdate
-            ? `v${desktopUpdate.currentVersion} → v${desktopUpdate.latestVersion}，下载安装后生效。`
-            : undefined
-        }
-        updateLabel="下载客户端"
+        currentVersion={desktopUpdate?.currentVersion}
+        latestVersion={desktopUpdate?.latestVersion}
+        description="点击更新，下载安装后即可使用新版本。"
         updatingLabel="正在打开…"
         resetUpdatingAfterUpdate
       />

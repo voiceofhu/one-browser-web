@@ -1,3 +1,4 @@
+import { formatDateTimeTitle, formatDisplayDateTime } from '@/lib/date-time';
 import { AnimatedSegmentedTabs } from '@/components/ui/animated-segmented-tabs';
 import { LoadingState } from '@/components/loading-state';
 import { Badge } from '@/components/ui/badge';
@@ -146,7 +147,9 @@ export function AppDownloadCard({
               {download ? (
                 <p className="text-muted-foreground mt-1 truncate text-[0.6875rem]">
                   版本 {download.version || '-'} · {formatBytes(download.fileSize)} ·{' '}
-                  {formatDate(download.updatedAt)}
+                  <span title={formatDateTimeTitle(download.updatedAt)}>
+                    {formatDisplayDateTime(download.updatedAt)}
+                  </span>
                 </p>
               ) : null}
             </div>
@@ -205,9 +208,3 @@ function formatBytes(value: number) {
   return `${size.toFixed(unit === 0 ? 0 : 1)} ${units[unit]}`;
 }
 
-function formatDate(value: string | null) {
-  if (!value) return '-';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat('zh-CN', { dateStyle: 'medium' }).format(date);
-}

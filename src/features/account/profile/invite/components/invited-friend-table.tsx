@@ -10,10 +10,8 @@ import {
 } from '@/components/ui/table';
 import { DefaultUserAvatar } from '@/features/account/avatar';
 import { getDefaultUserAvatarSeed } from '@/features/account/avatar';
-import {
-  formatDateTime,
-  formatFullDateTime,
-} from '@/features/account/profile/invite/invite-utils';
+import { formatFullDateTime } from '@/features/account/profile/invite/invite-utils';
+import { formatDisplayDateTime } from '@/lib/date-time';
 import type { UserInviteFriend } from '@/features/auth/api';
 
 export function InvitedFriendTable({
@@ -58,7 +56,7 @@ export function InvitedFriendTable({
             </TableCell>
             <TableCell className="text-muted-foreground">
               <span title={formatFullDateTime(friend.created_at)}>
-                {formatDateTime(friend.created_at)}
+                {formatDisplayDateTime(friend.created_at)}
               </span>
             </TableCell>
             <TableCell className="text-right">
