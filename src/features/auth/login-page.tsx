@@ -36,6 +36,7 @@ import {
   prepareWebLoginUrl,
 } from './api';
 import { InteractiveGridBackground } from './interactive-grid-background';
+import { markLoginRedirect, recentlyRedirected } from './login-redirect-guard';
 import { useLoginAppWindowSize } from './use-app-window-size';
 import { useAuthDeepLinks } from './use-auth-deep-links';
 
@@ -153,6 +154,9 @@ export function LoginPage({ authManaged = false }: LoginPageProps) {
   const [opening, setOpening] = React.useState(false);
   const [authNotice, setAuthNotice] = React.useState<string | null>(null);
   const [sessionChecked, setSessionChecked] = React.useState(authManaged);
+  const [autoLoginAllowed, setAutoLoginAllowed] = React.useState(
+    () => !recentlyRedirected(),
+  );
   const isDesktop = isTauriRuntime();
   const loginConfig = React.useMemo(() => getWebLoginConfig(), []);
   const canOpenLogin = !isDesktop || loginConfig.status === 'ready';
@@ -239,7 +243,21 @@ export function LoginPage({ authManaged = false }: LoginPageProps) {
     return () => window.clearTimeout(noticeTimer);
   }, [copy.authExpired]);
 
-  if (!sessionChecked) {
+  const autoLogin = !isDesktop && autoLoginAllowed && !authNotice;
+  React.useEffect(() => {
+    if (!sessionChecked || !autoLogin) return;
+    markLoginRedirect();
+    prepareWebLoginUrl(currentBrowserReturnTo())
+      .then((loginUrl) => window.location.replace(loginUrl))
+      .catch((error: unknown) => {
+        setAutoLoginAllowed(false);
+        toast.error(
+          error instanceof Error ? error.message : copy.openLoginError,
+        );
+      });
+  }, [autoLogin, copy.openLoginError, sessionChecked]);
+
+  if (!sessionChecked || autoLogin) {
     return null;
   }
 
@@ -448,7 +466,7 @@ function LoginPageControls() {
           <Button
             variant="outline"
             size="icon-sm"
-            className="border-border/60 bg-muted text-foreground shadow-none hover:bg-muted dark:bg-muted dark:hover:bg-muted"
+            className="border-border/60 bg-muted text-foreground hover:bg-muted dark:bg-muted dark:hover:bg-muted shadow-none"
             aria-label={locale === 'zh-CN' ? '切换语言' : 'Change language'}
           >
             <HugeiconsIcon icon={Globe02Icon} strokeWidth={2} />

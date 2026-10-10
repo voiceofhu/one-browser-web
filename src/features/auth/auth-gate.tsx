@@ -13,6 +13,7 @@ import {
 import type { AuthPermissions, CurrentUser } from '@/features/auth/types';
 import { useDefaultAppWindowSize } from '@/features/auth/use-app-window-size';
 import { useAuthDeepLinks } from '@/features/auth/use-auth-deep-links';
+import { sessionEstablished } from '@/features/auth/login-redirect-guard';
 import { isTauriRuntime } from '@/lib/desktop';
 import { expireStoredAuthSession } from '@/lib/http';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -135,6 +136,9 @@ export function AuthGate({ children }: React.PropsWithChildren) {
     : null;
   const hasWorkspace = Boolean(currentUser.data && permissions.data);
   useDefaultAppWindowSize(hasWorkspace);
+  React.useEffect(() => {
+    if (hasWorkspace) sessionEstablished();
+  }, [hasWorkspace]);
 
   const retryAuth = React.useCallback(() => {
     setAuthSessionError(null);
