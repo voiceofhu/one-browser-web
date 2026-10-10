@@ -11,7 +11,10 @@ import {
   readAuthSessionStatus,
 } from '@/features/auth/session';
 import type { AuthPermissions, CurrentUser } from '@/features/auth/types';
-import { useDefaultAppWindowSize } from '@/features/auth/use-app-window-size';
+import {
+  useDefaultAppWindowSize,
+  useLoginAppWindowSize,
+} from '@/features/auth/use-app-window-size';
 import { useAuthDeepLinks } from '@/features/auth/use-auth-deep-links';
 import { sessionEstablished } from '@/features/auth/login-redirect-guard';
 import { isTauriRuntime } from '@/lib/desktop';
@@ -135,6 +138,9 @@ export function AuthGate({ children }: React.PropsWithChildren) {
     ? getErrorMessage(authError, '无法连接有个浏览器服务')
     : null;
   const hasWorkspace = Boolean(currentUser.data && permissions.data);
+  // Every pre-workspace screen (sync, errors, login) stays login-sized; the
+  // window only grows once the workspace is ready.
+  useLoginAppWindowSize(!hasWorkspace);
   useDefaultAppWindowSize(hasWorkspace);
   React.useEffect(() => {
     if (hasWorkspace) sessionEstablished();
