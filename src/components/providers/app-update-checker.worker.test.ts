@@ -3,66 +3,92 @@ import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import { describe, expect, it, vi } from 'vitest';
 
+const manifestUrl = 'https://example.test/app-version.json';
+
 function startWorker(fetch: ReturnType<typeof vi.fn>) {
   let receive: (event: { data: unknown }) => void = () => {};
   const postMessage = vi.fn();
   runInNewContext(readFileSync('public/app-update-checker.worker.js', 'utf8'), {
-    URL, fetch,
+    URL,
+    AbortSignal,
+    Date,
+    Error,
+    Set,
+    fetch,
     self: {
-      location: { origin: 'https://example.test' },
-      addEventListener: (_type: string, handler: typeof receive) => { receive = handler; },
+      addEventListener: (_type: string, handler: typeof receive) => {
+        receive = handler;
+      },
       postMessage,
     },
   });
   return {
     postMessage,
-    check: (url = 'https://example.test/') => receive({ data: { type: 'check', url } }),
+    check: (build: string) =>
+      receive({ data: { type: 'check', url: manifestUrl, build } }),
   };
 }
-const response = (etag: string | null, status = 200, modified = 'today') => ({
-  ok: status === 200, status,
-  headers: new Headers({ ...(etag ? { etag } : {}), 'last-modified': modified }),
-  body: { cancel: vi.fn() },
-});
 
-describe('ETag update worker', () => {
-  it('records a baseline, ignores Last-Modified changes, and detects changed content', async () => {
-    const fetch = vi.fn().mockResolvedValueOnce(response('"v1"'))
-      .mockResolvedValueOnce(response('"v1"', 200, 'tomorrow'))
-      .mockResolvedValueOnce(response('"v2"'));
+async function lastResult(
+  worker: ReturnType<typeof startWorker>,
+  build: string,
+) {
+  const calls = worker.postMessage.mock.calls.length;
+  worker.check(build);
+  await vi.waitFor(() =>
+    expect(worker.postMessage.mock.calls.length).toBe(calls + 1),
+  );
+  return worker.postMessage.mock.lastCall?.[0];
+}
+
+describe('app version manifest worker', () => {
+  it('compares the running build with the deployed manifest without a baseline', async () => {
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(Response.json({ build: 'same' }))
+      .mockResolvedValueOnce(Response.json({ build: 'new' }));
     const worker = startWorker(fetch);
-    for (const type of ['baseline', 'unchanged', 'changed']) {
-      worker.check();
-      await vi.waitFor(() => expect(worker.postMessage).toHaveBeenLastCalledWith(expect.objectContaining({ type })));
+    expect(await lastResult(worker, 'same')).toEqual({ type: 'unchanged' });
+    expect(await lastResult(worker, 'same')).toEqual({ type: 'changed' });
+    const [url, init] = fetch.mock.calls[0];
+    expect(String(url)).toMatch(
+      /^https:\/\/example\.test\/app-version\.json\?t=\d+$/,
+    );
+    expect(init).toEqual(
+      expect.objectContaining({
+        cache: 'no-store',
+        credentials: 'same-origin',
+      }),
+    );
+  });
+
+  it('reports missing or invalid manifests as errors, never as updates', async () => {
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(new Response('missing', { status: 404 }))
+      .mockResolvedValueOnce(Response.json({}))
+      .mockRejectedValueOnce(new Error('offline'));
+    const worker = startWorker(fetch);
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      expect(await lastResult(worker, 'old')).toEqual(
+        expect.objectContaining({ type: 'error' }),
+      );
     }
-    expect(fetch).toHaveBeenCalledWith('https://example.test/', expect.objectContaining({ method: 'HEAD', cache: 'no-store' }));
   });
-  it('does not mistake missing ETags or failures for updates, and permits retry', async () => {
-    const fetch = vi.fn().mockResolvedValueOnce(response(null))
-      .mockResolvedValueOnce(response(null, 503)).mockResolvedValueOnce(response('"v1"'));
+
+  it('ignores malformed messages and deduplicates concurrent checks', async () => {
+    let resolve: (response: Response) => void = () => {};
+    const fetch = vi.fn(
+      () => new Promise<Response>((done) => (resolve = done)),
+    );
     const worker = startWorker(fetch);
-    for (const type of ['unavailable', 'error', 'baseline']) {
-      worker.check();
-      await vi.waitFor(() => expect(worker.postMessage).toHaveBeenLastCalledWith(expect.objectContaining({ type })));
-    }
-  });
-  it('falls back to GET when HEAD is unsupported', async () => {
-    const document = response('"v1"');
-    const fetch = vi.fn().mockResolvedValueOnce(response(null, 405)).mockResolvedValueOnce(document);
-    const worker = startWorker(fetch);
-    worker.check();
-    await vi.waitFor(() => expect(worker.postMessage).toHaveBeenCalledWith(expect.objectContaining({ type: 'baseline' })));
-    expect(fetch.mock.calls[1]?.[1].method).toBe('GET');
-    expect(document.body.cancel).toHaveBeenCalled();
-  });
-  it('rejects other origins and deduplicates concurrent checks after URL normalization', async () => {
-    const fetch = vi.fn().mockResolvedValue(response('"v1"'));
-    const worker = startWorker(fetch);
-    worker.check('https://other.test/');
-    expect(fetch).not.toHaveBeenCalled();
-    worker.check('https://example.test/?t=1#section');
-    worker.check('https://example.test/');
-    await vi.waitFor(() => expect(worker.postMessage).toHaveBeenCalledTimes(1));
+    worker.check(undefined as unknown as string);
+    worker.check('old');
+    worker.check('old');
     expect(fetch).toHaveBeenCalledTimes(1);
+    resolve(Response.json({ build: 'new' }));
+    await vi.waitFor(() =>
+      expect(worker.postMessage).toHaveBeenCalledWith({ type: 'changed' }),
+    );
   });
 });

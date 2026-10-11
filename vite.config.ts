@@ -35,7 +35,7 @@ export default defineConfig(({ mode }) => {
           this.emitFile({
             type: 'asset',
             fileName: 'app-version.json',
-            source: JSON.stringify({ version: appVersion, buildId }),
+            source: JSON.stringify({ version: appVersion, build: buildId }),
           });
         },
         transformIndexHtml: (html) => html.replaceAll('%APP_NAME%', appName),
