@@ -1,4 +1,5 @@
 import { UpdateAvailableNotice } from '@/components/update-available-notice';
+import { reloadForUpdate, startAppUpdateCheck } from '@/lib/app-update';
 import { desktopInvoke, isTauriRuntime } from '@/lib/desktop';
 import * as React from 'react';
 
@@ -8,99 +9,16 @@ import {
   findDesktopAppUpdate,
 } from './desktop-app-update';
 
-const APP_UPDATE_CHECKER_WORKER_URL = '/app-update-checker.worker.js';
-
-type AppUpdateCheckerWorkerMessage = {
-  type: 'baseline' | 'unchanged' | 'changed' | 'unavailable' | 'error';
-  message?: string;
-};
-
 export function AppUpdateChecker() {
   const [pageUpdateAvailable, setPageUpdateAvailable] = React.useState(false);
   const [desktopUpdate, setDesktopUpdate] =
     React.useState<DesktopAppUpdate | null>(null);
   const desktopCheckInFlight = React.useRef(false);
 
-  React.useEffect(() => {
-    if (
-      !import.meta.env.PROD ||
-      typeof window === 'undefined' ||
-      typeof Worker === 'undefined' ||
-      !isHttpProtocol(window.location.protocol)
-    ) {
-      return;
-    }
-
-    let worker: Worker;
-
-    try {
-      worker = new Worker(
-        `${APP_UPDATE_CHECKER_WORKER_URL}?build=${encodeURIComponent(__APP_BUILD_ID__)}`,
-        {
-          name: 'app-update-checker',
-          type: 'module',
-        },
-      );
-    } catch (error) {
-      console.warn('App update checker worker failed to start.', error);
-      return;
-    }
-
-    const requestCheck = (source: string) => {
-      if (document.visibilityState === 'hidden') {
-        return;
-      }
-
-      worker.postMessage({
-        type: 'check',
-        source,
-        url: new URL(
-          'app-version.json',
-          new URL(import.meta.env.BASE_URL, window.location.origin),
-        ).toString(),
-        build: __APP_BUILD_ID__,
-      });
-    };
-
-    const handleWorkerMessage = (
-      event: MessageEvent<AppUpdateCheckerWorkerMessage>,
-    ) => {
-      const message = event.data;
-      if (!message) {
-        return;
-      }
-
-      if (message.type === 'changed') {
-        setPageUpdateAvailable(true);
-        return;
-      }
-
-      if (message.type === 'error') {
-        console.debug('App update check failed.', message.message);
-      }
-    };
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        requestCheck('visibilitychange');
-      }
-    };
-
-    worker.addEventListener('message', handleWorkerMessage);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    const onOnline = () => requestCheck('online');
-    window.addEventListener('online', onOnline);
-    const interval = window.setInterval(() => requestCheck('interval'), 60_000);
-    requestCheck('mount');
-
-    return () => {
-      window.clearInterval(interval);
-      window.removeEventListener('online', onOnline);
-      worker.removeEventListener('message', handleWorkerMessage);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      worker.terminate();
-    };
-  }, []);
+  React.useEffect(
+    () => startAppUpdateCheck(() => setPageUpdateAvailable(true)),
+    [],
+  );
 
   const requestDesktopCheck = React.useCallback(async (source: string) => {
     if (
@@ -160,7 +78,7 @@ export function AppUpdateChecker() {
       <UpdateAvailableNotice
         open={pageUpdateAvailable}
         onOpenChange={setPageUpdateAvailable}
-        onUpdate={reloadWithTimestamp}
+        onUpdate={reloadForUpdate}
       />
       <UpdateAvailableNotice
         open={desktopUpdate !== null}
@@ -176,14 +94,4 @@ export function AppUpdateChecker() {
       />
     </div>
   );
-}
-
-function reloadWithTimestamp() {
-  const nextUrl = new URL(window.location.href);
-  nextUrl.searchParams.set('t', Date.now().toString());
-  window.location.replace(nextUrl.toString());
-}
-
-function isHttpProtocol(protocol: string) {
-  return protocol === 'http:' || protocol === 'https:';
 }
