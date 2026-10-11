@@ -101,10 +101,7 @@ async function getNativeAppStatus() {
     return injectedStatus;
   }
 
-  // Bypass desktopInvoke's web-package compatibility normalization. Update
-  // checks must compare the installed native shell version.
-  const { invoke } = await import('@tauri-apps/api/core');
-  return invoke<AppStatus>('get_app_status');
+  return desktopInvoke<AppStatus>('get_app_status');
 }
 
 async function getLatestAppRelease(

@@ -7,8 +7,6 @@ import {
   type DesktopInvokeOptions,
 } from '@/lib/desktop/types';
 
-const packageAppVersion = __APP_VERSION__;
-
 declare global {
   interface Window {
     __TAURI__?: unknown;
@@ -35,7 +33,7 @@ export async function desktopInvoke<T>(
         command,
         runtime: getDesktopRuntimeDebugInfo(),
       });
-      return normalizeDesktopResult(command, result);
+      return result;
     } catch (error) {
       const normalizedError = normalizeDesktopError(error);
       const logPayload = {
@@ -162,13 +160,6 @@ function summarizeDesktopError(error: unknown) {
     };
   }
   return error;
-}
-
-function normalizeDesktopResult<T>(command: DesktopCommand, result: T): T {
-  if (command !== 'get_app_status' || !isRecord(result)) {
-    return result;
-  }
-  return { ...result, appVersion: packageAppVersion } as T;
 }
 
 function shouldUseMock(option?: boolean) {

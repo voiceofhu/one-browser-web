@@ -141,7 +141,9 @@ export function AppFooter() {
   const apiStatus = status?.apiStatus;
   const apiEnabled = Boolean(apiStatus?.enabled);
   const apiRunning = Boolean(apiStatus?.running);
-  const appVersion = appVersionLabel(__APP_VERSION__);
+  const appVersion = appVersionLabel(
+    tauriRuntimeAvailable ? status?.appVersion : __APP_VERSION__,
+  );
   const apiStatusLabel = statusQuery.isLoading
     ? 'API 检测中'
     : statusQuery.isError
