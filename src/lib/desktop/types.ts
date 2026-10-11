@@ -3,6 +3,10 @@ import type { AppErrorPayload } from '@/features/browser/contracts';
 export type DesktopCommand =
   | 'get_app_release_identity'
   | 'get_app_status'
+  | 'get_notification_permission'
+  | 'request_notification_permission'
+  | 'send_system_notification'
+  | 'open_notification_settings'
   | 'animate_app_window'
   | 'open_app_data_dir'
   | 'open_external_url'

@@ -22,6 +22,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 
 import { SettingsDivider, SettingsGroup, SettingsRow } from './settings-group';
+import { NotificationSettings } from './notification-settings';
 
 export function AdvancedSettings() {
   const [openingLog, setOpeningLog] = useState(false);
@@ -43,6 +44,7 @@ export function AdvancedSettings() {
 
   return (
     <FieldGroup className="gap-5">
+      <NotificationSettings />
       <SettingsGroup title="诊断与维护">
         <SettingsRow
           label="系统日志"

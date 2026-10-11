@@ -51,6 +51,11 @@ export function invokeMockCommand<T>(
   const patch = args?.patch as Partial<AppSettings> | undefined;
 
   switch (command) {
+    case 'get_notification_permission':
+    case 'request_notification_permission':
+    case 'send_system_notification':
+    case 'open_notification_settings':
+      return Promise.reject(new Error('系统通知需要 One Browser 桌面客户端'));
     case 'get_app_release_identity':
       return mockResult<T>(mockAppReleaseIdentity());
     case 'get_app_status':

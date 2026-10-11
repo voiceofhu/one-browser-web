@@ -1,6 +1,7 @@
 import { UpdateAvailableNotice } from '@/components/update-available-notice';
 import { reloadForUpdate, startAppUpdateCheck } from '@/lib/app-update';
 import { desktopInvoke, isTauriRuntime } from '@/lib/desktop';
+import { onDesktopForeground } from '@/lib/desktop/foreground';
 import * as React from 'react';
 
 import {
@@ -15,10 +16,20 @@ export function AppUpdateChecker() {
     React.useState<DesktopAppUpdate | null>(null);
   const desktopCheckInFlight = React.useRef(false);
 
-  React.useEffect(
-    () => startAppUpdateCheck(() => setPageUpdateAvailable(true)),
-    [],
-  );
+  React.useEffect(() => {
+    const start = () => startAppUpdateCheck(() => setPageUpdateAvailable(true));
+    let stop = start();
+    const stopForeground = isTauriRuntime()
+      ? onDesktopForeground(() => {
+          stop();
+          stop = start();
+        })
+      : () => {};
+    return () => {
+      stopForeground();
+      stop();
+    };
+  }, []);
 
   const requestDesktopCheck = React.useCallback(async (source: string) => {
     if (
@@ -45,20 +56,16 @@ export function AppUpdateChecker() {
       return;
     }
 
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        void requestDesktopCheck('visibilitychange');
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    const stopForeground = onDesktopForeground(() => {
+      void requestDesktopCheck('foreground');
+    });
     const mountCheck = window.setTimeout(() => {
       void requestDesktopCheck('mount');
     }, 0);
 
     return () => {
       window.clearTimeout(mountCheck);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      stopForeground();
     };
   }, [requestDesktopCheck]);
 
