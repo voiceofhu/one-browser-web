@@ -16,3 +16,8 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+
+interface ImportMetaEnv {
+  /** MD5 of the ?debug= token that bypasses the production DevTools guard. */
+  readonly VITE_DEVTOOLS_BYPASS_MD5?: string;
+}

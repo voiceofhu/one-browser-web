@@ -1,3 +1,4 @@
+import { apiFetch } from '@/lib/http/api-fetch';
 import type {
   ApiResponse,
   BackendErrorResponse,
@@ -14,7 +15,7 @@ export async function sendHttpRequest(
   headers: Record<string, string>,
   body: BodyInit | null | undefined,
 ): Promise<HttpResponse> {
-  const response = await fetch(fullURL, {
+  const response = await apiFetch(fullURL, {
     ...fetchOptions,
     credentials: fetchOptions.credentials ?? 'omit',
     headers,

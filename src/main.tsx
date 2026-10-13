@@ -6,13 +6,16 @@ import { Providers } from '@/components/providers';
 
 import App from './App';
 import './index.css';
+import { startDevtoolsGuard } from '@/lib/devtools-guard';
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <BrowserRouter basename={import.meta.env.BASE_URL} useTransitions={false}>
-      <Providers>
-        <App />
-      </Providers>
-    </BrowserRouter>
-  </StrictMode>,
-);
+if (startDevtoolsGuard()) {
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <BrowserRouter basename={import.meta.env.BASE_URL} useTransitions={false}>
+        <Providers>
+          <App />
+        </Providers>
+      </BrowserRouter>
+    </StrictMode>,
+  );
+}
