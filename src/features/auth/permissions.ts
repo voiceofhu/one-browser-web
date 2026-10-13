@@ -167,7 +167,7 @@ function getTeamPermissionScope(
 }
 
 function hasAllTeamPermissions(access: AuthPermissions) {
-  return access.team_permissions.some(
+  return (access.team_permissions ?? []).some(
     (scope) => typeof scope === 'string' && scope === ALL_PERMISSION,
   );
 }
@@ -175,7 +175,7 @@ function hasAllTeamPermissions(access: AuthPermissions) {
 function getTeamPermissionScopes(
   access: AuthPermissions,
 ): AuthTeamPermissionEntry[] {
-  return access.team_permissions.filter(
+  return (access.team_permissions ?? []).filter(
     (scope): scope is AuthTeamPermissionEntry => typeof scope !== 'string',
   );
 }
