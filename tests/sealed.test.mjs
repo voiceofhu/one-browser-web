@@ -134,7 +134,13 @@ test('concurrent calls share one handshake and carry method, path, body and serv
   assert.equal(seen.handshakes, 1);
   assert.deepEqual(await list.json(), { ok: '/api/admin/users?page=1&q=a+b' });
   assert.equal(saved.headers.get('Content-Type'), 'application/json');
-  const [get, put] = seen.envelopes;
+  assert.equal(seen.envelopes.length, 2);
+  const get = seen.envelopes.find(
+    (envelope) => envelope.p === '/api/admin/users?page=1&q=a+b',
+  );
+  const put = seen.envelopes.find(
+    (envelope) => envelope.p === '/api/admin/users/7',
+  );
   assert.equal(get.m, 'GET');
   assert.equal(get.b, null);
   assert.equal(put.m, 'PUT');
