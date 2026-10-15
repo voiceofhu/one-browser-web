@@ -1,5 +1,5 @@
-import { LoadingState } from '@/components/loading-state';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -300,13 +300,9 @@ export function BrowserDataTable<TData, TValue>({
     });
   }
 
-  if (isLoading) {
-    return <LoadingState label="数据加载中..." />;
-  }
-
-  if (!data.length) {
+  if (!isLoading && !data.length) {
     return (
-      <Empty className="min-h-full">
+      <Empty className="min-h-56 rounded-none px-4 py-8">
         <EmptyHeader>
           <EmptyMedia variant="icon">
             <HugeiconsIcon icon={DatabaseSearchIcon} strokeWidth={2} />
@@ -325,15 +321,19 @@ export function BrowserDataTable<TData, TValue>({
       modifiers={[restrictToVerticalAxis]}
       onDragEnd={handleDragEnd}
     >
-      <Table className={cn('min-w-[900px]', tableClassName)}>
-        <TableHeader className="sticky top-0 z-20 bg-muted/45 backdrop-blur-xl">
+      <Table
+        className={cn('min-w-[900px]', tableClassName)}
+        aria-busy={Boolean(isLoading)}
+        aria-label={isLoading ? '数据加载中' : undefined}
+      >
+        <TableHeader className="sticky top-0 z-20 bg-muted">
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id} className="hover:bg-transparent">
               {headerGroup.headers.map((header) => (
                 <TableHead
                   key={header.id}
                   className={cn(
-                    density === 'compact' ? 'h-8' : 'h-9',
+                    'h-8 text-xs',
                     header.id === 'reorder' && 'w-8 px-1',
                     header.id === 'select' && 'w-10 pl-3',
                     header.id === 'name' && 'min-w-64',
@@ -358,6 +358,30 @@ export function BrowserDataTable<TData, TValue>({
           ))}
         </TableHeader>
         <TableBody>
+          {isLoading ? (
+            Array.from({ length: 6 }, (_, index) => (
+              <TableRow key={index} className="hover:bg-transparent" aria-hidden="true">
+                {table.getVisibleLeafColumns().map((column) => (
+                  <TableCell
+                    key={column.id}
+                    className={cn(
+                      density === 'compact' ? 'h-9 py-1' : 'h-11 py-1.5',
+                      column.id === 'actions' && 'sticky right-0 bg-card px-3',
+                      column.columnDef.meta?.cellClassName,
+                    )}
+                  >
+                    <Skeleton
+                      className={cn(
+                        'h-3 w-3/4 max-w-36 rounded-sm',
+                        (column.id === 'select' || column.id === 'reorder') && 'size-3.5',
+                        column.id === 'actions' && 'ml-auto w-16',
+                      )}
+                    />
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))
+          ) : (
           <SortableContext
             items={rowIds}
             strategy={verticalListSortingStrategy}
@@ -372,7 +396,7 @@ export function BrowserDataTable<TData, TValue>({
                   <TableCell
                     key={cell.id}
                     className={cn(
-                      density === 'compact' ? 'h-10 py-1.5' : 'h-14',
+                      density === 'compact' ? 'h-9 py-1' : 'h-11 py-1.5',
                       cell.column.id === 'reorder' && 'px-1',
                       cell.column.id === 'select' && 'pl-3',
                       cell.column.id === 'createdAt' && 'text-left',
@@ -387,6 +411,7 @@ export function BrowserDataTable<TData, TValue>({
               </SortableBrowserTableRow>
             ))}
           </SortableContext>
+          )}
         </TableBody>
       </Table>
     </DndContext>

@@ -8,6 +8,7 @@ import { AccountSettingsLayout } from '@/features/account/profile/account-settin
 import { AuthGate } from '@/features/auth/auth-gate';
 import { DashboardShell } from '@/features/browser-shell/dashboard-shell';
 import { AppErrorBoundary } from '@/views/error/error-boundary';
+import ErrorPage from '@/views/error/error-page';
 import NotFound from '@/views/error/not-found';
 import { lazy, Suspense, useDeferredValue } from 'react';
 import {
@@ -45,10 +46,13 @@ const OperationLogPage = lazy(() => import('@/views/system/log/operation'));
 const LoginLogPage = lazy(() => import('@/views/system/log/login'));
 const HealthPage = lazy(() => import('@/views/monitor/health'));
 const JobPage = lazy(() => import('@/views/monitor/job'));
+const errorStatuses = [401, 403, 404, 408, 429, 500, 502, 503, 504];
 
 export function AppRouter() {
+  const location = useLocation();
+
   return (
-    <AppErrorBoundary>
+    <AppErrorBoundary resetKey={location.key}>
       <RouteProgress />
       <Suspense
         fallback={
@@ -62,6 +66,13 @@ export function AppRouter() {
         }
       >
         <Routes>
+          {errorStatuses.map((status) => (
+            <Route
+              key={status}
+              path={`/${status}`}
+              element={<ErrorPage error={{ status }} />}
+            />
+          ))}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/download" element={<DownloadPage />} />
           <Route path="/callback" element={<CallbackPage />} />
@@ -121,7 +132,9 @@ function DashboardLayout() {
     <AuthGate>
       <DashboardShell>
         {location.key !== deferredLocationKey && <RouteProgressPending />}
-        <Suspense fallback={<RouteLoading />}>{deferredOutlet}</Suspense>
+        <AppErrorBoundary resetKey={location.key} embedded>
+          <Suspense fallback={<RouteLoading />}>{deferredOutlet}</Suspense>
+        </AppErrorBoundary>
       </DashboardShell>
     </AuthGate>
   );

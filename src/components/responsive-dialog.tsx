@@ -83,7 +83,7 @@ export function ResponsiveDialogContent({
     return (
       <DrawerContent
         className={cn(
-          'gap-0 overflow-hidden rounded-t-[var(--dialog-radius)] border border-border/70 bg-popover p-0 before:hidden data-[vaul-drawer-direction=bottom]:max-h-[90dvh] [&>div:first-child]:mt-3',
+          'gap-0 overflow-hidden rounded-t-[var(--dialog-radius)] border bg-popover p-0 shadow-none before:hidden data-[vaul-drawer-direction=bottom]:max-h-[90dvh] [&>div:first-child]:mt-2',
           className,
         )}
       >
@@ -95,7 +95,7 @@ export function ResponsiveDialogContent({
   return (
     <DialogContent
       className={cn(
-        'flex max-h-[min(90vh,44rem)] flex-col gap-0 overflow-hidden rounded-[var(--dialog-radius)] p-0 ring-foreground/10 sm:max-w-2xl',
+        'flex max-h-[min(90dvh,44rem)] flex-col gap-0 overflow-hidden rounded-[var(--dialog-radius)] p-0 shadow-none ring-0 sm:max-w-2xl',
         className,
       )}
     >
@@ -114,9 +114,9 @@ export function ResponsiveDialogHeader({
     return (
       <DrawerHeader
         className={cn(
-          'shrink-0 gap-0.5 bg-muted/50 px-4 py-2 pr-12 text-left',
+          'shrink-0 gap-0.5 bg-muted/50 px-3 py-2 pr-12 text-left',
           className,
-          'border-b-0',
+          'border-b',
         )}
       >
         {children}
@@ -127,9 +127,9 @@ export function ResponsiveDialogHeader({
   return (
     <DialogHeader
       className={cn(
-        'shrink-0 gap-0.5 bg-muted/50 px-4 py-2 pr-12',
+        'shrink-0 gap-0.5 bg-muted/50 px-3 py-2 pr-12',
         className,
-        'border-b-0',
+        'border-b',
       )}
     >
       {children}
@@ -172,7 +172,7 @@ export function ResponsiveDialogBody({
   children,
 }: React.ComponentProps<'div'>) {
   return (
-    <div className={cn('min-h-0 flex-1 overflow-y-auto px-4 py-3', className)}>
+    <div className={cn('min-h-0 flex-1 overflow-y-auto px-3 py-2.5', className)}>
       {children}
     </div>
   );
@@ -188,9 +188,9 @@ export function ResponsiveDialogFooter({
     return (
       <DrawerFooter
         className={cn(
-          'shrink-0 bg-muted/50 px-4 py-2',
+          'shrink-0 bg-muted/50 px-3 py-2',
           className,
-          'border-t-0',
+          'border-t',
         )}
       >
         {children}
@@ -200,7 +200,7 @@ export function ResponsiveDialogFooter({
 
   return (
     <DialogFooter
-      className={cn('shrink-0 bg-muted/50 px-4 py-2', className, 'border-t-0')}
+      className={cn('shrink-0 bg-muted/50 px-3 py-2', className, 'border-t')}
     >
       {children}
     </DialogFooter>

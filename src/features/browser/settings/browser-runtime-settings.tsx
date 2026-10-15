@@ -82,7 +82,7 @@ export function BrowserRuntimeSettings({
   }
 
   return (
-    <FieldGroup className="gap-5">
+    <FieldGroup className="gap-3">
       <SettingsGroup title="浏览器运行时">
         <SettingsFormRow
           label="Chrome 路径"

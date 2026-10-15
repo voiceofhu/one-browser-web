@@ -123,7 +123,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     setIsLoggingOut(true);
     try {
       const loginUrl = switchAccount
-        ? await prepareWebLoginUrl('/dashboard')
+        ? await prepareWebLoginUrl('/dashboard', true)
         : undefined;
       try {
         await logout();
@@ -145,7 +145,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         http.updateTokens(null);
         await queryClient.cancelQueries();
         queryClient.clear();
-        window.location.replace(loginUrl ?? '/login');
+        window.location.replace(loginUrl ?? '/login?prompt=select_account');
       }
     } catch (error) {
       toast.error(

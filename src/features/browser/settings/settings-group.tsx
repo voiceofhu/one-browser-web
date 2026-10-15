@@ -23,18 +23,18 @@ export function SettingsGroup({
   title: string;
 }) {
   return (
-    <FieldSet className="gap-1">
-      <FieldLegend className="mb-0 text-[12px] font-medium tracking-wide text-muted-foreground uppercase">
+    <FieldSet className="gap-1.5">
+      <FieldLegend className="mb-0 text-xs font-medium text-foreground">
         {title}
       </FieldLegend>
       {description ? (
-        <FieldDescription className="mb-1 text-[12px] leading-relaxed font-normal">
+        <FieldDescription className="mb-0 text-xs leading-relaxed font-normal">
           {description}
         </FieldDescription>
       ) : null}
       <FieldGroup
         className={cn(
-          'gap-0 overflow-hidden rounded-lg border bg-card',
+          'gap-0 overflow-hidden rounded-sm border bg-card',
           className,
         )}
       >
@@ -62,23 +62,23 @@ export function SettingsRow({
   return (
     <Field
       orientation="responsive"
-      className="items-center justify-between gap-4 px-3 py-2.5"
+      className="items-center justify-between gap-2 px-3 py-2 @md/field-group:gap-4"
     >
       <FieldContent className="min-w-0">
         <FieldLabel
           htmlFor={htmlFor}
           id={labelId}
-          className="text-[14px] leading-none font-normal"
+          className="text-[13px] leading-snug font-medium"
         >
           {label}
         </FieldLabel>
-        <FieldDescription className="mt-0.5 text-[12px] leading-relaxed font-normal">
+        <FieldDescription className="mt-0.5 text-xs leading-relaxed font-normal break-words">
           {description}
         </FieldDescription>
       </FieldContent>
       <div
         className={cn(
-          'flex w-full shrink-0 items-center justify-start @md/field-group:w-auto @md/field-group:justify-end',
+          'flex min-w-0 w-full shrink-0 items-center justify-start @md/field-group:w-auto @md/field-group:justify-end [&>button]:rounded-sm [&>button]:shadow-none',
           controlClassName,
         )}
       >
@@ -102,20 +102,20 @@ export function SettingsFormRow({
   return (
     <Field
       orientation="responsive"
-      className="items-center justify-between gap-4 px-3 py-2.5"
+      className="items-center justify-between gap-2 px-3 py-2 @md/field-group:gap-4"
     >
       <FieldContent className="min-w-0">
         <FieldLabel
           htmlFor={htmlFor}
-          className="text-[14px] leading-none font-normal"
+          className="text-[13px] leading-snug font-medium"
         >
           {label}
         </FieldLabel>
-        <FieldDescription className="mt-0.5 text-[12px] leading-relaxed font-normal">
+        <FieldDescription className="mt-0.5 text-xs leading-relaxed font-normal break-words">
           {description}
         </FieldDescription>
       </FieldContent>
-      <div className="flex w-full shrink-0 items-center @md/field-group:w-72">
+      <div className="flex min-w-0 w-full shrink-0 items-center @md/field-group:w-64 @lg/field-group:w-80 [&_[data-slot=input-group]]:rounded-sm [&_input]:shadow-none">
         {children}
       </div>
     </Field>
@@ -123,5 +123,5 @@ export function SettingsFormRow({
 }
 
 export function SettingsDivider() {
-  return <Separator className="mx-3 w-auto" />;
+  return <Separator className="w-full" />;
 }

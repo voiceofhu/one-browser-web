@@ -75,7 +75,7 @@ export function TablePagination({
   return (
     <div
       ref={containerRef}
-      className="bg-card/95 flex min-h-11 shrink-0 flex-wrap items-center justify-between gap-2 border-t px-3 py-1.5 backdrop-blur-xl lg:px-4"
+      className="bg-card flex min-h-9 shrink-0 flex-wrap items-center justify-between gap-1.5 border-t px-2.5 py-1"
     >
       <div className="text-muted-foreground flex min-w-0 items-center gap-2 text-xs">
         <span className="shrink-0 tabular-nums">

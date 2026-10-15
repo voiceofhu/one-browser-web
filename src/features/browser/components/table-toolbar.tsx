@@ -1,8 +1,12 @@
-import {
-  AnimatedSegmentedTabs,
-  type AnimatedSegmentedTabsOption,
-} from '@/components/ui/animated-segmented-tabs';
+import type { AnimatedSegmentedTabsOption } from '@/components/ui/animated-segmented-tabs';
 import { RefreshButton } from '@/components/refresh-button';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import {
   InputGroup,
   InputGroupAddon,
@@ -31,11 +35,11 @@ export function BrowserTableToolbar({
   actions,
 }: BrowserTableToolbarProps) {
   return (
-    <div className="bg-muted/40 flex shrink-0 flex-col gap-1.5 border-b px-3 py-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between lg:px-4">
-      <div className="flex min-w-0 flex-col gap-1.5 sm:flex-row sm:flex-wrap sm:items-center">
+    <div className="bg-muted/20 flex shrink-0 flex-col gap-2 border-b px-3 py-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+      <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
         {filters}
       </div>
-      <div className="flex min-w-0 flex-wrap items-center justify-start gap-1.5 sm:ml-auto sm:justify-end">
+      <div className="flex min-w-0 flex-wrap items-center justify-start gap-1.5 border-t pt-2 sm:ml-auto sm:justify-end sm:border-t-0 sm:border-l sm:pt-0 sm:pl-2 [&_button]:rounded-sm [&_button]:shadow-none">
         {actions}
       </div>
     </div>
@@ -56,15 +60,41 @@ export function BrowserTableFilterTabs<TValue extends string>({
   onValueChange,
 }: BrowserTableFilterTabsProps<TValue>) {
   return (
-    <AnimatedSegmentedTabs
-      label={label}
-      options={options}
+    <Tabs
+      className="max-w-full shrink-0 gap-0 overflow-x-auto"
       value={value}
-      listClassName="h-6 rounded-md p-0.5"
-      triggerClassName="rounded-sm px-2 text-xs"
-      highlightClassName="rounded-sm"
-      onValueChange={onValueChange}
-    />
+      onValueChange={(nextValue) => {
+        const option = options.find((item) => item.value === nextValue);
+        if (option) onValueChange(option.value);
+      }}
+    >
+      <TabsList
+        aria-label={label}
+        className="h-8 rounded-sm border bg-background p-0.5 sm:h-7"
+      >
+        <TooltipProvider>
+          {options.map((option) => {
+            const trigger = (
+              <TabsTrigger
+                key={option.value}
+                value={option.value}
+                disabled={option.disabled}
+                className="rounded-[2px] px-2.5 text-xs font-normal shadow-none data-active:bg-muted data-active:font-medium"
+              >
+                {option.label}
+              </TabsTrigger>
+            );
+
+            return option.tooltip ? (
+              <Tooltip key={option.value}>
+                <TooltipTrigger asChild>{trigger}</TooltipTrigger>
+                <TooltipContent>{option.tooltip}</TooltipContent>
+              </Tooltip>
+            ) : trigger;
+          })}
+        </TooltipProvider>
+      </TabsList>
+    </Tabs>
   );
 }
 
@@ -84,7 +114,7 @@ export function BrowserTableSearchField({
   onValueChange,
 }: BrowserTableSearchFieldProps) {
   return (
-    <InputGroup className={cn('h-9 sm:h-6', className)}>
+    <InputGroup className={cn('h-9 w-full max-w-64 rounded-sm bg-background shadow-none sm:h-7 sm:w-56 sm:flex-none', className)}>
       <InputGroupAddon className="h-full py-0">
         <HugeiconsIcon icon={Search01Icon} strokeWidth={2} />
       </InputGroupAddon>

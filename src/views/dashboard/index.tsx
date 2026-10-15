@@ -1,5 +1,6 @@
 import { RefreshButton } from '@/components/refresh-button';
 import { LoadingState } from '@/components/loading-state';
+import { Button } from '@/components/ui/button';
 import {
   Empty,
   EmptyDescription,
@@ -84,28 +85,31 @@ export default function DashboardOverviewPage() {
   );
 
   return (
-    <section className="bg-muted flex min-h-0 flex-1 flex-col overflow-auto">
-      <div className="mx-auto flex w-full max-w-[96rem] flex-col gap-3 p-3 lg:p-4">
-        <div className="flex items-center justify-end gap-2 px-1">
-          {data ? (
-            <span
-              className="text-muted-foreground text-xs"
-              title={formatDateTimeTitle(data.generated_at)}
-            >
-              更新于 {formatDisplayDateTime(data.generated_at)}
-            </span>
-          ) : null}
-          <RefreshButton
-            size="sm"
-            variant="outline"
-            isRefreshing={query.isFetching}
-            onRefresh={query.refetch}
-            successMessage="工作台已刷新"
-          />
+    <section className="bg-muted/30 flex min-h-0 flex-1 flex-col overflow-auto">
+      <div className="mx-auto flex w-full max-w-[96rem] flex-col gap-2 p-2 sm:p-3">
+        <div className="bg-card flex min-h-9 flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-sm border px-2.5 py-1">
+          <h1 className="text-sm font-semibold">工作台</h1>
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            {data ? (
+              <span
+                className="text-muted-foreground text-[0.6875rem]"
+                title={formatDateTimeTitle(data.generated_at)}
+              >
+                更新于 {formatDisplayDateTime(data.generated_at)}
+              </span>
+            ) : null}
+            <RefreshButton
+              size="sm"
+              variant="outline"
+              isRefreshing={query.isFetching}
+              onRefresh={query.refetch}
+              successMessage="工作台已刷新"
+            />
+          </div>
         </div>
 
         {!query.isLoading && visibleMetrics.length ? (
-          <div className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-6">
+          <div className="bg-border grid grid-cols-2 gap-px overflow-hidden rounded-sm border md:grid-cols-3 xl:grid-cols-6">
             {visibleMetrics.map((metric) => (
               <MetricCard key={metric.key} metric={metric} />
             ))}
@@ -114,11 +118,11 @@ export default function DashboardOverviewPage() {
 
         {query.isLoading ? (
           <LoadingState
-            className="bg-card min-h-64 rounded-xl"
+            className="bg-card min-h-48 rounded-sm border"
             label="工作台加载中..."
           />
         ) : query.isError ? (
-          <Empty className="bg-card min-h-64 border-0">
+          <Empty className="bg-card min-h-48 rounded-sm border">
             <EmptyHeader>
               <EmptyTitle>Dashboard 加载失败</EmptyTitle>
               <EmptyDescription>{query.error.message}</EmptyDescription>
@@ -127,7 +131,7 @@ export default function DashboardOverviewPage() {
         ) : data ? (
           <>
             {hasChartScope ? (
-              <div className="grid gap-3 lg:grid-cols-2">
+              <div className="grid gap-2 lg:grid-cols-2">
                 {resourceData.length ? (
                   <ResourceDistributionChart
                     data={resourceData}
@@ -148,31 +152,34 @@ export default function DashboardOverviewPage() {
             ) : null}
 
             {quickLinks.length ? (
-              <section className="flex flex-col gap-2">
-                <h2 className="px-1 text-sm font-semibold">快捷入口</h2>
-                <div className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              <section className="bg-card overflow-hidden rounded-sm border">
+                <h2 className="bg-muted/30 border-b px-2.5 py-1.5 text-xs font-semibold">
+                  快捷入口
+                </h2>
+                <div className="bg-border grid gap-px sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   {quickLinks.map((item) => (
-                    <Link
+                    <Button
+                      asChild
                       key={item.href}
-                      to={item.href}
-                      className="group bg-card hover:bg-primary/5 flex min-w-0 items-center gap-2 rounded-lg px-2.5 py-1.5 transition-colors"
+                      variant="ghost"
+                      className="bg-card h-8 min-w-0 justify-start gap-2 rounded-none px-2.5"
                     >
-                      <div className="bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground flex size-6 shrink-0 items-center justify-center rounded-md transition-colors">
+                      <Link to={item.href}>
                         <HugeiconsIcon
                           icon={item.icon}
                           strokeWidth={2}
-                          className="size-3.5"
+                          className="text-muted-foreground size-3.5"
                         />
-                      </div>
-                      <span className="min-w-0 flex-1 truncate text-xs font-medium">
-                        {item.title}
-                      </span>
-                      <HugeiconsIcon
-                        icon={ArrowRight01Icon}
-                        strokeWidth={2}
-                        className="text-muted-foreground group-hover:text-primary size-3.5 shrink-0 transition-transform group-hover:translate-x-0.5"
-                      />
-                    </Link>
+                        <span className="min-w-0 flex-1 truncate text-xs font-medium">
+                          {item.title}
+                        </span>
+                        <HugeiconsIcon
+                          icon={ArrowRight01Icon}
+                          strokeWidth={2}
+                          className="text-muted-foreground size-3 shrink-0"
+                        />
+                      </Link>
+                    </Button>
                   ))}
                 </div>
               </section>
@@ -189,27 +196,32 @@ function MetricCard({ metric }: { metric: DashboardMetric }) {
     METRIC_ICONS[metric.key as keyof typeof METRIC_ICONS] ??
     DashboardSquare01Icon;
   return (
-    <Link
-      to={metric.href}
-      className="group bg-card flex min-w-0 items-center gap-2.5 rounded-xl px-3 py-2 transition-transform hover:-translate-y-0.5"
+    <Button
+      asChild
+      variant="ghost"
+      className="bg-card h-auto min-w-0 justify-start gap-2 rounded-none px-2.5 py-2 text-left whitespace-normal"
     >
-      <div className="bg-primary/10 text-primary flex size-8 shrink-0 items-center justify-center rounded-lg">
-        <HugeiconsIcon icon={Icon} strokeWidth={2} className="size-4" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-baseline justify-between gap-2">
-          <p className="text-muted-foreground truncate text-xs">
-            {metric.title}
-          </p>
-          <p className="shrink-0 text-lg leading-6 font-semibold tabular-nums">
-            {metric.value}
+      <Link to={metric.href}>
+        <HugeiconsIcon
+          icon={Icon}
+          strokeWidth={2}
+          className="text-muted-foreground size-4"
+        />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-baseline justify-between gap-2">
+            <p className="text-muted-foreground truncate text-xs">
+              {metric.title}
+            </p>
+            <p className="shrink-0 text-lg leading-6 font-semibold tabular-nums">
+              {metric.value}
+            </p>
+          </div>
+          <p className="text-muted-foreground truncate text-[0.6875rem] font-normal">
+            {metric.secondary_label} {metric.secondary_value}
           </p>
         </div>
-        <p className="text-muted-foreground/80 truncate text-[0.6875rem]">
-          {metric.secondary_label} {metric.secondary_value}
-        </p>
-      </div>
-    </Link>
+      </Link>
+    </Button>
   );
 }
 

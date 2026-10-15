@@ -37,7 +37,7 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
   );
   useRuntimeEvents(queryClient);
   useRuntimeSupervisor();
-  useAuthRuntimeCleanup();
+  useAuthRuntimeCleanup(queryClient);
   useChromiumAutoUpdate(queryClient);
 
   return (

@@ -244,6 +244,22 @@ export class HttpClient {
     return this.request<T>(url, { ...options, method: 'POST', data: formData });
   }
 
+  async refreshSession() {
+    const generation = getAuthSessionGeneration();
+    try {
+      await this.refreshAuthTokens();
+    } catch (error) {
+      if (
+        error instanceof HttpError &&
+        isUnauthorizedError(error) &&
+        generation === getAuthSessionGeneration()
+      ) {
+        this.expireAuthSession(error.message, '/auth/refresh');
+      }
+      throw error;
+    }
+  }
+
   private async sendRequest<T>(url: string, options: RequestOptions) {
     const { params, data, ...fetchOptions } = options;
     const fullURL = buildRequestUrl(this.baseURL, url, params);
@@ -341,6 +357,7 @@ export class HttpClient {
       isTauri: isTauriRuntime(),
       hasExistingPromise: Boolean(this.refreshTokensPromise),
     });
+    const generation = getAuthSessionGeneration();
     this.refreshTokensPromise = desktopInvoke<{
       accessToken: string;
       expiresIn: number;
@@ -348,6 +365,9 @@ export class HttpClient {
       receivedAt: number;
     }>('refresh_desktop_auth_session')
       .then((snapshot) => {
+        if (generation !== getAuthSessionGeneration()) {
+          throw new Error('登录状态已更新，请重试');
+        }
         this.updateTokens(
           {
             accessToken: snapshot.accessToken,
@@ -361,6 +381,9 @@ export class HttpClient {
         );
       })
       .catch((error: unknown) => {
+        if (generation !== getAuthSessionGeneration()) {
+          throw new Error('登录状态已更新，请重试');
+        }
         if (
           error instanceof DesktopApiError &&
           (error.code === 40401 || error.code === 40901)
@@ -422,7 +445,7 @@ export class HttpClient {
     ) {
       markAuthExpiredNotice(notice);
     }
-    notifyAuthSessionExpired(notice);
     this.updateTokens(null);
+    notifyAuthSessionExpired(notice);
   }
 }

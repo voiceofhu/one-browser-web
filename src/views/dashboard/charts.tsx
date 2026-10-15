@@ -59,7 +59,7 @@ export function ResourceDistributionChart({
             value: item.value,
             itemStyle: {
               color: palette.primary,
-              borderRadius: 4,
+              borderRadius: 0,
             },
           })),
           barMaxWidth: 24,
@@ -76,7 +76,7 @@ export function ResourceDistributionChart({
     <ChartCard title="资源规模">
       <EChartsChart
         option={option}
-        className="h-52 w-full cursor-pointer"
+        className="h-44 w-full cursor-pointer"
         onItemClick={(label) => {
           const href = hrefByLabel.get(label);
           if (href) onNavigate(href);
@@ -118,7 +118,7 @@ export function StatusPieChart({
 
   return (
     <ChartCard title={title}>
-      <EChartsChart option={option} className="h-52 w-full" />
+      <EChartsChart option={option} className="h-44 w-full" />
     </ChartCard>
   );
 }
@@ -174,7 +174,7 @@ export function ActivityChart({ data }: { data: DashboardActivityPoint[] }) {
 
   return (
     <ChartCard title="最近 7 天新增趋势" className="lg:col-span-2">
-      <EChartsChart option={option} className="h-56 w-full" />
+      <EChartsChart option={option} className="h-48 w-full" />
     </ChartCard>
   );
 }
@@ -191,12 +191,17 @@ function ChartCard({
   return (
     <Card
       size="sm"
-      className={cn('bg-card border-0 shadow-none ring-0', className)}
+      className={cn(
+        'bg-card rounded-sm border shadow-none ring-0 data-[size=sm]:gap-0 data-[size=sm]:py-0',
+        className,
+      )}
     >
-      <CardHeader className="pb-0">
-        <CardTitle className="text-sm">{title}</CardTitle>
+      <CardHeader className="bg-muted/30 rounded-none border-b py-1.5 group-data-[size=sm]/card:px-2.5 group-data-[size=sm]/card:[.border-b]:pb-1.5">
+        <CardTitle className="text-xs font-semibold">{title}</CardTitle>
       </CardHeader>
-      <CardContent className="pt-1">{children}</CardContent>
+      <CardContent className="py-1 group-data-[size=sm]/card:px-2">
+        {children}
+      </CardContent>
     </Card>
   );
 }

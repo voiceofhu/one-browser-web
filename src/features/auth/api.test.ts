@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import { getWebLoginConfig } from './api';
+import { buildWebLoginUrl, getWebLoginConfig } from './api';
 import { isTauriRuntime } from '@/lib/desktop';
 
 vi.mock('@/lib/desktop', () => ({
@@ -47,4 +47,30 @@ it('rejects invalid App login configuration', () => {
     __ONE_BROWSER_CONFIG__: { webLoginUrl: 'https://browser.aicbe.com/wrong' },
   });
   expect(getWebLoginConfig().status).toBe('invalid');
+});
+
+it('reuses the One User session for ordinary Web login', () => {
+  vi.mocked(isTauriRuntime).mockReturnValue(false);
+  vi.stubGlobal('window', { location: { origin: 'https://browser.example' } });
+  const url = new URL(buildWebLoginUrl('/dashboard'));
+  expect(url.searchParams.get('return_to')).toBe('/dashboard');
+  expect(url.searchParams.has('prompt')).toBe(false);
+});
+
+it('requests account selection only for an explicit Web account change', () => {
+  vi.mocked(isTauriRuntime).mockReturnValue(false);
+  vi.stubGlobal('window', { location: { origin: 'https://browser.example' } });
+  const url = new URL(buildWebLoginUrl('/dashboard', true));
+  expect(url.searchParams.get('prompt')).toBe('select_account');
+});
+
+it('preserves the desktop return path for desktop login', () => {
+  vi.mocked(isTauriRuntime).mockReturnValue(true);
+  vi.stubGlobal('window', {
+    __ONE_BROWSER_CONFIG__: {
+      webLoginUrl: 'https://browser.example/api/auth/oidc/start',
+    },
+  });
+  const url = new URL(buildWebLoginUrl());
+  expect(url.searchParams.get('return_to')).toBe('/callback?desktop=1');
 });

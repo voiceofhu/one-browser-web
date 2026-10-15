@@ -179,6 +179,8 @@ export function RemoteProxiesPage() {
       <RemoteTeamRequiredState
         isLoading={teamsQuery.isLoading}
         error={teamsQuery.error}
+        isRetrying={teamsQuery.isFetching}
+        onRetry={() => void teamsQuery.refetch()}
       />
     );
   }

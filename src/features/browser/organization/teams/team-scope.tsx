@@ -1,14 +1,21 @@
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { CopyButton } from '@/components/ui/copy-button';
 import {
   Empty,
+  EmptyContent,
   EmptyDescription,
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
 } from '@/components/ui/empty';
 import { Spinner } from '@/components/ui/spinner';
+import { resolveErrorState } from '@/views/error/error-state';
 import { ShieldUserIcon, UserGroupIcon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import * as React from 'react';
+import { Link } from 'react-router-dom';
 
 import type { RemoteTeamResource } from './types';
 
@@ -111,30 +118,54 @@ function writeStoredTeamId(value: number) {
 export function RemoteTeamRequiredState({
   isLoading,
   error,
+  isRetrying,
+  onRetry,
 }: {
   isLoading?: boolean;
   error?: unknown;
+  isRetrying?: boolean;
+  onRetry?: () => void;
 }) {
   if (isLoading) {
     return (
-      <div className="grid min-h-full place-items-center bg-card text-muted-foreground">
+      <div className="grid min-h-full place-items-center bg-card text-muted-foreground" role="status" aria-label="团队加载中">
         <Spinner />
       </div>
     );
   }
 
   if (error) {
+    const state = resolveErrorState(error);
+
     return (
-      <Empty className="min-h-full">
+      <Empty className="min-h-full gap-3 rounded-none p-4" role="alert">
         <EmptyHeader>
           <EmptyMedia variant="icon">
             <HugeiconsIcon icon={UserGroupIcon} strokeWidth={2} />
           </EmptyMedia>
-          <EmptyTitle>无法读取团队</EmptyTitle>
-          <EmptyDescription>
-            {error instanceof Error ? error.message : '请稍后重试。'}
-          </EmptyDescription>
+          <Badge variant="outline" className="font-mono">{state.code}</Badge>
+          <EmptyTitle>团队：{state.title}</EmptyTitle>
+          <EmptyDescription>{state.description}</EmptyDescription>
         </EmptyHeader>
+        <EmptyContent>
+          <Alert className="rounded-sm">
+            <AlertDescription>{state.hint}</AlertDescription>
+          </Alert>
+          <div className="flex flex-wrap justify-center gap-2">
+            {onRetry ? (
+              <Button type="button" size="sm" variant="outline" disabled={isRetrying} onClick={onRetry}>
+                {isRetrying ? '重试中' : '重新加载'}
+              </Button>
+            ) : null}
+            <CopyButton
+              size="sm"
+              variant="ghost"
+              text={`${state.code}\n${state.title}\n${state.description}\n${state.hint}`}
+            >
+              复制错误
+            </CopyButton>
+          </div>
+        </EmptyContent>
       </Empty>
     );
   }
@@ -167,9 +198,15 @@ export function RemotePermissionRequiredState({
         <EmptyMedia variant="icon">
           <HugeiconsIcon icon={ShieldUserIcon} strokeWidth={2} />
         </EmptyMedia>
+        <Badge variant="outline" className="font-mono">403</Badge>
         <EmptyTitle>{title}</EmptyTitle>
         <EmptyDescription>{description}</EmptyDescription>
       </EmptyHeader>
+      <EmptyContent>
+        <Button asChild size="sm" variant="outline">
+          <Link to="/">返回首页</Link>
+        </Button>
+      </EmptyContent>
     </Empty>
   );
 }

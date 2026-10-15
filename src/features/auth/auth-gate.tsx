@@ -17,10 +17,12 @@ import {
 } from '@/features/auth/use-app-window-size';
 import { useAuthDeepLinks } from '@/features/auth/use-auth-deep-links';
 import { sessionEstablished } from '@/features/auth/login-redirect-guard';
+import { startAuthSessionRenewal } from '@/features/auth/session-renewal';
 import { isTauriRuntime } from '@/lib/desktop';
 import { expireStoredAuthSession } from '@/lib/http';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as React from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
 
 interface AuthContextValue {
   user: CurrentUser;
@@ -28,12 +30,6 @@ interface AuthContextValue {
 }
 
 const AuthContext = React.createContext<AuthContextValue | null>(null);
-const LoginPage = React.lazy(() =>
-  import('@/features/auth/login-page').then((module) => ({
-    default: module.LoginPage,
-  })),
-);
-
 export function useAuth() {
   const value = React.useContext(AuthContext);
   if (!value) {
@@ -44,6 +40,7 @@ export function useAuth() {
 
 export function AuthGate({ children }: React.PropsWithChildren) {
   const queryClient = useQueryClient();
+  const location = useLocation();
   const isDesktop = isTauriRuntime();
   const [authReady, setAuthReady] = React.useState(false);
   const [authSessionError, setAuthSessionError] = React.useState<string | null>(
@@ -145,6 +142,10 @@ export function AuthGate({ children }: React.PropsWithChildren) {
   React.useEffect(() => {
     if (hasWorkspace) sessionEstablished();
   }, [hasWorkspace]);
+  React.useEffect(() => {
+    if (!hasWorkspace || shouldLogin) return;
+    return startAuthSessionRenewal();
+  }, [hasWorkspace, shouldLogin]);
 
   const retryAuth = React.useCallback(() => {
     setAuthSessionError(null);
@@ -183,13 +184,21 @@ export function AuthGate({ children }: React.PropsWithChildren) {
       />
     );
   }
-  if (shouldLogin) return <LoginPage authManaged />;
+  if (shouldLogin) {
+    return (
+      <Navigate
+        to={`/login?redirect=${encodeURIComponent(location.pathname + location.search)}`}
+        replace
+      />
+    );
+  }
   if (authError && !unauthorized) {
     return (
       <AuthGateStatus
         tone="error"
         title="无法连接有个浏览器服务"
         message={authErrorMessage ?? '请检查网络后重试。'}
+        error={authError}
         busy={currentUser.isFetching || permissions.isFetching}
         onRetry={retryAuth}
         onLogin={goLogin}

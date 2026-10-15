@@ -62,7 +62,7 @@
 
 :root {
   --app-radius: 0.6rem;
-  --dialog-radius: 1rem;
+  --dialog-radius: 0.375rem;
   --theme-color-default: oklch(0.5645 0.163 253.27);
   --theme-color-default-foreground: oklch(0.985 0 0);
   --theme-color-zinc: oklch(0.37 0.013 285.81);
@@ -114,7 +114,7 @@
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --radius: 0.5rem;
+  --radius: 0.25rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: var(--theme-primary);
@@ -237,7 +237,7 @@ html.platform-other {
 
 :root[data-ui-radius='0.25'] {
   --radius: 0.25rem;
-  --dialog-radius: 0.5rem;
+  --dialog-radius: 0.375rem;
 }
 
 :root[data-ui-radius='0.5'] {

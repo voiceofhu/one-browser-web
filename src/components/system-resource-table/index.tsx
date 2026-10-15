@@ -157,18 +157,22 @@ export function SystemResourceTable({
       />
       <div className="min-h-0 flex-1 overflow-auto">
         {query.isLoading ? (
-          <ResourceTableLoading />
+          <ResourceTableLoading columnCount={table.getVisibleLeafColumns().length} />
         ) : query.isError ? (
-          <ResourceError error={query.error} />
+          <ResourceError
+            error={query.error}
+            isRetrying={query.isFetching}
+            onRetry={() => void query.refetch()}
+          />
         ) : table.getRowModel().rows.length === 0 ? (
           <ResourceEmpty />
         ) : (
-          <Table>
-            <TableHeader className="bg-muted/70 sticky top-0 z-10 backdrop-blur-xl">
+          <Table className="min-w-[640px]">
+            <TableHeader className="bg-muted sticky top-0 z-10">
               {table.getHeaderGroups().map((group) => (
                 <TableRow key={group.id}>
                   {group.headers.map((header) => (
-                    <TableHead key={header.id}>
+                    <TableHead key={header.id} className="h-8">
                       {flexRender(
                         header.column.columnDef.header,
                         header.getContext(),
@@ -182,7 +186,7 @@ export function SystemResourceTable({
               {table.getRowModel().rows.map((row) => (
                 <TableRow key={row.id}>
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell key={cell.id} className="h-10 py-1.5">
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext(),

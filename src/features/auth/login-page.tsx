@@ -162,6 +162,7 @@ export function LoginPage({ authManaged = false }: LoginPageProps) {
   const canOpenLogin = !isDesktop || loginConfig.status === 'ready';
   const loginConfigMessage = localizedLoginConfigMessage(loginConfig, copy);
   const redirectTo = searchParams.get('redirect');
+  const selectAccount = searchParams.get('prompt') === 'select_account';
   const safeRedirectTo = React.useMemo(
     () => normalizeAppRedirect(redirectTo),
     [redirectTo],
@@ -247,7 +248,7 @@ export function LoginPage({ authManaged = false }: LoginPageProps) {
   React.useEffect(() => {
     if (!sessionChecked || !autoLogin) return;
     markLoginRedirect();
-    prepareWebLoginUrl(currentBrowserReturnTo())
+    prepareWebLoginUrl(currentBrowserReturnTo(), selectAccount)
       .then((loginUrl) => window.location.replace(loginUrl))
       .catch((error: unknown) => {
         setAutoLoginAllowed(false);
@@ -255,7 +256,7 @@ export function LoginPage({ authManaged = false }: LoginPageProps) {
           error instanceof Error ? error.message : copy.openLoginError,
         );
       });
-  }, [autoLogin, copy.openLoginError, sessionChecked]);
+  }, [autoLogin, copy.openLoginError, selectAccount, sessionChecked]);
 
   if (!sessionChecked || autoLogin) {
     return null;
@@ -269,7 +270,10 @@ export function LoginPage({ authManaged = false }: LoginPageProps) {
 
     setOpening(true);
     try {
-      const loginUrl = await prepareWebLoginUrl(currentBrowserReturnTo());
+      const loginUrl = await prepareWebLoginUrl(
+        currentBrowserReturnTo(),
+        selectAccount,
+      );
       if (isDesktop) {
         await desktopInvoke('open_external_url', {
           request: { url: loginUrl },

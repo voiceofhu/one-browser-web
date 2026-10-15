@@ -42,7 +42,7 @@ export function LocalApiSettings({ settings }: { settings: AppSettings }) {
   }
 
   return (
-    <FieldGroup className="gap-5">
+    <FieldGroup className="gap-3">
       <SettingsGroup title="服务">
         <SettingsRow
           label="启用服务"

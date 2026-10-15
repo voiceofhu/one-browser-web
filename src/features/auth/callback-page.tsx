@@ -1,5 +1,8 @@
 import { AppImage } from '@/components/app-image';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { CopyButton } from '@/components/ui/copy-button';
 import { SweepShine } from '@/components/ui/sweep-shine';
 import {
   authorizeDesktopHandoff,
@@ -8,11 +11,13 @@ import {
   getCurrentUser,
 } from '@/features/auth/api';
 import { requestDownloadPrompt } from '@/features/app-download/session';
+import { resolveErrorState } from '@/views/error/error-state';
 import { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 type CallbackState =
   | { status: 'loading'; message: string }
-  | { status: 'error'; message: string };
+  | { status: 'error'; message: string; error?: unknown };
 
 export function CallbackPage() {
   const started = useRef(false);
@@ -72,6 +77,7 @@ export function CallbackPage() {
       .catch((callbackError: unknown) => {
         setCallbackState({
           status: 'error',
+          error: callbackError,
           message:
             callbackError instanceof Error
               ? callbackError.message
@@ -80,45 +86,83 @@ export function CallbackPage() {
       });
   }, []);
 
+  if (callbackState.status === 'error') {
+    const errorState = resolveErrorState(
+      callbackState.error ?? new Error(callbackState.message),
+    );
+    const originalCode =
+      typeof callbackState.error === 'object' && callbackState.error !== null && 'code' in callbackState.error
+        ? callbackState.error.code
+        : undefined;
+    const diagnostic = [
+      errorState.code,
+      typeof originalCode === 'string' || typeof originalCode === 'number'
+        ? `Code: ${originalCode}`
+        : '',
+      callbackState.message,
+    ].filter(Boolean).join('\n');
+
+    return (
+      <main className="bg-muted text-foreground flex h-dvh min-w-0 overflow-y-auto px-4 py-6">
+        <section className="bg-card m-auto w-full max-w-sm overflow-hidden rounded-sm border">
+          <header className="bg-muted/40 flex items-center justify-between gap-2 border-b px-3 py-2">
+            <span className="text-xs font-medium">One Browser</span>
+            <Badge variant="outline" className="font-mono">
+              {errorState.code}
+            </Badge>
+          </header>
+          <div className="space-y-3 p-3">
+            <Alert className="border-0 bg-transparent p-0">
+              <AlertTitle>
+                <h1 className="text-sm font-semibold">
+                  {errorState.kind === 'unknown' ? '授权未完成' : errorState.title}
+                </h1>
+              </AlertTitle>
+              <AlertDescription>
+                {errorState.kind === 'unknown'
+                  ? '本次登录授权未能完成，请重新登录。'
+                  : errorState.description}
+              </AlertDescription>
+            </Alert>
+            <pre className="bg-muted/40 max-h-40 overflow-auto rounded-sm border px-2.5 py-2 font-mono text-xs/5 whitespace-pre-wrap break-words">
+              {callbackState.message}
+            </pre>
+            <CopyButton text={diagnostic} variant="ghost" size="sm">
+              复制错误详情
+            </CopyButton>
+          </div>
+          <footer className="bg-muted/40 flex flex-wrap gap-2 border-t px-3 py-2">
+            <Button onClick={() => window.location.assign(buildWebLoginUrl('/'))}>
+              重新登录
+            </Button>
+            <Button asChild variant="outline">
+              <Link to="/">返回首页</Link>
+            </Button>
+          </footer>
+        </section>
+      </main>
+    );
+  }
+
   return (
-    <main className="bg-background text-foreground grid min-h-dvh place-items-center border-0 px-5 py-12">
+    <main className="bg-background text-foreground grid h-dvh place-items-center overflow-y-auto border-0 px-4 py-6">
       <section className="flex w-full max-w-sm flex-col items-center text-center">
         <AppImage
           src="/pwa-512x512.png"
           alt="有个浏览器"
-          width={72}
-          height={72}
-          className="size-18 rounded-[1.25rem]"
+          width={48}
+          height={48}
+          className="size-12 object-contain"
           priority
         />
-        {callbackState.status === 'loading' ? (
-          <SweepShine asChild>
-            <h1 className="mt-7 text-xl font-semibold tracking-tight">
-              正在完成授权
-            </h1>
-          </SweepShine>
-        ) : (
-          <h1 className="mt-7 text-xl font-semibold tracking-tight">
-            授权未完成
+        <SweepShine asChild>
+          <h1 className="mt-4 text-sm font-semibold">
+            正在完成授权
           </h1>
-        )}
-        <p
-          className={
-            callbackState.status === 'error'
-              ? 'text-destructive mt-3 text-sm/6'
-              : 'text-muted-foreground mt-3 text-sm/6'
-          }
-        >
+        </SweepShine>
+        <p className="text-muted-foreground mt-2 text-xs/5" role="status">
           {callbackState.message}
         </p>
-        {callbackState.status === 'error' ? (
-          <Button
-            className="mt-7"
-            onClick={() => window.location.assign(buildWebLoginUrl('/'))}
-          >
-            重新登录
-          </Button>
-        ) : null}
       </section>
     </main>
   );

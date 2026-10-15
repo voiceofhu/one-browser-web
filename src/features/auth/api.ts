@@ -122,7 +122,7 @@ export function getWebLoginConfig(): WebLoginConfig {
   }
 }
 
-export function buildWebLoginUrl(returnTo?: string) {
+export function buildWebLoginUrl(returnTo?: string, selectAccount = false) {
   if (!isTauriRuntime()) {
     const origin =
       typeof window === 'undefined'
@@ -130,6 +130,7 @@ export function buildWebLoginUrl(returnTo?: string) {
         : window.location.origin;
     const url = new URL(OIDC_START_PATH, origin);
     url.searchParams.set('return_to', normalizeBrowserReturnTo(returnTo));
+    if (selectAccount) url.searchParams.set('prompt', 'select_account');
     return typeof window === 'undefined'
       ? `${url.pathname}${url.search}`
       : url.toString();
@@ -146,8 +147,11 @@ export function buildWebLoginUrl(returnTo?: string) {
   return url.toString();
 }
 
-export async function prepareWebLoginUrl(returnTo?: string) {
-  return buildWebLoginUrl(returnTo);
+export async function prepareWebLoginUrl(
+  returnTo?: string,
+  selectAccount = false,
+) {
+  return buildWebLoginUrl(returnTo, selectAccount);
 }
 
 function normalizeBrowserReturnTo(value?: string) {

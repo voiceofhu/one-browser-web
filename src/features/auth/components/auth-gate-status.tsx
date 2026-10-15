@@ -1,9 +1,13 @@
 import { ThemeToggleButton } from '@/components/theme/theme-toggle-button';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { CopyButton } from '@/components/ui/copy-button';
+import { Separator } from '@/components/ui/separator';
 import { getWebLoginConfig, prepareWebLoginUrl } from '@/features/auth/api';
 import { isReducedMotionPreferred } from '@/features/auth/components/auth-motion';
 import { desktopInvoke, isTauriRuntime } from '@/lib/desktop';
+import { resolveErrorState } from '@/views/error/error-state';
 import {
   AlertCircleIcon,
   ArrowReloadVerticalIcon,
@@ -23,6 +27,7 @@ export type AuthGateStatusProps = {
   message: string;
   tone?: 'loading' | 'error';
   busy?: boolean;
+  error?: unknown;
   onRetry?: () => void;
   onLogin?: () => void;
 };
@@ -32,40 +37,27 @@ export function AuthGateStatus({
   message,
   tone = 'loading',
   busy = false,
+  error,
   onRetry,
   onLogin,
 }: AuthGateStatusProps) {
   const [openingLogin, setOpeningLogin] = React.useState(false);
   const loginConfig = React.useMemo(() => getWebLoginConfig(), []);
   const isLoading = tone === 'loading';
-  const errorPanelRef = React.useRef<HTMLDivElement>(null);
-
-  React.useLayoutEffect(() => {
-    if (isLoading) return;
-    const panel = errorPanelRef.current;
-    if (!panel) return;
-
-    gsap.killTweensOf(panel);
-    if (isReducedMotionPreferred()) {
-      gsap.set(panel, { autoAlpha: 1, y: 0, scale: 1 });
-      return;
-    }
-    const tween = gsap.fromTo(
-      panel,
-      { autoAlpha: 0, y: 10, scale: 0.99 },
-      {
-        autoAlpha: 1,
-        y: 0,
-        scale: 1,
-        duration: 0.48,
-        ease: 'power3.out',
-      },
-    );
-    return () => {
-      tween.kill();
-      gsap.killTweensOf(panel);
-    };
-  }, [isLoading, message, title]);
+  const errorState = resolveErrorState(error ?? new Error(message));
+  const errorTitle = errorState.kind === 'unknown' ? title : errorState.title;
+  const originalCode =
+    typeof error === 'object' && error !== null && 'code' in error
+      ? error.code
+      : undefined;
+  const diagnostic = [
+    errorState.code,
+    title,
+    typeof originalCode === 'string' || typeof originalCode === 'number'
+      ? `Code: ${originalCode}`
+      : '',
+    message,
+  ].filter(Boolean).join('\n');
 
   async function openWebLogin() {
     if (onLogin) {
@@ -100,78 +92,79 @@ export function AuthGateStatus({
 
   return (
     <main
-      className="border-border/60 bg-background text-foreground relative isolate grid min-h-dvh place-items-center overflow-hidden rounded-[var(--app-radius)] border px-6 py-10 shadow-2xl select-none"
+      className="bg-muted text-foreground relative flex h-dvh min-w-0 overflow-y-auto px-4 py-12"
       onMouseDown={(event) => void startWindowDrag(event)}
     >
-      <div className="bg-muted/20 absolute inset-0" />
       <ThemeToggleButton className="absolute top-3 right-3 z-20" />
       <section
-        ref={errorPanelRef}
-        className="relative z-10 flex w-full max-w-[23rem] flex-col items-center text-center"
+        className="relative m-auto flex w-full max-w-sm flex-col gap-3"
         aria-live="assertive"
       >
-        <div className="relative">
+        <header className="flex items-center gap-2">
           <Image
             src={APP_LOGO_SRC}
             alt="有个浏览器"
-            width={56}
-            height={56}
+            width={32}
+            height={32}
             priority
-            className="size-14 rounded-[1.1rem] shadow-sm select-none"
+            className="size-8 shrink-0 object-contain select-none"
             draggable={false}
           />
-          <span className="border-background bg-destructive text-destructive-foreground absolute -right-1 -bottom-1 grid size-5 place-items-center rounded-full border shadow-sm">
-            <HugeiconsIcon
-              icon={AlertCircleIcon}
-              strokeWidth={2.2}
-              className="size-3"
-              aria-hidden="true"
-            />
-          </span>
-        </div>
-        <p className="text-destructive mt-5 text-[0.625rem]/4 font-semibold tracking-[0.18em] uppercase">
-          连接失败
-        </p>
-        <h1 className="text-foreground mt-2 text-xl/7 font-semibold tracking-normal text-balance">
-          {title}
-        </h1>
-        <Card className="border-border/60 bg-card/85 mt-6 w-full py-0 text-left shadow-sm backdrop-blur-sm">
-          <CardContent className="flex flex-col gap-4 px-4 py-4">
-            <div>
-              <p className="text-muted-foreground text-[0.625rem]/4 font-medium tracking-[0.14em] uppercase">
-                错误原因
-              </p>
-              <p className="text-destructive mt-1 font-mono text-sm/5 font-semibold break-words">
-                {message}
-              </p>
-            </div>
-            <div className="bg-border/70 h-px" />
-            <div>
-              <p className="text-muted-foreground text-[0.625rem]/4 font-medium tracking-[0.14em] uppercase">
-                详情
-              </p>
-              <p className="text-muted-foreground mt-1 text-xs/5">
-                重试会重新同步账号、权限和工作区数据；如果仍然失败，重新登录刷新授权。
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-        <div className="mt-5 flex w-full flex-col gap-2">
-          <Button
-            className="w-full"
-            disabled={busy}
-            onClick={() => onRetry?.()}
+          <span className="flex-1 text-sm font-semibold">One Browser</span>
+          <Badge variant="outline" className="font-mono">
+            {errorState.code}
+          </Badge>
+        </header>
+        <Separator />
+        <Alert className="bg-background rounded-sm border px-3 py-2.5 shadow-none">
+          <HugeiconsIcon icon={AlertCircleIcon} strokeWidth={2} />
+          <AlertTitle>
+            <h1 className="text-sm font-semibold">{errorTitle}</h1>
+          </AlertTitle>
+          <AlertDescription className="text-xs/5">
+            {errorState.kind === 'unknown'
+              ? '登录状态或授权信息未能完成同步，请重试或重新登录。'
+              : errorState.description}
+          </AlertDescription>
+        </Alert>
+        <div className="min-w-0">
+          <div className="mb-1 flex items-center justify-between gap-2">
+            <p className="text-muted-foreground text-xs font-medium">错误详情</p>
+            <CopyButton
+              text={diagnostic}
+              variant="ghost"
+              size="sm"
+              aria-label="复制错误详情"
+            >
+              复制
+            </CopyButton>
+          </div>
+          <pre
+            data-no-window-drag
+            className="bg-background max-h-36 overflow-auto rounded-sm border px-2.5 py-2 font-mono text-xs/5 whitespace-pre-wrap break-words select-text"
           >
-            <HugeiconsIcon
-              icon={ArrowReloadVerticalIcon}
-              strokeWidth={2}
-              data-icon="inline-start"
-            />
-            {busy ? '正在重试...' : '重试连接'}
-          </Button>
+            {message}
+          </pre>
+        </div>
+        <p className="text-muted-foreground text-xs/5">
+          {errorState.kind === 'unknown'
+            ? '重试会重新同步账号、权限和工作区数据。'
+            : errorState.hint}
+        </p>
+        <div className="flex flex-wrap items-center gap-2 border-t pt-3">
+          {onRetry ? (
+            <Button disabled={busy} onClick={onRetry}>
+              <HugeiconsIcon
+                icon={ArrowReloadVerticalIcon}
+                strokeWidth={2}
+                data-icon="inline-start"
+              />
+              {busy ? '正在重试...' : '重试'}
+            </Button>
+          ) : null}
           <Button
             variant="outline"
-            className="bg-background/70 w-full"
+            className="bg-background"
             disabled={openingLogin}
             onClick={() => void openWebLogin()}
           >

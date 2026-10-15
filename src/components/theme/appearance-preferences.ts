@@ -26,7 +26,7 @@ export type AppearancePreferences = {
 };
 
 export const DEFAULT_APPEARANCE_PREFERENCES = {
-  radius: '0.5',
+  radius: '0.25',
   fontSize: 'default',
   contentLayout: 'full',
 } as const satisfies AppearancePreferences;

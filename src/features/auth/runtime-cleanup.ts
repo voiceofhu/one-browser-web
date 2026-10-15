@@ -4,17 +4,18 @@ import {
 } from '@/features/auth/session';
 import { closeAllProfiles } from '@/features/browser/runtime/api';
 import { isTauriRuntime } from '@/lib/desktop';
+import type { QueryClient } from '@tanstack/react-query';
 import * as React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 type AuthSessionExpiredPayload = {
   generation: number;
   message: string;
 };
 
-export function useAuthRuntimeCleanup() {
+export function useAuthRuntimeCleanup(queryClient: QueryClient) {
+  const navigate = useNavigate();
   React.useEffect(() => {
-    if (!isTauriRuntime()) return;
-
     let cleaningGeneration: number | null = null;
     let cleanupPromise: Promise<void> | null = null;
 
@@ -26,6 +27,11 @@ export function useAuthRuntimeCleanup() {
       if (cleaningGeneration === generation) return;
 
       cleaningGeneration = generation;
+      void queryClient.cancelQueries();
+      queryClient.clear();
+      void navigate('/login', { replace: true });
+      if (!isTauriRuntime()) return;
+
       const previousCleanup = cleanupPromise ?? Promise.resolve();
       const nextCleanup = previousCleanup
         .then(() => closeAllProfiles())
@@ -54,7 +60,7 @@ export function useAuthRuntimeCleanup() {
         handleAuthSessionExpired,
       );
     };
-  }, []);
+  }, [navigate, queryClient]);
 }
 
 function isAuthSessionExpiredPayload(

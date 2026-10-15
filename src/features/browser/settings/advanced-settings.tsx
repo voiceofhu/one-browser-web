@@ -43,7 +43,7 @@ export function AdvancedSettings() {
   }
 
   return (
-    <FieldGroup className="gap-5">
+    <FieldGroup className="gap-3">
       <NotificationSettings />
       <SettingsGroup title="诊断与维护">
         <SettingsRow
@@ -53,6 +53,7 @@ export function AdvancedSettings() {
           <Button
             type="button"
             variant="outline"
+            size="sm"
             className="min-w-24 px-2.5 text-[12px] font-medium"
             onClick={() => void openSystemLog()}
             disabled={openingLog}
@@ -77,6 +78,7 @@ export function AdvancedSettings() {
               <Button
                 type="button"
                 variant="outline"
+                size="sm"
                 className="min-w-24 px-2.5 text-[12px] font-medium"
               >
                 <HugeiconsIcon

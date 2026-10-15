@@ -12,9 +12,9 @@ import {
   useThemeColor,
 } from '@/components/theme';
 import { ThemeModeToggle } from '@/components/theme/theme-mode-toggle';
-import { AnimatedSegmentedTabs } from '@/components/ui/animated-segmented-tabs';
 import { Button } from '@/components/ui/button';
 import { FieldDescription, FieldGroup } from '@/components/ui/field';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select,
   SelectContent,
@@ -90,7 +90,7 @@ export function AppearanceSettings() {
 
   return (
     <div className="flex min-h-full flex-col">
-      <FieldGroup className="flex-1 gap-5">
+      <FieldGroup className="flex-1 gap-3 pb-3">
         <SettingsGroup title="语言">
           <SettingsRow
             label="界面语言"
@@ -151,15 +151,18 @@ export function AppearanceSettings() {
             description="界面元素的圆角大小"
             labelId="radius-label"
           >
-            <AnimatedSegmentedTabs
-              label="圆角"
-              options={RADIUS_TAB_ITEMS}
+            <Tabs
               value={radius}
               onValueChange={(value) => setRadius(value as AppearanceRadius)}
-              aria-labelledby="radius-label"
-              listClassName="h-6 rounded-md p-0.5"
-              triggerClassName="min-w-10 px-2 text-[12px] font-medium"
-            />
+            >
+              <TabsList aria-labelledby="radius-label" className="h-7 rounded-sm border bg-background p-0.5">
+                {RADIUS_TAB_ITEMS.map((item) => (
+                  <TabsTrigger key={item.value} value={item.value} className="min-w-8 rounded-[2px] px-2 font-normal shadow-none data-active:bg-muted">
+                    {item.label}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
           </SettingsRow>
         </SettingsGroup>
 
@@ -169,17 +172,20 @@ export function AppearanceSettings() {
             description="调整全局文字缩放"
             labelId="font-size-label"
           >
-            <AnimatedSegmentedTabs
-              label="字体大小"
-              options={FONT_SIZE_TAB_ITEMS}
+            <Tabs
               value={fontSize}
               onValueChange={(value) =>
                 setFontSize(value as AppearanceFontSize)
               }
-              aria-labelledby="font-size-label"
-              listClassName="h-6 rounded-md p-0.5"
-              triggerClassName="min-w-12 px-2 text-[12px] font-medium"
-            />
+            >
+              <TabsList aria-labelledby="font-size-label" className="h-7 rounded-sm border bg-background p-0.5">
+                {FONT_SIZE_TAB_ITEMS.map((item) => (
+                  <TabsTrigger key={item.value} value={item.value} className="min-w-10 rounded-[2px] px-2 font-normal shadow-none data-active:bg-muted">
+                    {item.label}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
           </SettingsRow>
 
           <SettingsDivider />
@@ -189,22 +195,25 @@ export function AppearanceSettings() {
             description="主内容区域的排布方式"
             labelId="content-layout-label"
           >
-            <AnimatedSegmentedTabs
-              label="内容布局"
-              options={CONTENT_LAYOUT_ITEMS}
+            <Tabs
               value={contentLayout}
               onValueChange={(value) =>
                 setContentLayout(value as ContentLayout)
               }
-              aria-labelledby="content-layout-label"
-              listClassName="h-6 rounded-md p-0.5"
-              triggerClassName="min-w-14 px-2 text-[12px] font-medium"
-            />
+            >
+              <TabsList aria-labelledby="content-layout-label" className="h-7 rounded-sm border bg-background p-0.5">
+                {CONTENT_LAYOUT_ITEMS.map((item) => (
+                  <TabsTrigger key={item.value} value={item.value} className="min-w-12 rounded-[2px] px-2 font-normal shadow-none data-active:bg-muted">
+                    {item.label}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
           </SettingsRow>
         </SettingsGroup>
       </FieldGroup>
 
-      <div className="-mx-4 -mb-4 mt-auto flex flex-wrap items-center justify-between gap-2 border-t bg-background px-4 py-3 md:-mx-6 md:-mb-5 md:px-6">
+      <div className="sticky bottom-0 -mx-3 -mb-3 mt-auto flex flex-wrap items-center justify-between gap-2 border-t bg-background px-3 py-2 md:-mx-4 md:px-4">
         <FieldDescription className="text-[12px] leading-relaxed font-normal">
           {isDefaultAppearance ? '当前为默认设置' : '设置已修改'}
         </FieldDescription>

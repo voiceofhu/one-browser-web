@@ -64,7 +64,7 @@ export function ResourceToolbar({
             />
           ) : null}
           <BrowserTableSearchField
-            className="w-full sm:w-72"
+            className="w-full sm:w-56"
             value={search}
             onValueChange={setSearch}
             placeholder={`搜索${title}`}
