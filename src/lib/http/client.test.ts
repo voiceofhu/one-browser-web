@@ -48,27 +48,17 @@ describe('session renewal', () => {
     vi.unstubAllGlobals();
   });
 
-  it('renews an expired browser access cookie and retries the business request', async () => {
-    vi.mocked(apiFetch)
-      .mockResolvedValueOnce(response(401))
-      .mockResolvedValueOnce(response(200, { refreshed: true }))
-      .mockResolvedValueOnce(response(200, { id: 1 }));
+  it('expires the browser session immediately when a business request returns 401', async () => {
+    vi.mocked(apiFetch).mockResolvedValueOnce(response(401));
     const client = new HttpClient({ baseURL: '/api' });
 
-    await expect(client.get('/system/user')).resolves.toMatchObject({
-      data: { id: 1 },
+    await expect(client.get('/system/user')).rejects.toMatchObject({
+      status: 401,
     });
     expect(vi.mocked(apiFetch).mock.calls.map(([url]) => url)).toEqual([
       '/api/system/user',
-      '/api/auth/refresh',
-      '/api/system/user',
     ]);
-    expect(apiFetch).toHaveBeenNthCalledWith(
-      2,
-      '/api/auth/refresh',
-      expect.objectContaining({ method: 'POST', credentials: 'same-origin' }),
-    );
-    expect(expired).not.toHaveBeenCalled();
+    expect(expired).toHaveBeenCalledTimes(1);
   });
 
   it('announces definitive expiry from a business request after clearing tokens', async () => {

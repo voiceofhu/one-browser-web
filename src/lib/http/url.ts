@@ -74,10 +74,6 @@ export function shouldRefreshAuth(url: string) {
   );
 }
 
-export function isRefreshRequest(url: string) {
-  return getUrlPath(url).endsWith('/auth/refresh');
-}
-
 export function shouldLogRequest(url: string, fullURL: string) {
   return getUrlPath(fullURL || url).includes('/auth/');
 }

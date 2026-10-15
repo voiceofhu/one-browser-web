@@ -304,22 +304,22 @@ export function LoginPage({ authManaged = false }: LoginPageProps) {
 
   if (!isDesktop) {
     return (
-      <main className="bg-muted text-foreground flex min-h-svh w-full items-center justify-center px-4 py-10">
+      <main className="bg-muted/40 text-foreground relative flex min-h-svh w-full items-center justify-center px-4 py-8">
         <LoginPageControls />
-        <div className="flex w-full max-w-md flex-col gap-4 text-left">
-          <section className="bg-card text-card-foreground flex flex-col rounded-2xl p-6 sm:p-7">
-            <div className="flex items-center gap-3">
+        <div className="flex w-full max-w-sm flex-col gap-3 text-left">
+          <section className="bg-card text-card-foreground flex flex-col rounded-xl p-5">
+            <div className="flex items-center gap-2.5">
               <Image
                 src={APP_LOGO_SRC}
                 alt={copy.appLogoAlt}
-                width={48}
-                height={48}
+                width={40}
+                height={40}
                 priority
-                className="size-12 rounded-xl select-none"
+                className="size-10 shrink-0 rounded-lg select-none"
                 draggable={false}
               />
               <div>
-                <h1 className="text-xl font-semibold tracking-tight">
+                <h1 className="text-base font-semibold tracking-tight">
                   One Browser
                 </h1>
                 <p className="text-muted-foreground mt-0.5 text-xs">
@@ -328,18 +328,21 @@ export function LoginPage({ authManaged = false }: LoginPageProps) {
               </div>
             </div>
 
-            <p className="text-muted-foreground mt-8 text-sm leading-6">
+            <p className="text-muted-foreground mt-4 text-xs leading-5">
               {copy.webDescription}
             </p>
             {authNotice || !canOpenLogin ? (
-              <Alert className="mt-4" aria-live="polite">
+              <Alert
+                className="bg-muted/60 mt-3 rounded-md border-0 px-2.5 py-2"
+                aria-live="polite"
+              >
                 <AlertDescription>
                   {authNotice || loginConfigMessage}
                 </AlertDescription>
               </Alert>
             ) : null}
             <Button
-              className="mt-5 h-11 min-w-32 self-end rounded-md px-5"
+              className="mt-4 h-8 w-full rounded-md px-3"
               disabled={opening}
               onClick={() => void openWebLogin()}
               size="lg"
@@ -348,14 +351,14 @@ export function LoginPage({ authManaged = false }: LoginPageProps) {
               {opening ? copy.openingAuthLogin : copy.webAuthLogin}
             </Button>
           </section>
-          <section className="bg-card text-card-foreground rounded-2xl p-6 sm:p-7">
+          <section className="bg-card text-card-foreground rounded-xl p-5">
             <h2 className="text-sm font-medium">{copy.desktopDownload}</h2>
             <p className="text-muted-foreground mt-1 text-xs leading-5">
               {copy.desktopDescription}
             </p>
             <AppDownloadCard
               showHeader={false}
-              className="[&_a]:bg-primary [&_a]:text-primary-foreground [&_a:hover]:bg-primary/90 mt-4 rounded-none bg-transparent p-0 shadow-none ring-0 [&_[data-slot=card-content]]:px-0"
+              className="[&_a]:bg-primary [&_a]:text-primary-foreground [&_a:hover]:bg-primary/90 mt-3 rounded-none border-0 bg-transparent p-0 shadow-none ring-0 [&_[data-slot=button]]:rounded-md [&_[data-slot=card-content]]:gap-2.5 [&_[data-slot=card-content]]:px-0"
             />
           </section>
         </div>
@@ -365,39 +368,41 @@ export function LoginPage({ authManaged = false }: LoginPageProps) {
 
   return (
     <main
-      className="bg-background text-foreground relative isolate grid min-h-dvh place-items-center overflow-hidden rounded-[var(--app-radius)] px-5 py-6"
+      className="bg-background text-foreground relative isolate grid min-h-dvh place-items-center overflow-hidden rounded-[var(--app-radius)] px-4 py-8"
       onMouseDown={(event) => void startWindowDrag(event)}
     >
-      <InteractiveGridBackground />
+      <InteractiveGridBackground className="opacity-40" />
       <LoginPageControls />
-      <section className="relative z-10 flex w-full max-w-80 flex-col items-center text-center">
-        <div className="relative flex size-[4.5rem] items-center justify-center">
+      <section className="relative z-10 flex w-full max-w-72 flex-col">
+        <div className="flex items-center gap-2.5">
           <Image
             src={APP_LOGO_SRC}
             alt={copy.appLogoAlt}
-            width={64}
-            height={64}
+            width={40}
+            height={40}
             priority
-            className="relative size-16 rounded-[1.35rem] drop-shadow-[0_12px_20px_rgba(15,23,42,0.18)] select-none dark:drop-shadow-[0_14px_22px_rgba(0,0,0,0.4)]"
+            className="size-10 shrink-0 rounded-lg select-none"
             draggable={false}
           />
+          <h1 className="text-foreground text-base/6 font-semibold tracking-tight">
+            {copy.title}
+          </h1>
         </div>
 
-        <h1 className="text-foreground mt-4 text-lg/6 font-semibold tracking-normal">
-          {copy.title}
-        </h1>
-
         {authNotice || !canOpenLogin ? (
-          <Alert className="mt-4" aria-live="polite">
+          <Alert
+            className="bg-muted/60 mt-3 rounded-md border-0 px-2.5 py-2"
+            aria-live="polite"
+          >
             <AlertDescription>
               {authNotice || loginConfigMessage}
             </AlertDescription>
           </Alert>
         ) : null}
 
-        <div className="mt-4 flex w-full max-w-80 flex-col gap-2">
+        <div className="mt-4 flex w-full flex-col gap-1.5">
           <Button
-            className="w-full"
+            className="h-8 w-full rounded-md px-3"
             disabled={opening || !canOpenLogin}
             onClick={() => void openWebLogin()}
             size="lg"
@@ -420,10 +425,10 @@ export function LoginPage({ authManaged = false }: LoginPageProps) {
           </Button>
 
           {isDesktop ? (
-            <div className="grid w-full grid-cols-[3fr_2fr] gap-2">
+            <div className="flex w-full flex-wrap items-center justify-between gap-x-2 gap-y-1">
               <CopyButton
-                variant="outline"
-                className="border-border/70 bg-background/60 hover:bg-muted/70 min-w-0 px-2"
+                variant="ghost"
+                className="text-muted-foreground min-w-0 rounded-md px-1.5"
                 disabled={!canOpenLogin}
                 getText={() => prepareWebLoginUrl(currentBrowserReturnTo())}
                 idleLabel={copy.copyLoginLink}
@@ -431,7 +436,7 @@ export function LoginPage({ authManaged = false }: LoginPageProps) {
                 copiedLabel={copy.copied}
                 successMessage={copy.copySuccess}
                 errorMessage={copy.copyError}
-                size="lg"
+                size="default"
               >
                 {(stage) =>
                   stage === 'copying'
@@ -441,10 +446,10 @@ export function LoginPage({ authManaged = false }: LoginPageProps) {
               </CopyButton>
 
               <Button
-                variant="outline"
-                className="border-destructive/25 bg-background/60 text-destructive hover:bg-destructive/10 hover:text-destructive min-w-0 px-2"
+                variant="ghost"
+                className="text-muted-foreground min-w-0 rounded-md px-1.5"
                 onClick={() => void exitApp()}
-                size="lg"
+                size="default"
               >
                 <HugeiconsIcon
                   icon={Door01Icon}
@@ -464,13 +469,13 @@ export function LoginPage({ authManaged = false }: LoginPageProps) {
 function LoginPageControls() {
   const { locale, setLocale } = useI18n();
   return (
-    <div className="absolute top-3 right-3 z-20 flex items-center gap-2">
+    <div className="absolute top-3 right-3 z-20 flex items-center gap-1">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
-            variant="outline"
+            variant="ghost"
             size="icon-sm"
-            className="border-border/60 bg-muted text-foreground hover:bg-muted dark:bg-muted dark:hover:bg-muted shadow-none"
+            className="text-muted-foreground rounded-md"
             aria-label={locale === 'zh-CN' ? '切换语言' : 'Change language'}
           >
             <HugeiconsIcon icon={Globe02Icon} strokeWidth={2} />
@@ -489,7 +494,7 @@ function LoginPageControls() {
           </DropdownMenuRadioGroup>
         </DropdownMenuContent>
       </DropdownMenu>
-      <ThemeToggleButton />
+      <ThemeToggleButton className="text-muted-foreground rounded-md border-transparent bg-transparent hover:bg-muted/70 dark:bg-transparent dark:hover:bg-muted/70" />
     </div>
   );
 }

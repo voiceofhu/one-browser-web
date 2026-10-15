@@ -29,7 +29,6 @@ import { HttpError } from '@/lib/http/types';
 import {
   buildRequestUrl,
   getUrlPath,
-  isRefreshRequest,
   isUnauthorizedError,
   sanitizeRequestUrl,
   shouldLogRequest,
@@ -142,61 +141,8 @@ export class HttpClient {
       if (desktopRequest && requestGeneration !== getAuthSessionGeneration()) {
         throw error;
       }
-      if (isRefreshRequest(url)) {
-        console.info('[auth-request] refresh request unauthorized', {
-          path: getUrlPath(url),
-          status: error.status,
-          code: error.code,
-          message: error.message,
-        });
-        this.expireAuthSession(error.message, url);
-        throw error;
-      }
-      if (this.authSessionExpired) {
-        console.info(
-          '[auth-request] request unauthorized with expired session',
-          {
-            path: getUrlPath(url),
-            status: error.status,
-            code: error.code,
-            message: error.message,
-          },
-        );
-        this.expireAuthSession(error.message, url);
-        throw error;
-      }
-      if (!shouldRefreshAuth(url)) {
-        throw error;
-      }
-
-      try {
-        await this.refreshAuthTokens();
-      } catch (refreshError: unknown) {
-        if (
-          refreshError instanceof HttpError &&
-          isUnauthorizedError(refreshError)
-        ) {
-          this.expireAuthSession(refreshError.message, '/auth/refresh');
-        }
-        throw refreshError instanceof Error
-          ? refreshError
-          : new Error('网络请求失败');
-      }
-
-      try {
-        return await this.sendRequest<T>(url, options);
-      } catch (retryError: unknown) {
-        if (
-          retryError instanceof HttpError &&
-          isUnauthorizedError(retryError) &&
-          (!desktopRequest || requestGeneration === getAuthSessionGeneration())
-        ) {
-          this.expireAuthSession(retryError.message, url);
-        }
-        throw retryError instanceof Error
-          ? retryError
-          : new Error('网络请求失败');
-      }
+      this.expireAuthSession(error.message, url);
+      throw error;
     }
   }
 
