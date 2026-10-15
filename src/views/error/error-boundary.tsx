@@ -10,13 +10,28 @@ type AppErrorBoundaryProps = {
 
 type AppErrorBoundaryState = {
   error: Error | null;
+  resetKey?: string;
 };
 
 export class AppErrorBoundary extends Component<
   AppErrorBoundaryProps,
   AppErrorBoundaryState
 > {
-  state: AppErrorBoundaryState = { error: null };
+  state: AppErrorBoundaryState = {
+    error: null,
+    resetKey: this.props.resetKey,
+  };
+
+  static getDerivedStateFromProps(
+    props: AppErrorBoundaryProps,
+    state: AppErrorBoundaryState,
+  ): AppErrorBoundaryState | null {
+    if (props.resetKey !== state.resetKey) {
+      return { error: null, resetKey: props.resetKey };
+    }
+
+    return null;
+  }
 
   static getDerivedStateFromError(error: Error): AppErrorBoundaryState {
     return { error };
@@ -24,12 +39,6 @@ export class AppErrorBoundary extends Component<
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error('One Browser Web render failed.', error, info);
-  }
-
-  componentDidUpdate(previousProps: AppErrorBoundaryProps) {
-    if (previousProps.resetKey !== this.props.resetKey && this.state.error) {
-      this.setState({ error: null });
-    }
   }
 
   render() {
