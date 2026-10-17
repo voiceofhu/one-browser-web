@@ -12,9 +12,9 @@ import {
   useThemeColor,
 } from '@/components/theme';
 import { ThemeModeToggle } from '@/components/theme/theme-mode-toggle';
+import { AnimatedSegmentedTabs } from '@/components/ui/animated-segmented-tabs';
 import { Button } from '@/components/ui/button';
 import { FieldDescription, FieldGroup } from '@/components/ui/field';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select,
   SelectContent,
@@ -151,18 +151,16 @@ export function AppearanceSettings() {
             description="界面元素的圆角大小"
             labelId="radius-label"
           >
-            <Tabs
+            <AnimatedSegmentedTabs
+              label="圆角"
+              aria-labelledby="radius-label"
+              options={RADIUS_TAB_ITEMS}
               value={radius}
               onValueChange={(value) => setRadius(value as AppearanceRadius)}
-            >
-              <TabsList aria-labelledby="radius-label" className="h-7 rounded-sm border bg-background p-0.5">
-                {RADIUS_TAB_ITEMS.map((item) => (
-                  <TabsTrigger key={item.value} value={item.value} className="min-w-8 rounded-[2px] px-2 font-normal shadow-none data-active:bg-muted">
-                    {item.label}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
+              listClassName="h-7 border bg-background p-0.5"
+              triggerClassName="h-full min-w-8 px-2 text-xs font-normal"
+              highlightClassName="bg-muted shadow-none ring-0"
+            />
           </SettingsRow>
         </SettingsGroup>
 
@@ -172,20 +170,18 @@ export function AppearanceSettings() {
             description="调整全局文字缩放"
             labelId="font-size-label"
           >
-            <Tabs
+            <AnimatedSegmentedTabs
+              label="字体大小"
+              aria-labelledby="font-size-label"
+              options={FONT_SIZE_TAB_ITEMS}
               value={fontSize}
               onValueChange={(value) =>
                 setFontSize(value as AppearanceFontSize)
               }
-            >
-              <TabsList aria-labelledby="font-size-label" className="h-7 rounded-sm border bg-background p-0.5">
-                {FONT_SIZE_TAB_ITEMS.map((item) => (
-                  <TabsTrigger key={item.value} value={item.value} className="min-w-10 rounded-[2px] px-2 font-normal shadow-none data-active:bg-muted">
-                    {item.label}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
+              listClassName="h-7 border bg-background p-0.5"
+              triggerClassName="h-full min-w-10 px-2 text-xs font-normal"
+              highlightClassName="bg-muted shadow-none ring-0"
+            />
           </SettingsRow>
 
           <SettingsDivider />
@@ -195,20 +191,18 @@ export function AppearanceSettings() {
             description="主内容区域的排布方式"
             labelId="content-layout-label"
           >
-            <Tabs
+            <AnimatedSegmentedTabs
+              label="内容布局"
+              aria-labelledby="content-layout-label"
+              options={CONTENT_LAYOUT_ITEMS}
               value={contentLayout}
               onValueChange={(value) =>
                 setContentLayout(value as ContentLayout)
               }
-            >
-              <TabsList aria-labelledby="content-layout-label" className="h-7 rounded-sm border bg-background p-0.5">
-                {CONTENT_LAYOUT_ITEMS.map((item) => (
-                  <TabsTrigger key={item.value} value={item.value} className="min-w-12 rounded-[2px] px-2 font-normal shadow-none data-active:bg-muted">
-                    {item.label}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
+              listClassName="h-7 border bg-background p-0.5"
+              triggerClassName="h-full min-w-12 px-2 text-xs font-normal"
+              highlightClassName="bg-muted shadow-none ring-0"
+            />
           </SettingsRow>
         </SettingsGroup>
       </FieldGroup>

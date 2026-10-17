@@ -192,7 +192,7 @@ function ChartCard({
     <Card
       size="sm"
       className={cn(
-        'bg-card rounded-sm border shadow-none ring-0 data-[size=sm]:gap-0 data-[size=sm]:py-0',
+        'bg-card border shadow-none ring-0 data-[size=sm]:gap-0 data-[size=sm]:py-0',
         className,
       )}
     >

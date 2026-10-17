@@ -1,0 +1,185 @@
+/* One Browser keeps Radix controls and its compact desktop surfaces. */
+:root {
+  --browser-table-surface: oklch(0.947 0.006 265);
+  --browser-table-heading: oklch(0.925 0.007 265);
+  --browser-table-hover: oklch(0.922 0.006 265);
+  --browser-table-selected: oklch(0.903 0.007 265);
+}
+
+.dark {
+  --browser-table-surface: oklch(0.19 0 0);
+  --browser-table-heading: oklch(0.225 0 0);
+  --browser-table-hover: oklch(0.24 0 0);
+  --browser-table-selected: oklch(0.27 0 0);
+}
+
+/* shadcn owns the geometry; Solid Glass supplies the surface material. */
+.bg-sidebar-primary,
+:is(div, span):not([data-slot]).bg-primary[class*='size-'] {
+  border-radius: var(--radius-lg);
+}
+
+/* shadcn maps its variants to Radix, but the material's raw selectors do not. */
+:is([data-slot='switch'], [data-slot='checkbox'], [data-slot='radio-group-item']):is([data-state='checked'], [data-state='indeterminate']):not([data-checked]) {
+  border-color: transparent;
+  border-top-color: var(--primary-rim);
+  border-bottom-color: color-mix(in oklch, var(--primary-under) 45%, transparent);
+  background-color: color-mix(in oklch, var(--primary) var(--primary-solid), transparent);
+  background-clip: border-box;
+  color: var(--primary-foreground);
+  box-shadow: var(--tw-ring-shadow, 0 0 #0000);
+}
+
+[data-slot='switch'] > [data-slot='switch-thumb'] {
+  background-color: var(--knob);
+}
+
+[data-slot='radio-group-item'][data-state='checked'] [data-slot='radio-group-indicator'] > span {
+  background-color: var(--primary-foreground);
+}
+
+[data-slot='tabs-list'][data-variant='default'] > [data-slot='tabs-trigger'][data-state='active']:not([data-active='false']) {
+  border-color: var(--glass-edge);
+  background-color: var(--glass-control);
+  background-clip: padding-box;
+  color: var(--foreground);
+  box-shadow:
+    inset 0 1px 0 var(--glass-control-rim),
+    0 1px 2px var(--glass-contact),
+    var(--tw-ring-shadow, 0 0 #0000);
+}
+
+[data-slot='animated-segmented-tabs-list'] {
+  box-shadow:
+    inset 0 1px 2px var(--well-shade),
+    inset 0 -1px 0 var(--well-rim);
+}
+
+[data-slot='animated-segmented-tabs-highlight'] {
+  background-color: var(--glass-control);
+  box-shadow:
+    inset 0 1px 0 var(--glass-control-rim),
+    inset 0 0 0 1px var(--glass-edge),
+    0 1px 2px var(--glass-contact);
+}
+
+/* Vaul reserves an inset pseudo-element for the drawer's visible pane. */
+[data-slot='drawer-content']:not(.before\:hidden) {
+  border-width: 0;
+  background-color: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+[data-slot='drawer-content']:not(.before\:hidden)::before {
+  border-width: 0;
+  background-color: var(--popover);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow:
+    inset 0 1px 0 var(--glass-rim),
+    inset 0 -1px 0 var(--popover-under),
+    0 0 0 1px var(--popover-edge),
+    0 24px 60px -18px var(--glass-shade),
+    0 6px 16px -6px var(--glass-lift);
+}
+
+/* Scrolling rows must not show through a fixed heading or action cell. */
+thead.sticky,
+thead.sticky th,
+[data-slot='table-head'].sticky {
+  background-color: var(--browser-table-heading);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+[data-slot='table-cell'].sticky.bg-card {
+  background-color: var(--browser-table-surface);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+[data-slot='table-row']:is(:hover, :has([aria-expanded='true'])) > [data-slot='table-cell'].sticky.bg-card {
+  background-color: var(--browser-table-hover);
+}
+
+[data-slot='table-row'][data-state='selected'] > [data-slot='table-cell'].sticky.bg-card {
+  background-color: var(--browser-table-selected);
+}
+
+[data-slot='select-scroll-up-button'].bg-popover,
+[data-slot='select-scroll-down-button'].bg-popover {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+[data-slot='input-group'] [data-slot='input-group-control'] {
+  border-width: 0;
+  background-color: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+[data-slot='app-titlebar'],
+[data-slot='app-mobile-header'],
+[data-slot='app-footer'],
+[data-slot='browser-table-toolbar'],
+[data-slot='table-pagination'] {
+  background-color: var(--panel);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: inset 0 1px 0 var(--glass-inner);
+}
+
+[data-slot='sidebar-inner'].bg-sidebar,
+[data-slot='sidebar'].bg-sidebar:not([data-mobile='true']) {
+  box-shadow:
+    inset -1px 0 0 var(--glass-edge),
+    inset 0 1px 0 var(--glass-inner);
+}
+
+[data-slot='sidebar'][data-side='right'] [data-slot='sidebar-inner'].bg-sidebar {
+  box-shadow:
+    inset 1px 0 0 var(--glass-edge),
+    inset 0 1px 0 var(--glass-inner);
+}
+
+[data-slot='app-content'] > :is(section, div).bg-card:not(.my-auto) {
+  background-color: var(--panel);
+  box-shadow: inset 0 1px 0 var(--glass-inner);
+}
+
+[data-slot='dashboard-metric-card'] {
+  box-shadow: inset 0 1px 0 var(--glass-inner);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  :root,
+  .dark {
+    --glass-blur: none;
+    --glass-blur-control: none;
+  }
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root {
+    --panel: oklch(0.947 0.006 265);
+    --card: oklch(0.958 0.005 265);
+    --popover: oklch(0.98 0.003 265);
+    --sidebar: oklch(0.985 0 0);
+    --glass-blur: none;
+    --glass-blur-control: none;
+  }
+
+  .dark {
+    --panel: oklch(0.19 0 0);
+    --card: oklch(0.225 0 0);
+    --popover: oklch(0.22 0 0);
+    --sidebar: oklch(0.13 0 0);
+  }
+}

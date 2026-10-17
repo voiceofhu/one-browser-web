@@ -61,6 +61,7 @@ export function SiteHeader() {
 
   return (
     <header
+      data-slot="app-titlebar"
       className="bg-sidebar flex h-(--header-height) shrink-0 items-center gap-2 border-b px-3"
       onMouseDown={isMac ? (event) => void startWindowDrag(event) : undefined}
     >

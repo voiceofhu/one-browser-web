@@ -1,5 +1,5 @@
+import { AnimatedSegmentedTabs } from '@/components/ui/animated-segmented-tabs';
 import { Field, FieldLabel } from '@/components/ui/field';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import type { ReactNode } from 'react';
 
@@ -48,33 +48,17 @@ export function CompactTabs<T extends string>({
   value: T;
 }) {
   return (
-    <Tabs
+    <AnimatedSegmentedTabs
+      label="编辑选项"
+      options={options}
       value={value}
-      onValueChange={(nextValue) => {
-        const option = options.find((item) => item.value === nextValue);
-
-        if (option) {
-          onValueChange(option.value);
-        }
-      }}
+      onValueChange={onValueChange}
       className={cn('inline-flex max-w-full overflow-hidden', className)}
-    >
-      <TabsList
-        className={cn(
-          'no-scrollbar max-w-full justify-start overflow-x-auto overscroll-x-contain scroll-px-1 [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
-          listClassName,
-        )}
-      >
-        {options.map((option) => (
-          <TabsTrigger
-            key={option.value}
-            value={option.value}
-            className={cn('min-w-16 flex-none snap-start px-4', itemClassName)}
-          >
-            {option.label}
-          </TabsTrigger>
-        ))}
-      </TabsList>
-    </Tabs>
+      listClassName={cn(
+        'no-scrollbar max-w-full justify-start overflow-x-auto overscroll-x-contain scroll-px-1 border p-0.5 [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+        listClassName,
+      )}
+      triggerClassName={cn('h-full min-w-16 flex-none snap-start px-4 text-xs', itemClassName)}
+    />
   );
 }

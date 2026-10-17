@@ -26,7 +26,7 @@ export function DashboardShell({ children }: React.PropsWithChildren) {
     <BrowserShellProvider>
       <DesktopAppGateProvider>
         <SidebarProvider
-          className="bg-muted h-dvh min-w-0 flex-col"
+          className="bg-transparent h-dvh min-w-0 flex-col"
           style={
             {
               '--sidebar-width': '11.25rem',
@@ -35,15 +35,19 @@ export function DashboardShell({ children }: React.PropsWithChildren) {
           }
         >
           <div
+            data-slot="app-shell"
             className={cn(
-              'bg-muted flex min-h-0 flex-1 flex-col overflow-hidden',
+              'bg-transparent flex min-h-0 flex-1 flex-col overflow-hidden',
               showSiteHeader
                 ? 'border-border/70 rounded-[var(--app-radius)] border shadow-none'
                 : 'rounded-none border-0 shadow-none',
             )}
           >
             {showSiteHeader ? <SiteHeader /> : null}
-            <header className="bg-sidebar flex shrink-0 items-center gap-2 border-b px-2 pt-[env(safe-area-inset-top)] md:hidden">
+            <header
+              data-slot="app-mobile-header"
+              className="bg-sidebar flex shrink-0 items-center gap-2 border-b px-2 pt-[env(safe-area-inset-top)] md:hidden"
+            >
               <SidebarTrigger className="size-11" aria-label="打开导航菜单" />
               <span className="text-sm font-semibold">One Browser</span>
             </header>
@@ -52,7 +56,7 @@ export function DashboardShell({ children }: React.PropsWithChildren) {
                 collapsible={isMobile ? 'offcanvas' : 'none'}
                 className="bg-sidebar shrink-0 border-r"
               />
-              <SidebarInset className="bg-muted min-w-0 rounded-none shadow-none md:m-0 md:peer-data-[variant=inset]:m-0">
+              <SidebarInset className="bg-transparent min-w-0 rounded-none shadow-none md:m-0 md:peer-data-[variant=inset]:m-0">
                 <div
                   data-slot="app-content"
                   className="app-content-container flex min-h-0 w-full flex-1 flex-col"

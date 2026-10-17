@@ -1,5 +1,5 @@
+import { AnimatedSegmentedTabs } from '@/components/ui/animated-segmented-tabs';
 import { Button } from '@/components/ui/button';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useAuth } from '@/features/auth/auth-gate';
 import {
   hasAnyTeamPermission,
@@ -305,28 +305,25 @@ export function RemoteEnvironmentsPage() {
       {groupFilters.length > 1 ? (
         <div className="border-border/60 flex shrink-0 flex-wrap items-center gap-1.5 border-b px-4 py-2">
           <span className="text-muted-foreground text-xs">分组</span>
-          <ToggleGroup
-            type="single"
+          <AnimatedSegmentedTabs
+            label="环境分组"
             value={activeGroupFilter}
             onValueChange={(value) => setGroupFilter(value || groupFilterAll)}
-            className="flex max-w-full flex-wrap gap-1"
-            spacing={1}
-          >
-            {groupFilters.map((group) => (
-              <ToggleGroupItem
-                key={group.value}
-                value={group.value}
-                variant="outline"
-                size="sm"
-                className="data-[state=on]:border-primary/50 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground h-6 min-w-0 gap-1 px-2"
-              >
-                <span className="truncate">{group.label}</span>
-                <span className="text-[0.625rem] opacity-70">
-                  {group.count}
-                </span>
-              </ToggleGroupItem>
-            ))}
-          </ToggleGroup>
+            className="min-w-0 max-w-full"
+            listClassName="h-auto max-w-full flex-wrap justify-start gap-1"
+            triggerClassName="h-6 min-w-0 max-w-full flex-none gap-1 px-2 text-xs"
+            options={groupFilters.map((group) => ({
+              value: group.value,
+              label: (
+                <>
+                  <span className="truncate">{group.label}</span>
+                  <span className="shrink-0 text-[0.625rem] opacity-70">
+                    {group.count}
+                  </span>
+                </>
+              ),
+            }))}
+          />
         </div>
       ) : null}
 

@@ -8,7 +8,7 @@ import {
   ResponsiveDialogTitle,
 } from '@/components/responsive-dialog';
 import { DialogActionButton } from '@/components/ui/dialog-action-button';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { AnimatedSegmentedTabs } from '@/components/ui/animated-segmented-tabs';
 import type {
   CheckProxyRequest,
   CreateProxyRequest,
@@ -193,22 +193,18 @@ export function ProfileProxySwitchForm({
   return (
     <>
       <ResponsiveDialogBody className="flex flex-col gap-3">
-        <ToggleGroup
-          className="grid h-8 w-full grid-cols-3 gap-0 rounded-md border border-border bg-background p-1"
-          type="single"
+        <AnimatedSegmentedTabs
+          label="代理来源"
+          className="w-full"
+          listClassName="grid w-full grid-cols-3"
+          triggerClassName="h-6 min-w-0 text-xs"
           value={mode}
           onValueChange={updateMode}
-        >
-          {proxyModeOptions.map((option) => (
-            <ToggleGroupItem
-              key={option.value}
-              className="h-6 min-w-0 text-xs"
-              value={option.value}
-            >
-              <span className="truncate">{option.label}</span>
-            </ToggleGroupItem>
-          ))}
-        </ToggleGroup>
+          options={proxyModeOptions.map((option) => ({
+            ...option,
+            label: <span className="truncate">{option.label}</span>,
+          }))}
+        />
         {mode === 'none' ? (
           <LocalNetworkStatus
             isChecking={

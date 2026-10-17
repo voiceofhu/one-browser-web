@@ -10,6 +10,7 @@ import {
 import { ThemeToggleButton } from '@/components/theme/theme-toggle-button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { CopyButton } from '@/components/ui/copy-button';
 import { Spinner } from '@/components/ui/spinner';
 import {
@@ -236,7 +237,10 @@ export function LoginPage({ authManaged = false }: LoginPageProps) {
   React.useEffect(() => {
     const noticeTimer = window.setTimeout(() => {
       const notice = consumeAuthExpiredNotice();
-      if (notice !== null) {
+      if (
+        notice !== null &&
+        !['请先登录', 'login required'].includes(notice.trim().toLowerCase())
+      ) {
         setAuthNotice(notice || copy.authExpired);
       }
     }, 0);
@@ -307,7 +311,7 @@ export function LoginPage({ authManaged = false }: LoginPageProps) {
       <main className="bg-muted/40 text-foreground relative flex min-h-svh w-full items-center justify-center px-4 py-8">
         <LoginPageControls />
         <div className="flex w-full max-w-sm flex-col gap-3 text-left">
-          <section className="bg-card text-card-foreground flex flex-col rounded-xl p-5">
+          <Card className="gap-0 p-5">
             <div className="flex items-center gap-2.5">
               <Image
                 src={APP_LOGO_SRC}
@@ -333,7 +337,8 @@ export function LoginPage({ authManaged = false }: LoginPageProps) {
             </p>
             {authNotice || !canOpenLogin ? (
               <Alert
-                className="bg-muted/60 mt-3 rounded-md border-0 px-2.5 py-2"
+                variant="destructive"
+                className="mt-3 rounded-md border-destructive/20 bg-destructive/5 px-2.5 py-2"
                 aria-live="polite"
               >
                 <AlertDescription>
@@ -350,8 +355,8 @@ export function LoginPage({ authManaged = false }: LoginPageProps) {
               {opening ? <Spinner data-icon="inline-start" /> : null}
               {opening ? copy.openingAuthLogin : copy.webAuthLogin}
             </Button>
-          </section>
-          <section className="bg-card text-card-foreground rounded-xl p-5">
+          </Card>
+          <Card className="gap-0 p-5">
             <h2 className="text-sm font-medium">{copy.desktopDownload}</h2>
             <p className="text-muted-foreground mt-1 text-xs leading-5">
               {copy.desktopDescription}
@@ -360,7 +365,7 @@ export function LoginPage({ authManaged = false }: LoginPageProps) {
               showHeader={false}
               className="[&_a]:bg-primary [&_a]:text-primary-foreground [&_a:hover]:bg-primary/90 mt-3 rounded-none border-0 bg-transparent p-0 shadow-none ring-0 [&_[data-slot=button]]:rounded-md [&_[data-slot=card-content]]:gap-2.5 [&_[data-slot=card-content]]:px-0"
             />
-          </section>
+          </Card>
         </div>
       </main>
     );
@@ -391,7 +396,8 @@ export function LoginPage({ authManaged = false }: LoginPageProps) {
 
         {authNotice || !canOpenLogin ? (
           <Alert
-            className="bg-muted/60 mt-3 rounded-md border-0 px-2.5 py-2"
+            variant="destructive"
+            className="mt-3 rounded-md border-destructive/20 bg-destructive/5 px-2.5 py-2"
             aria-live="polite"
           >
             <AlertDescription>

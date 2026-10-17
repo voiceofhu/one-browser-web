@@ -209,7 +209,10 @@ export function AppFooter() {
 
   if (!tauriRuntimeAvailable) {
     return (
-      <footer className="border-border/60 bg-muted/40 text-muted-foreground flex min-h-9 shrink-0 items-center gap-1 border-t px-1.5 pb-[env(safe-area-inset-bottom)] text-[0.6875rem] leading-none md:h-5 md:min-h-0 md:pb-0">
+      <footer
+        data-slot="app-footer"
+        className="border-border/60 bg-muted/40 text-muted-foreground flex min-h-9 shrink-0 items-center gap-1 border-t px-1.5 pb-[env(safe-area-inset-bottom)] text-[0.6875rem] leading-none md:h-5 md:min-h-0 md:pb-0"
+      >
         <button
           type="button"
           className="text-foreground hover:bg-accent inline-flex h-full items-center gap-1 rounded-sm px-1 font-medium transition-colors"
@@ -292,7 +295,10 @@ export function AppFooter() {
   }
 
   return (
-    <footer className="border-border/60 bg-muted/40 text-muted-foreground flex h-5 shrink-0 items-center border-t px-1.5 text-[0.6875rem] leading-none">
+    <footer
+      data-slot="app-footer"
+      className="border-border/60 bg-muted/40 text-muted-foreground flex h-5 shrink-0 items-center border-t px-1.5 text-[0.6875rem] leading-none"
+    >
       <HoverCard openDelay={120} closeDelay={120}>
         <HoverCardTrigger asChild>
           <button

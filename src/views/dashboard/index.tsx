@@ -198,6 +198,7 @@ function MetricCard({ metric }: { metric: DashboardMetric }) {
   return (
     <Button
       asChild
+      data-slot="dashboard-metric-card"
       variant="ghost"
       className="bg-card h-auto min-w-0 justify-start gap-2 rounded-none px-2.5 py-2 text-left whitespace-normal"
     >

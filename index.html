@@ -24,7 +24,7 @@
 
         var storedTheme = 'system';
         var themeColor = 'default';
-        var radius = '0.5';
+        var radius = '0.625';
         var fontSize = 'default';
         var contentLayout = 'full';
 
@@ -52,7 +52,7 @@
         ) {
           root.dataset.themeColor = themeColor;
         }
-        if (['0', '0.25', '0.5', '0.75', '1'].indexOf(radius) !== -1) {
+        if (['0', '0.25', '0.5', '0.625', '0.75', '1'].indexOf(radius) !== -1) {
           root.setAttribute('data-ui-radius', radius);
         }
         if (['default', 'sm', 'md', 'lg'].indexOf(fontSize) !== -1) {

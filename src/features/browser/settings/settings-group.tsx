@@ -34,7 +34,7 @@ export function SettingsGroup({
       ) : null}
       <FieldGroup
         className={cn(
-          'gap-0 overflow-hidden rounded-sm border bg-card',
+          'gap-0 overflow-hidden rounded-lg border bg-card',
           className,
         )}
       >
@@ -78,7 +78,7 @@ export function SettingsRow({
       </FieldContent>
       <div
         className={cn(
-          'flex min-w-0 w-full shrink-0 items-center justify-start @md/field-group:w-auto @md/field-group:justify-end [&>button]:rounded-sm [&>button]:shadow-none',
+          'flex min-w-0 w-full shrink-0 items-center justify-start @md/field-group:w-auto @md/field-group:justify-end [&>button]:shadow-none',
           controlClassName,
         )}
       >
@@ -115,7 +115,7 @@ export function SettingsFormRow({
           {description}
         </FieldDescription>
       </FieldContent>
-      <div className="flex min-w-0 w-full shrink-0 items-center @md/field-group:w-64 @lg/field-group:w-80 [&_[data-slot=input-group]]:rounded-sm [&_input]:shadow-none">
+      <div className="flex min-w-0 w-full shrink-0 items-center @md/field-group:w-64 @lg/field-group:w-80 [&_input]:shadow-none">
         {children}
       </div>
     </Field>

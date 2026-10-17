@@ -1,6 +1,8 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
+@import './styles/solid-glass.css';
+@import './styles/solid-glass-compat.css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -62,7 +64,7 @@
 
 :root {
   --app-radius: 0.6rem;
-  --dialog-radius: 0.375rem;
+  --dialog-radius: calc(var(--radius) * 1.4);
   --theme-color-default: oklch(0.5645 0.163 253.27);
   --theme-color-default-foreground: oklch(0.985 0 0);
   --theme-color-zinc: oklch(0.37 0.013 285.81);
@@ -83,20 +85,8 @@
   --theme-color-violet-foreground: oklch(0.985 0 0);
   --theme-primary: var(--theme-color-default);
   --theme-primary-foreground: var(--theme-color-default-foreground);
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
   --primary: var(--theme-primary);
   --primary-foreground: var(--theme-primary-foreground);
-  --secondary: oklch(0.5168 0.215 321.24);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
   --success: oklch(0.5234 0.135 144.17);
   --destructive: oklch(0.568 0.2 26.41);
   --destructive-foreground: oklch(0.985 0 0);
@@ -106,22 +96,11 @@
   --warning-foreground: oklch(0.985 0 0);
   --info: oklch(0.6029 0.147 243.46);
   --info-foreground: oklch(0.985 0 0);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
   --ring: var(--theme-primary);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.25rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
+  --radius: 0.625rem;
+  --radius-control: var(--radius);
   --sidebar-primary: var(--theme-primary);
   --sidebar-primary-foreground: var(--theme-primary-foreground);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: var(--theme-primary);
 }
 
@@ -149,20 +128,8 @@ html.platform-other {
   --theme-color-yellow-foreground: oklch(0.145 0 0);
   --theme-color-violet: oklch(0.64 0.2 293.01);
   --theme-color-violet-foreground: oklch(0.145 0 0);
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
   --primary: var(--theme-primary);
   --primary-foreground: var(--theme-primary-foreground);
-  --secondary: oklch(0.5168 0.215 321.24);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
   --success: oklch(0.5234 0.135 144.17);
   --destructive: oklch(0.568 0.2 26.41);
   --destructive-foreground: oklch(0.985 0 0);
@@ -172,21 +139,9 @@ html.platform-other {
   --warning-foreground: oklch(0.985 0 0);
   --info: oklch(0.6029 0.147 243.46);
   --info-foreground: oklch(0.985 0 0);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
   --ring: var(--theme-primary);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: var(--theme-primary);
   --sidebar-primary-foreground: var(--theme-primary-foreground);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: var(--theme-primary);
 }
 
@@ -232,27 +187,26 @@ html.platform-other {
 
 :root[data-ui-radius='0'] {
   --radius: 0rem;
-  --dialog-radius: 0rem;
 }
 
 :root[data-ui-radius='0.25'] {
   --radius: 0.25rem;
-  --dialog-radius: 0.375rem;
 }
 
 :root[data-ui-radius='0.5'] {
   --radius: 0.5rem;
-  --dialog-radius: 1rem;
+}
+
+:root[data-ui-radius='0.625'] {
+  --radius: 0.625rem;
 }
 
 :root[data-ui-radius='0.75'] {
   --radius: 0.75rem;
-  --dialog-radius: 1.25rem;
 }
 
 :root[data-ui-radius='1'] {
   --radius: 1rem;
-  --dialog-radius: 1.5rem;
 }
 
 :root[data-ui-font-size='sm'] {
@@ -282,7 +236,7 @@ html.platform-other {
   }
 
   body {
-    @apply bg-muted text-foreground;
+    @apply bg-background text-foreground;
     min-height: 100dvh;
     overflow: hidden;
     border-radius: var(--app-radius);
@@ -290,7 +244,7 @@ html.platform-other {
   }
 
   html {
-    @apply bg-muted font-sans;
+    @apply bg-background font-sans;
     font-size: var(--app-font-size, 16px);
     overflow: hidden;
     border-radius: var(--app-radius);
@@ -306,7 +260,7 @@ html.platform-other {
 
   html.platform-windows body,
   html.platform-other body {
-    @apply bg-muted;
+    @apply bg-background;
   }
 
   button:not([disabled]),
