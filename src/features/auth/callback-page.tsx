@@ -56,7 +56,9 @@ export function CallbackPage() {
       .then(async (result) => {
         await getCurrentUser();
         if (isDesktopCallback(result.returnTo)) {
-          const authorization = await authorizeDesktopHandoff();
+          const authorization = await authorizeDesktopHandoff(
+            desktopHandoffState(result.returnTo),
+          );
           if (import.meta.env.DEV) {
             console.info('[auth-deep-link]', authorization.callback_url);
           }
@@ -174,10 +176,31 @@ function isDesktopCallback(returnTo: string) {
     if (url.origin !== window.location.origin || url.pathname !== '/callback') {
       return false;
     }
-    return url.searchParams.get('desktop') === '1';
+    return (
+      url.searchParams.get('desktop') === '1' ||
+      desktopHandoffState(returnTo) !== undefined
+    );
   } catch {
     return false;
   }
+}
+
+/** Mirrors the backend's `is_desktop_return_to`: app-started logins carry both values. */
+function desktopHandoffState(returnTo: string) {
+  try {
+    const url = new URL(returnTo, window.location.origin);
+    const state = url.searchParams.get('handoff_state') || '';
+    const challenge = url.searchParams.get('code_challenge') || '';
+    return isBase64Url256(state) && isBase64Url256(challenge)
+      ? state
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function isBase64Url256(value: string) {
+  return /^[A-Za-z0-9_-]{43}$/.test(value);
 }
 
 function normalizeReturnTo(value: string) {

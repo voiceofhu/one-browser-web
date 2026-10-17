@@ -218,7 +218,7 @@ export function LoginPage({ authManaged = false }: LoginPageProps) {
           applyAuthSession();
           return;
         }
-        const authorization = await authorizeDesktopHandoff();
+        const authorization = await authorizeDesktopHandoff(handoff.state);
         window.location.assign(authorization.callback_url);
       })
       .catch((error: unknown) => {
@@ -494,7 +494,7 @@ function LoginPageControls() {
           </DropdownMenuRadioGroup>
         </DropdownMenuContent>
       </DropdownMenu>
-      <ThemeToggleButton className="text-muted-foreground rounded-md border-transparent bg-transparent hover:bg-muted/70 dark:bg-transparent dark:hover:bg-muted/70" />
+      <ThemeToggleButton className="text-muted-foreground hover:bg-muted/70 dark:hover:bg-muted/70 rounded-md border-transparent bg-transparent dark:bg-transparent" />
     </div>
   );
 }

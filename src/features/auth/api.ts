@@ -211,11 +211,15 @@ export async function completeOidcLogin(payload: OidcCompletePayload) {
   return response.data;
 }
 
-export async function authorizeDesktopHandoff() {
+/**
+ * `handoffState` is the state the desktop app generated when it opened the
+ * login page; the backend echoes it so the app can bind the deep link to it.
+ */
+export async function authorizeDesktopHandoff(handoffState?: string) {
   const response = await http.post<
     DesktopHandoffAuthorization,
-    Record<string, never>
-  >('/auth/app/handoff', {});
+    { handoff_state?: string }
+  >('/auth/app/handoff', handoffState ? { handoff_state: handoffState } : {});
   return response.data;
 }
 
