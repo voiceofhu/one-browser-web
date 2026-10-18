@@ -42,6 +42,7 @@ import { useLoginAppWindowSize } from './use-app-window-size';
 import { useAuthDeepLinks } from './use-auth-deep-links';
 
 const APP_LOGO_SRC = '/pwa-512x512.png';
+const AUTO_LOGIN_SECONDS = 10;
 
 type LoginPageCopy = {
   appLogoAlt: string;
@@ -52,6 +53,7 @@ type LoginPageCopy = {
   desktopDownload: string;
   desktopDescription: string;
   openingAuthLogin: string;
+  autoOpenWebLogin: (seconds: number) => string;
   copyLoginLink: string;
   copyingLoginLink: string;
   copied: string;
@@ -76,6 +78,7 @@ const LOGIN_PAGE_COPY: Record<'zh-CN' | 'en-US', LoginPageCopy> = {
     desktopDownload: '桌面客户端',
     desktopDescription: '下载 One Browser，使用完整的浏览器功能。',
     openingAuthLogin: '正在打开...',
+    autoOpenWebLogin: (seconds) => `${seconds} 秒后自动打开网页版登录`,
     copyLoginLink: '复制登录链接',
     copyingLoginLink: '正在复制...',
     copied: '已复制',
@@ -98,6 +101,7 @@ const LOGIN_PAGE_COPY: Record<'zh-CN' | 'en-US', LoginPageCopy> = {
     desktopDownload: 'Desktop app',
     desktopDescription: 'Download One Browser for the full desktop experience.',
     openingAuthLogin: 'Opening...',
+    autoOpenWebLogin: (seconds) => `Opening web sign-in in ${seconds}s`,
     copyLoginLink: 'Copy sign-in link',
     copyingLoginLink: 'Copying...',
     copied: 'Copied',
@@ -248,9 +252,18 @@ export function LoginPage({ authManaged = false }: LoginPageProps) {
     return () => window.clearTimeout(noticeTimer);
   }, [copy.authExpired]);
 
+  // The web login page stays up for a short countdown so visitors can grab the
+  // desktop app first; any interaction with the download card cancels it.
   const autoLogin = !isDesktop && autoLoginAllowed && !authNotice;
+  const [countdown, setCountdown] = React.useState(AUTO_LOGIN_SECONDS);
+  const autoRedirecting = sessionChecked && autoLogin && countdown === 0;
   React.useEffect(() => {
-    if (!sessionChecked || !autoLogin) return;
+    if (!sessionChecked || !autoLogin || countdown === 0) return;
+    const timer = window.setTimeout(() => setCountdown((n) => n - 1), 1000);
+    return () => window.clearTimeout(timer);
+  }, [autoLogin, countdown, sessionChecked]);
+  React.useEffect(() => {
+    if (!autoRedirecting) return;
     markLoginRedirect();
     prepareWebLoginUrl(currentBrowserReturnTo(), selectAccount)
       .then((loginUrl) => window.location.replace(loginUrl))
@@ -260,9 +273,9 @@ export function LoginPage({ authManaged = false }: LoginPageProps) {
           error instanceof Error ? error.message : copy.openLoginError,
         );
       });
-  }, [autoLogin, copy.openLoginError, selectAccount, sessionChecked]);
+  }, [autoRedirecting, copy.openLoginError, selectAccount]);
 
-  if (!sessionChecked || autoLogin) {
+  if (!sessionChecked) {
     return null;
   }
 
@@ -348,15 +361,30 @@ export function LoginPage({ authManaged = false }: LoginPageProps) {
             ) : null}
             <Button
               className="mt-4 h-8 w-full rounded-md px-3"
-              disabled={opening}
+              disabled={opening || autoRedirecting}
               onClick={() => void openWebLogin()}
               size="lg"
             >
-              {opening ? <Spinner data-icon="inline-start" /> : null}
-              {opening ? copy.openingAuthLogin : copy.webAuthLogin}
+              {opening || autoRedirecting ? (
+                <Spinner data-icon="inline-start" />
+              ) : null}
+              {opening || autoRedirecting
+                ? copy.openingAuthLogin
+                : copy.webAuthLogin}
             </Button>
+            {autoLogin && countdown > 0 ? (
+              <p
+                className="text-muted-foreground mt-2 text-center text-xs tabular-nums"
+                aria-live="polite"
+              >
+                {copy.autoOpenWebLogin(countdown)}
+              </p>
+            ) : null}
           </Card>
-          <Card className="gap-0 p-5">
+          <Card
+            className="gap-0 p-5"
+            onPointerDownCapture={() => setAutoLoginAllowed(false)}
+          >
             <h2 className="text-sm font-medium">{copy.desktopDownload}</h2>
             <p className="text-muted-foreground mt-1 text-xs leading-5">
               {copy.desktopDescription}

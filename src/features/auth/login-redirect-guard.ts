@@ -1,5 +1,5 @@
-// Web runtime has no start page: unauthenticated visits go straight to One
-// User's login. A short-lived guard stops callback/401 redirect loops.
+// Web runtime opens One User's login after a short countdown on the login
+// page. A short-lived guard stops callback/401 redirect loops.
 const GUARD_KEY = 'one:oidc-redirect-at';
 const GUARD_MS = 15_000;
 
