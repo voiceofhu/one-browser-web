@@ -1,9 +1,8 @@
-import { LoadingState } from '@/components/loading-state';
+import { AppLoading } from '@/components/app-loading';
 import {
   RouteProgress,
   RouteProgressPending,
 } from '@/components/route-progress';
-import { SweepShine } from '@/components/ui/sweep-shine';
 import { AccountSettingsLayout } from '@/features/account/profile/account-settings-layout';
 import { AuthGate } from '@/features/auth/auth-gate';
 import { DashboardShell } from '@/features/browser-shell/dashboard-shell';
@@ -58,9 +57,9 @@ export function AppRouter() {
         fallback={
           <>
             <RouteProgressPending />
-            <LoadingState
-              className="bg-background min-h-dvh"
-              label="正在加载工作区..."
+            <AppLoading
+              className="min-h-dvh"
+              label="正在加载工作区"
             />
           </>
         }
@@ -142,14 +141,10 @@ function DashboardLayout() {
 
 function RouteLoading() {
   return (
-    <div
-      role="status"
-      aria-label="页面加载中"
-      className="bg-card text-muted-foreground flex min-h-0 flex-1 items-center justify-center text-sm"
-    >
+    <>
       <RouteProgressPending />
-      <SweepShine>页面加载中</SweepShine>
-    </div>
+      <AppLoading className="bg-card min-h-0" />
+    </>
   );
 }
 

@@ -1,3 +1,4 @@
+import { AppLoading } from '@/components/app-loading';
 import { ThemeToggleButton } from '@/components/theme/theme-toggle-button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -221,15 +222,7 @@ function AppLoadingStatus({
         aria-live="polite"
         aria-busy="true"
       >
-        <Image
-          src={APP_LOGO_SRC}
-          alt="有个浏览器"
-          width={64}
-          height={64}
-          priority
-          className="size-16 object-contain select-none"
-          draggable={false}
-        />
+        <AppLoading className="min-h-0 w-full p-0" label={title} />
         <p className="sr-only">{statusText}</p>
       </section>
     </main>
