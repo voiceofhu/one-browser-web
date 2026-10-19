@@ -11,8 +11,8 @@ import { ThemeToggleButton } from '@/components/theme/theme-toggle-button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { CopyButton } from '@/components/ui/copy-button';
 import { Spinner } from '@/components/ui/spinner';
+import { SweepShine } from '@/components/ui/sweep-shine';
 import {
   consumeAuthExpiredNotice,
   readAuthSessionStatus,
@@ -21,7 +21,7 @@ import { isUnauthorizedAuthError } from '@/features/auth/auth-errors';
 import { AppDownloadCard } from '@/features/app-download/download-card';
 import { requestDownloadPrompt } from '@/features/app-download/session';
 import { desktopInvoke, isTauriRuntime } from '@/lib/desktop';
-import { Door01Icon, Globe02Icon } from '@hugeicons/core-free-icons';
+import { Globe02Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { useQueryClient } from '@tanstack/react-query';
 import * as React from 'react';
@@ -36,7 +36,6 @@ import {
   getWebLoginConfig,
   prepareWebLoginUrl,
 } from './api';
-import { InteractiveGridBackground } from './interactive-grid-background';
 import { markLoginRedirect, recentlyRedirected } from './login-redirect-guard';
 import { useLoginAppWindowSize } from './use-app-window-size';
 import { useAuthDeepLinks } from './use-auth-deep-links';
@@ -54,15 +53,8 @@ type LoginPageCopy = {
   desktopDescription: string;
   openingAuthLogin: string;
   autoOpenWebLogin: (seconds: number) => string;
-  copyLoginLink: string;
-  copyingLoginLink: string;
-  copied: string;
-  copySuccess: string;
-  copyError: string;
-  exitApp: string;
   authExpired: string;
   openLoginError: string;
-  exitAppError: string;
   missingLoginUrl: (envName: string) => string;
   unsupportedLoginUrlProtocol: (envName: string) => string;
   invalidLoginUrl: (envName: string) => string;
@@ -79,15 +71,8 @@ const LOGIN_PAGE_COPY: Record<'zh-CN' | 'en-US', LoginPageCopy> = {
     desktopDescription: '下载 One Browser，使用完整的浏览器功能。',
     openingAuthLogin: '正在打开...',
     autoOpenWebLogin: (seconds) => `${seconds} 秒后自动打开网页版登录`,
-    copyLoginLink: '复制登录链接',
-    copyingLoginLink: '正在复制...',
-    copied: '已复制',
-    copySuccess: '登录链接已复制',
-    copyError: '无法复制登录链接',
-    exitApp: '退出应用',
     authExpired: '登录信息已过期，请重新登录',
     openLoginError: '无法打开网页登录',
-    exitAppError: '无法退出应用',
     missingLoginUrl: (envName) => `请配置 ${envName}`,
     unsupportedLoginUrlProtocol: (envName) => `${envName} 只支持 http 或 https`,
     invalidLoginUrl: (envName) => `${envName} 不是有效链接`,
@@ -102,15 +87,8 @@ const LOGIN_PAGE_COPY: Record<'zh-CN' | 'en-US', LoginPageCopy> = {
     desktopDescription: 'Download One Browser for the full desktop experience.',
     openingAuthLogin: 'Opening...',
     autoOpenWebLogin: (seconds) => `Opening web sign-in in ${seconds}s`,
-    copyLoginLink: 'Copy sign-in link',
-    copyingLoginLink: 'Copying...',
-    copied: 'Copied',
-    copySuccess: 'Sign-in link copied',
-    copyError: 'Unable to copy sign-in link',
-    exitApp: 'Quit app',
     authExpired: 'Your session has expired. Sign in again.',
     openLoginError: 'Unable to open the sign-in page',
-    exitAppError: 'Unable to quit the app',
     missingLoginUrl: (envName) => `Please configure ${envName}`,
     unsupportedLoginUrlProtocol: (envName) =>
       `${envName} only supports http or https`,
@@ -305,20 +283,6 @@ export function LoginPage({ authManaged = false }: LoginPageProps) {
     }
   }
 
-  async function exitApp() {
-    if (typeof window === 'undefined' || !window.__TAURI_INTERNALS__) {
-      window.close();
-      return;
-    }
-
-    try {
-      const { getCurrentWindow } = await import('@tauri-apps/api/window');
-      await getCurrentWindow().close();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : copy.exitAppError);
-    }
-  }
-
   if (!isDesktop) {
     return (
       <main className="bg-muted/40 text-foreground relative flex min-h-svh w-full items-center justify-center px-4 py-8">
@@ -401,31 +365,29 @@ export function LoginPage({ authManaged = false }: LoginPageProps) {
 
   return (
     <main
-      className="bg-background text-foreground relative isolate grid min-h-dvh place-items-center overflow-hidden rounded-[var(--app-radius)] px-4 py-8"
+      className="bg-background text-foreground relative grid min-h-dvh place-items-center overflow-hidden rounded-[var(--app-radius)] px-5 py-6 select-none"
       onMouseDown={(event) => void startWindowDrag(event)}
     >
-      <InteractiveGridBackground className="opacity-40" />
       <LoginPageControls />
-      <section className="relative z-10 flex w-full max-w-72 flex-col">
-        <div className="flex items-center gap-2.5">
-          <Image
-            src={APP_LOGO_SRC}
-            alt={copy.appLogoAlt}
-            width={40}
-            height={40}
-            priority
-            className="size-10 shrink-0 rounded-lg select-none"
-            draggable={false}
-          />
-          <h1 className="text-foreground text-base/6 font-semibold tracking-tight">
-            {copy.title}
-          </h1>
-        </div>
+      <section className="flex w-full max-w-sm flex-col items-center px-6 py-8 text-center">
+        <Image
+          src={APP_LOGO_SRC}
+          alt={copy.appLogoAlt}
+          width={88}
+          height={88}
+          priority
+          className="size-[5.5rem] shrink-0"
+          draggable={false}
+        />
+        <h1 className="mt-3 text-lg/6 font-semibold">{copy.title}</h1>
+        <p className="text-muted-foreground mt-1.5 text-sm/6">
+          {copy.webDescription}
+        </p>
 
         {authNotice || !canOpenLogin ? (
           <Alert
             variant="destructive"
-            className="mt-3 rounded-md border-destructive/20 bg-destructive/5 px-2.5 py-2"
+            className="mt-4 w-full cursor-text border-destructive/20 bg-destructive/5 text-left select-text"
             aria-live="polite"
           >
             <AlertDescription>
@@ -434,67 +396,25 @@ export function LoginPage({ authManaged = false }: LoginPageProps) {
           </Alert>
         ) : null}
 
-        <div className="mt-4 flex w-full flex-col gap-1.5">
-          <Button
-            className="h-8 w-full rounded-md px-3"
-            disabled={opening || !canOpenLogin}
-            onClick={() => void openWebLogin()}
-            size="lg"
-            title={!canOpenLogin ? loginConfigMessage : undefined}
-          >
-            {opening ? (
-              <Spinner data-icon="inline-start" />
-            ) : (
-              <HugeiconsIcon
-                icon={Globe02Icon}
-                strokeWidth={2}
-                data-icon="inline-start"
-              />
-            )}
-            {opening
-              ? copy.openingAuthLogin
-              : isDesktop
-                ? copy.openAuthLogin
-                : copy.webAuthLogin}
-          </Button>
-
-          {isDesktop ? (
-            <div className="flex w-full flex-wrap items-center justify-between gap-x-2 gap-y-1">
-              <CopyButton
-                variant="ghost"
-                className="text-muted-foreground min-w-0 rounded-md px-1.5"
-                disabled={!canOpenLogin}
-                getText={() => prepareWebLoginUrl(currentBrowserReturnTo())}
-                idleLabel={copy.copyLoginLink}
-                copyingLabel={copy.copyingLoginLink}
-                copiedLabel={copy.copied}
-                successMessage={copy.copySuccess}
-                errorMessage={copy.copyError}
-                size="default"
-              >
-                {(stage) =>
-                  stage === 'copying'
-                    ? copy.copyingLoginLink
-                    : copy.copyLoginLink
-                }
-              </CopyButton>
-
-              <Button
-                variant="ghost"
-                className="text-muted-foreground min-w-0 rounded-md px-1.5"
-                onClick={() => void exitApp()}
-                size="default"
-              >
-                <HugeiconsIcon
-                  icon={Door01Icon}
-                  strokeWidth={2}
-                  data-icon="inline-start"
-                />
-                {copy.exitApp}
-              </Button>
-            </div>
-          ) : null}
-        </div>
+        <Button
+          className="mt-5 h-9 w-full gap-1.5 rounded-lg px-3 text-sm"
+          disabled={opening || !canOpenLogin}
+          aria-busy={opening}
+          onClick={() => void openWebLogin()}
+          size="lg"
+          title={!canOpenLogin ? loginConfigMessage : undefined}
+        >
+          {!opening && (
+            <HugeiconsIcon
+              icon={Globe02Icon}
+              strokeWidth={2}
+              data-icon="inline-start"
+            />
+          )}
+          <SweepShine active={opening}>
+            {opening ? copy.openingAuthLogin : copy.openAuthLogin}
+          </SweepShine>
+        </Button>
       </section>
     </main>
   );
