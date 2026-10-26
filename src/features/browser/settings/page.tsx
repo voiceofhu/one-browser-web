@@ -52,7 +52,7 @@ export function SettingsDialog({
       {trigger ? (
         <ResponsiveDialogTrigger asChild>{trigger}</ResponsiveDialogTrigger>
       ) : null}
-      <ResponsiveDialogContent className="h-[min(88dvh,560px)] max-h-[min(88dvh,560px)] sm:max-w-[min(90vw,768px)] [&_[data-slot=dialog-close]]:right-2 [&_[data-slot=dialog-close]]:top-2">
+      <ResponsiveDialogContent className="h-[min(88dvh,560px)] max-h-[min(88dvh,560px)] sm:max-w-[min(90vw,768px)] [&_[data-slot=dialog-close]]:top-2 [&_[data-slot=dialog-close]]:right-2">
         <ResponsiveDialogHeader className="sr-only">
           <ResponsiveDialogTitle>设置</ResponsiveDialogTitle>
           <ResponsiveDialogDescription>
@@ -77,7 +77,7 @@ export function SettingsDialog({
 export function SettingsPage() {
   return (
     <section className="flex min-h-0 flex-1 flex-col overflow-hidden p-2 lg:p-3">
-      <div className="min-h-0 flex-1 overflow-hidden rounded-sm border bg-card">
+      <div className="bg-card min-h-0 flex-1 overflow-hidden rounded-sm border">
         <SettingsPanel />
       </div>
     </section>
@@ -94,7 +94,9 @@ function SettingsPanel() {
     return (
       <Empty className="h-full gap-3 rounded-none px-4 py-6" role="alert">
         <EmptyHeader className="gap-1.5">
-          <span className="text-muted-foreground font-mono text-[11px]">{state.code}</span>
+          <span className="text-muted-foreground font-mono text-[11px]">
+            {state.code}
+          </span>
           <EmptyTitle>设置：{state.title}</EmptyTitle>
           <EmptyDescription>{state.description}</EmptyDescription>
           <p className="text-muted-foreground text-xs">{state.hint}</p>
@@ -123,7 +125,11 @@ function SettingsPanel() {
 
   if (!settingsQuery.data) {
     return (
-      <div role="status" aria-label="设置加载中" className="h-full overflow-hidden p-3 md:p-4">
+      <div
+        role="status"
+        aria-label="设置加载中"
+        className="h-full overflow-hidden p-3 md:p-4"
+      >
         <span className="sr-only">设置加载中...</span>
         <Skeleton className="mb-4 h-4 w-20 rounded-sm" />
         <div className="space-y-3" aria-hidden="true">
@@ -164,11 +170,20 @@ function SettingsSection({
     case 'egress':
       return <DefaultEgressSettings settings={settings} />;
     case 'pre-proxy':
-      return (
+      return settings.preProxy ? (
         <PreProxySettings
           key={JSON.stringify(settings.preProxy)}
-          settings={settings}
+          preProxy={settings.preProxy}
         />
+      ) : (
+        <Empty className="h-full gap-3 rounded-none px-4 py-6">
+          <EmptyHeader className="gap-1.5">
+            <EmptyTitle>当前客户端不支持前置代理</EmptyTitle>
+            <EmptyDescription>
+              请在「客户端」中检查更新，安装新版本后即可设置前置代理。
+            </EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       );
     case 'appearance':
       return <AppearanceSettings />;

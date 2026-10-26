@@ -96,7 +96,7 @@ export function invokeMockCommand<T>(
           ...settings,
           hasPassword:
             password === undefined
-              ? mockSettings.preProxy.hasPassword
+              ? Boolean(mockSettings.preProxy?.hasPassword)
               : Boolean(password),
         };
       }
@@ -110,12 +110,12 @@ export function invokeMockCommand<T>(
       });
     case 'test_pre_proxy':
       return mockResult<T>({
-        success: mockSettings.preProxy.mode !== 'off',
-        route: mockSettings.preProxy.mode,
+        success: mockSettings.preProxy?.mode !== 'off',
+        route: mockSettings.preProxy?.mode,
         via: null,
-        latencyMs: mockSettings.preProxy.mode === 'off' ? null : 120,
+        latencyMs: mockSettings.preProxy?.mode === 'off' ? null : 120,
         message:
-          mockSettings.preProxy.mode === 'off'
+          mockSettings.preProxy?.mode === 'off'
             ? '当前为直连模式，未使用前置代理'
             : '已通过前置代理访问外网',
       });

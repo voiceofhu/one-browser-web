@@ -13,7 +13,8 @@ export interface AppSettings {
   defaultStartUrl: string;
   egressSelectionMode: 'auto' | 'manual';
   preferredEgressId: string | null;
-  preProxy: PreProxySettings;
+  /** Absent on desktop clients built before the pre-proxy existed. */
+  preProxy?: PreProxySettings;
   apiEnabled: boolean;
   apiHost: '127.0.0.1';
   apiPort: number;

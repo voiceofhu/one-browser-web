@@ -6,6 +6,7 @@ import {
 import { AccountSettingsLayout } from '@/features/account/profile/account-settings-layout';
 import { AuthGate } from '@/features/auth/auth-gate';
 import { DashboardShell } from '@/features/browser-shell/dashboard-shell';
+import { isTauriRuntime } from '@/lib/desktop';
 import { AppErrorBoundary } from '@/views/error/error-boundary';
 import ErrorPage from '@/views/error/error-page';
 import NotFound from '@/views/error/not-found';
@@ -19,6 +20,7 @@ import {
   useOutlet,
 } from 'react-router-dom';
 
+const HomePage = lazy(() => import('@/views/home'));
 const LoginPage = lazy(() => import('@/views/auth/login'));
 const DownloadPage = lazy(() => import('@/views/download'));
 const CallbackPage = lazy(() => import('@/views/auth/callback'));
@@ -77,7 +79,7 @@ export function AppRouter() {
           <Route path="/callback" element={<CallbackPage />} />
           <Route path="/team-invite" element={<TeamInvitePage />} />
           <Route path="/index" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/" element={<HomeRoute />} />
           <Route element={<DashboardLayout />}>
             <Route path="/dashboard" element={<DashboardOverviewPage />} />
             <Route path="/system/user" element={<SystemUserPage />} />
@@ -119,6 +121,12 @@ export function AppRouter() {
       </Suspense>
     </AppErrorBoundary>
   );
+}
+
+// The marketing home is web-only; the desktop shell goes straight to its workspace.
+function HomeRoute() {
+  if (isTauriRuntime()) return <Navigate to="/dashboard" replace />;
+  return <HomePage />;
 }
 
 function DashboardLayout() {

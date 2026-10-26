@@ -100,6 +100,9 @@ export const settingsMessages = {
   '（较忙）': '(elevated)',
   前置代理: 'Pre-proxy',
   连接方式: 'Connection mode',
+  当前客户端不支持前置代理: 'This app version does not support the pre-proxy',
+  '请在「客户端」中检查更新，安装新版本后即可设置前置代理。':
+    'Check for updates under App, then install the new version to set up the pre-proxy.',
   '环境代理、直连环境和平台线路都会先经过前置代理再连出去。在需要翻墙才能访问代理的网络里，用它代替 TUN 模式。本机和局域网地址不经过前置代理。':
     'Profile proxies, direct profiles, and platform routes all connect through the pre-proxy first. Use it instead of TUN mode on networks where proxies are only reachable through a VPN. Local and LAN addresses bypass it.',
   直连: 'Direct',

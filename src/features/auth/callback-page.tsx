@@ -67,7 +67,7 @@ export function CallbackPage() {
             message: 'App 授权已完成，正在进入 Web…',
           });
           window.setTimeout(() => {
-            window.location.replace('/');
+            window.location.replace('/dashboard');
           }, 800);
           window.location.assign(authorization.callback_url);
           return;
@@ -134,7 +134,7 @@ export function CallbackPage() {
             </CopyButton>
           </div>
           <footer className="bg-muted/40 flex flex-wrap gap-2 border-t px-3 py-2">
-            <Button onClick={() => window.location.assign(buildWebLoginUrl('/'))}>
+            <Button onClick={() => window.location.assign(buildWebLoginUrl('/dashboard'))}>
               重新登录
             </Button>
             <Button asChild variant="outline">
@@ -204,5 +204,5 @@ function isBase64Url256(value: string) {
 }
 
 function normalizeReturnTo(value: string) {
-  return value.startsWith('/') && !value.startsWith('//') ? value : '/';
+  return value.startsWith('/') && !value.startsWith('//') ? value : '/dashboard';
 }

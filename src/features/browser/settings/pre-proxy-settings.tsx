@@ -12,9 +12,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import type {
-  AppSettings,
   PreProxyMode,
   PreProxyPatch,
+  PreProxySettings as PreProxySettingsValue,
   PreProxyTestResult,
   PreProxyType,
 } from '@/features/browser/contracts';
@@ -53,8 +53,11 @@ const MODE_CHOICES: {
   },
 ];
 
-export function PreProxySettings({ settings }: { settings: AppSettings }) {
-  const preProxy = settings.preProxy;
+export function PreProxySettings({
+  preProxy,
+}: {
+  preProxy: PreProxySettingsValue;
+}) {
   const updateSettingsMutation = useUpdateSettingsMutation();
   const testMutation = useTestPreProxyMutation();
   const [mode, setMode] = useState<PreProxyMode>(preProxy.mode);
