@@ -1,6 +1,8 @@
 import type {
   AppSettings,
   ChromiumPathStatus,
+  PreProxyTestResult,
+  SystemProxyStatus,
   UpdateSettingsRequest,
   ValidateChromiumPathRequest,
 } from '@/features/browser/contracts';
@@ -20,4 +22,12 @@ export function validateChromiumPath(
   return desktopInvoke<ChromiumPathStatus>('validate_chromium_path', {
     request,
   });
+}
+
+export function detectSystemProxy() {
+  return desktopInvoke<SystemProxyStatus>('detect_system_proxy');
+}
+
+export function testPreProxy() {
+  return desktopInvoke<PreProxyTestResult>('test_pre_proxy');
 }

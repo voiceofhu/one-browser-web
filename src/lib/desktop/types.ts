@@ -20,6 +20,8 @@ export type DesktopCommand =
   | 'open_system_log'
   | 'get_settings'
   | 'update_settings'
+  | 'detect_system_proxy'
+  | 'test_pre_proxy'
   | 'probe_egress_lines'
   | 'sync_tray_egress_lines'
   | 'validate_chromium_path'

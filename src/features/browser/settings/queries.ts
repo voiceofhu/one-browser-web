@@ -6,7 +6,13 @@ import type {
 import { toastBrowserError } from '@/features/browser/errors';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { getSettings, updateSettings, validateChromiumPath } from './api';
+import {
+  detectSystemProxy,
+  getSettings,
+  testPreProxy,
+  updateSettings,
+  validateChromiumPath,
+} from './api';
 
 export function useSettingsQuery() {
   return useQuery({
@@ -36,6 +42,22 @@ export function useValidateChromiumPathMutation() {
   return useMutation({
     mutationFn: (request: ValidateChromiumPathRequest) =>
       validateChromiumPath(request),
+    onError: toastBrowserError,
+  });
+}
+
+export function useSystemProxyQuery(enabled: boolean) {
+  return useQuery({
+    queryKey: [...browserQueryKeys.settings(), 'system-proxy'],
+    queryFn: detectSystemProxy,
+    enabled,
+    staleTime: 0,
+  });
+}
+
+export function useTestPreProxyMutation() {
+  return useMutation({
+    mutationFn: testPreProxy,
     onError: toastBrowserError,
   });
 }

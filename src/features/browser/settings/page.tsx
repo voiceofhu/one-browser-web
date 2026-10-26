@@ -31,6 +31,7 @@ import { AppearanceSettings } from './appearance-settings';
 import { BrowserRuntimeSettings } from './browser-runtime-settings';
 import { DefaultEgressSettings } from './default-egress-settings';
 import { LocalApiSettings } from './local-api-settings';
+import { PreProxySettings } from './pre-proxy-settings';
 import { useSettingsQuery } from './queries';
 import {
   type SettingsSectionId,
@@ -162,6 +163,13 @@ function SettingsSection({
       );
     case 'egress':
       return <DefaultEgressSettings settings={settings} />;
+    case 'pre-proxy':
+      return (
+        <PreProxySettings
+          key={JSON.stringify(settings.preProxy)}
+          settings={settings}
+        />
+      );
     case 'appearance':
       return <AppearanceSettings />;
     case 'local-api':

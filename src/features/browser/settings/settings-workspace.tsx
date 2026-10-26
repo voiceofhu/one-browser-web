@@ -20,6 +20,7 @@ import {
 import {
   ApiIcon,
   BrowserIcon,
+  Link04Icon,
   PaintBoardIcon,
   Refresh01Icon,
   Route01Icon,
@@ -30,6 +31,7 @@ import type { CSSProperties, ComponentProps, ReactNode } from 'react';
 export type SettingsSectionId =
   | 'general'
   | 'egress'
+  | 'pre-proxy'
   | 'appearance'
   | 'local-api'
   | 'client';
@@ -50,6 +52,11 @@ const sections: SettingsSection[] = [
     id: 'egress',
     label: '线路',
     icon: Route01Icon,
+  },
+  {
+    id: 'pre-proxy',
+    label: '前置代理',
+    icon: Link04Icon,
   },
   {
     id: 'appearance',

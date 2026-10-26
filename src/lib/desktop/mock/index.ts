@@ -1,7 +1,7 @@
 import type {
-  AppSettings,
   CheckProxyRequest,
   DeleteProfileCacheResult,
+  UpdateSettingsRequest,
 } from '@/features/browser/contracts';
 import {
   mockAppReleaseIdentity,
@@ -48,7 +48,7 @@ export function invokeMockCommand<T>(
   args?: DesktopCommandArgs,
 ): Promise<T> {
   const request = args?.request as Record<string, unknown> | undefined;
-  const patch = args?.patch as Partial<AppSettings> | undefined;
+  const patch = args?.patch as UpdateSettingsRequest | undefined;
 
   switch (command) {
     case 'get_notification_permission':
@@ -87,9 +87,38 @@ export function invokeMockCommand<T>(
       return mockResult<T>(undefined);
     case 'get_settings':
       return mockResult<T>(mockSettings);
-    case 'update_settings':
-      Object.assign(mockSettings, patch);
+    case 'update_settings': {
+      const { preProxy, ...rest } = patch ?? {};
+      Object.assign(mockSettings, rest);
+      if (preProxy) {
+        const { password, ...settings } = preProxy;
+        mockSettings.preProxy = {
+          ...settings,
+          hasPassword:
+            password === undefined
+              ? mockSettings.preProxy.hasPassword
+              : Boolean(password),
+        };
+      }
       return mockResult<T>(mockSettings);
+    }
+    case 'detect_system_proxy':
+      return mockResult<T>({
+        proxy: { type: 'http', host: '127.0.0.1', port: 7890 },
+        source: 'mock',
+        message: '检测到系统代理 127.0.0.1:7890',
+      });
+    case 'test_pre_proxy':
+      return mockResult<T>({
+        success: mockSettings.preProxy.mode !== 'off',
+        route: mockSettings.preProxy.mode,
+        via: null,
+        latencyMs: mockSettings.preProxy.mode === 'off' ? null : 120,
+        message:
+          mockSettings.preProxy.mode === 'off'
+            ? '当前为直连模式，未使用前置代理'
+            : '已通过前置代理访问外网',
+      });
     case 'probe_egress_lines':
       return mockResult<T>(
         Array.isArray(request?.targets)

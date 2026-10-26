@@ -98,4 +98,48 @@ export const settingsMessages = {
   较忙: 'Elevated',
   '（繁忙）': '(busy)',
   '（较忙）': '(elevated)',
+  前置代理: 'Pre-proxy',
+  连接方式: 'Connection mode',
+  '环境代理、直连环境和平台线路都会先经过前置代理再连出去。在需要翻墙才能访问代理的网络里，用它代替 TUN 模式。本机和局域网地址不经过前置代理。':
+    'Profile proxies, direct profiles, and platform routes all connect through the pre-proxy first. Use it instead of TUN mode on networks where proxies are only reachable through a VPN. Local and LAN addresses bypass it.',
+  直连: 'Direct',
+  '不经过任何前置代理，从本机网络直接连接代理和线路':
+    'Skip the pre-proxy and connect to proxies and routes from the local network',
+  跟随系统代理: 'Follow system proxy',
+  '自动使用 Clash、v2rayN 等软件开启的系统代理；未开启时直接连接':
+    'Use the system proxy set by Clash, v2rayN and similar apps; connect directly when none is set',
+  手动指定: 'Manual',
+  '始终经过下方代理，连不上时阻止访问，不会退回直连':
+    'Always use the proxy below; block traffic when it is unreachable instead of falling back to direct',
+  系统代理: 'System proxy',
+  未检测到: 'Not detected',
+  '检测中...': 'Detecting...',
+  读取操作系统的代理设置: 'Reads the operating system proxy settings',
+  重新检测: 'Detect again',
+  代理服务器: 'Proxy server',
+  协议: 'Protocol',
+  本机代理软件的混合端口两种都支持:
+    'Mixed ports of local proxy apps accept both',
+  地址: 'Address',
+  '例如 127.0.0.1 端口 7890': 'For example 127.0.0.1 port 7890',
+  端口: 'Port',
+  认证: 'Authentication',
+  '密码已保存在系统钥匙串，留空表示不修改':
+    'Password is saved in the system keychain; leave blank to keep it',
+  '可选；密码保存在系统钥匙串':
+    'Optional; the password is saved in the system keychain',
+  用户名: 'Username',
+  密码: 'Password',
+  清除密码: 'Clear password',
+  保存: 'Save',
+  保存中: 'Saving',
+  测试连接: 'Test connection',
+  测试中: 'Testing',
+  '固定服务器和 PAC 类型的环境代理由浏览器直接连接，不经过前置代理。':
+    'Fixed-server and PAC profile proxies are connected by the browser directly and skip the pre-proxy.',
+  前置代理已更新: 'Pre-proxy updated',
+  前置代理已保存: 'Pre-proxy saved',
+  密码已清除: 'Password cleared',
+  '请填写前置代理地址和 1-65535 的端口':
+    'Enter the pre-proxy address and a port from 1-65535',
 } as const;
