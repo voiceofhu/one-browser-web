@@ -16,8 +16,6 @@ import { useAppStatusQuery } from '@/features/browser/status/queries';
 import { cn } from '@/lib/utils';
 import { desktopInvoke, isTauriRuntime } from '@/lib/desktop';
 import { useDesktopAppGate } from '@/lib/desktop/app-gate';
-import { ServerStack03Icon } from '@hugeicons/core-free-icons';
-import { HugeiconsIcon } from '@hugeicons/react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -27,7 +25,6 @@ import {
   resolveChromiumDownloadTitle,
   resolveChromiumDownloadValue,
 } from './chromium-download-footer';
-import { EgressQuickSwitch } from './egress-quick-switch';
 
 type StatusTone = 'success' | 'danger' | 'muted';
 type StatusLabelTone = StatusTone | 'default';
@@ -227,24 +224,6 @@ export function AppFooter() {
           <StatusDot tone="muted" label="Web" />
           {appVersion}
         </button>
-        <button
-          type="button"
-          className="text-foreground hover:bg-accent inline-flex h-full items-center gap-1 rounded-sm px-1 font-medium transition-colors"
-          onClick={() =>
-            requireDesktopApp({
-              title: '在 App 中选择节点',
-              description:
-                '节点测速与本机线路切换需要 One Browser App 的网络能力。',
-            })
-          }
-        >
-          <HugeiconsIcon
-            icon={ServerStack03Icon}
-            strokeWidth={2}
-            className="size-2.5"
-          />
-          选择节点
-        </button>
       </footer>
     );
   }
@@ -350,7 +329,6 @@ export function AppFooter() {
           </div>
         </HoverCardContent>
       </HoverCard>
-      <EgressQuickSwitch settings={status?.settings} />
       {showChromiumDownload ? (
         <ChromiumDownloadFooter
           isError={isChromiumDownloadError}

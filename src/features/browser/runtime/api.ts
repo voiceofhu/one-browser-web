@@ -4,7 +4,7 @@ import type {
   CloseProfileResult,
   OpenProfileRequest,
   RuntimeProfile,
-  UpdateTunnelRouteRequest,
+  UpdateRemoteLeaseRequest,
 } from '@/features/browser/contracts';
 import { desktopInvoke } from '@/lib/desktop';
 
@@ -24,16 +24,6 @@ export function closeAllProfiles() {
   return desktopInvoke<CloseAllProfilesResult>('close_all_profiles');
 }
 
-export function updateTunnelRoute(request: UpdateTunnelRouteRequest) {
-  return desktopInvoke<RuntimeProfile>('update_tunnel_route', { request });
-}
-
-export function getTunnelRenewalCredential(
-  profileId: string,
-  generation: number,
-) {
-  return desktopInvoke<string>('get_tunnel_renewal_credential', {
-    profileId,
-    generation,
-  });
+export function updateRemoteLease(request: UpdateRemoteLeaseRequest) {
+  return desktopInvoke<RuntimeProfile>('update_remote_lease', { request });
 }

@@ -73,7 +73,7 @@ export function RemoteProxyEditorDialog({
     if (
       !requireDesktopApp({
         title: '在 App 中检测代理',
-        description: '代理检测需要使用 One Browser App 的本机网络与出口线路。',
+        description: '代理检测需要使用 One Browser App 的本机网络。',
       })
     ) {
       return;

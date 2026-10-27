@@ -1,11 +1,9 @@
 export const settingsMessages = {
-  '配置浏览器、线路、外观、本地 API 和客户端操作。':
-    'Configure the browser, routes, appearance, local API, and app actions.',
+  '配置浏览器、前置代理、外观、本地 API 和客户端操作。':
+    'Configure the browser, pre-proxy, appearance, local API, and app actions.',
   常规: 'General',
   '浏览器运行时、启动页和环境存储':
     'Browser runtime, startup page, and environment storage',
-  线路: 'Routes',
-  默认最优线路与本机测速: 'Best default route and local latency checks',
   外观与语言: 'Appearance & language',
   '界面语言、显示模式和主题色':
     'Interface language, display mode, and accent color',
@@ -59,55 +57,19 @@ export const settingsMessages = {
   '当前界面会立即重新加载，正在运行的浏览器环境不受影响。':
     'The current interface reloads immediately. Running browser environments are not affected.',
   立即重载: 'Reload now',
-  默认线路: 'Default route',
-  默认线路已更新: 'Default route updated',
-  线路测速失败: 'Route test failed',
-  '仅影响新打开的浏览器环境；已运行或已绑定的环境不会自动切换，避免出口 IP 漂移。':
-    'Applies only to newly opened browser environments. Running or assigned environments do not switch automatically, preventing outbound IP changes.',
-  '自动选择（推荐）': 'Auto-select (recommended)',
   推荐: 'Recommended',
-  已选择线路: 'Selected route',
-  '该线路已不在服务器列表中；设置已保留，启动时将明确报错。':
-    'This route is no longer listed by the server. The setting is preserved, and startup will fail explicitly.',
   不可用: 'Unavailable',
-  暂时无法读取线路: 'Routes temporarily unavailable',
-  '其他设置不受影响；启动环境时 Server 仍会按权威健康状态选择线路。':
-    'Other settings are unaffected. When starting an environment, the server still selects a route using its authoritative health status.',
-  尚未完成本机数据面测速: 'No local data-plane test yet',
-  测速中: 'Testing',
-  重新测速: 'Retest',
-  正在加载线路: 'Loading routes',
-  '本机测速未发现可用线路；启动会明确报错，不会直连或偷换出口。':
-    'Local tests found no available route. Startup will fail explicitly without connecting directly or silently changing the outbound route.',
-  'Server 将按线路健康、容量和环境粘性在启动前选择。':
-    'The server selects a route before startup based on health, capacity, and environment affinity.',
-  本机不可达: 'Unreachable from this device',
-  连接波动: 'Unstable connection',
-  等待本机测速: 'Waiting for local test',
-  暂无质量数据: 'No quality data',
-  容量已满: 'At capacity',
-  繁忙: 'Busy',
-  降级: 'Degraded',
-  维护中: 'Under maintenance',
-  初始化: 'Initializing',
-  刚刚: 'Just now',
-  '最近测试：': 'Last tested:',
-  '当前推荐：': 'Recommended now:',
   本机: 'Local',
-  负载: 'Load',
-  较忙: 'Elevated',
-  '（繁忙）': '(busy)',
-  '（较忙）': '(elevated)',
   前置代理: 'Pre-proxy',
   连接方式: 'Connection mode',
   当前客户端不支持前置代理: 'This app version does not support the pre-proxy',
   '请在「客户端」中检查更新，安装新版本后即可设置前置代理。':
     'Check for updates under App, then install the new version to set up the pre-proxy.',
-  '环境代理、直连环境和平台线路都会先经过前置代理再连出去。在需要翻墙才能访问代理的网络里，用它代替 TUN 模式。本机和局域网地址不经过前置代理。':
-    'Profile proxies, direct profiles, and platform routes all connect through the pre-proxy first. Use it instead of TUN mode on networks where proxies are only reachable through a VPN. Local and LAN addresses bypass it.',
+  '环境代理和直连环境都会先经过前置代理再连出去。在需要翻墙才能访问代理的网络里，用它代替 TUN 模式。本机和局域网地址不经过前置代理。':
+    'Profile proxies and direct profiles both connect through the pre-proxy first. Use it instead of TUN mode on networks where proxies are only reachable through a VPN. Local and LAN addresses bypass it.',
   直连: 'Direct',
-  '不经过任何前置代理，从本机网络直接连接代理和线路':
-    'Skip the pre-proxy and connect to proxies and routes from the local network',
+  '不经过任何前置代理，从本机网络直接连接代理':
+    'Skip the pre-proxy and connect to proxies from the local network',
   跟随系统代理: 'Follow system proxy',
   '自动使用 Clash、v2rayN 等软件开启的系统代理；未开启时直接连接':
     'Use the system proxy set by Clash, v2rayN and similar apps; connect directly when none is set',

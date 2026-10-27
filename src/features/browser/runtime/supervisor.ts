@@ -2,15 +2,10 @@ import { readAuthTokens } from '@/features/auth/session';
 import { isTauriRuntime } from '@/lib/desktop';
 import * as React from 'react';
 
-import type { RuntimeProfile, TunnelRoute } from '../contracts';
+import type { RuntimeProfile } from '../contracts';
 import { renewRemoteEnvironment } from '../environments/api';
 import { parseRemoteEnvironmentProfileId } from '../environments/runtime-profile-id';
-import type { RemoteTunnelRoute } from '../environments/types';
-import {
-  getTunnelRenewalCredential,
-  listRuntime,
-  updateTunnelRoute,
-} from './api';
+import { listRuntime, updateRemoteLease } from './api';
 import {
   isRuntimeRenewCandidate,
   nextRuntimeRenewDelay,
@@ -29,39 +24,28 @@ export function useRuntimeSupervisor() {
       const environmentId = parseRemoteEnvironmentProfileId(runtime.profileId);
       if (
         environmentId === null ||
-        runtime.tunnelGeneration === null ||
-        !runtime.tunnelRouteExpiresAt
+        runtime.leaseGeneration === null ||
+        !runtime.leaseExpiresAt
       ) {
         return Promise.resolve();
       }
       const current = renewals.get(environmentId);
       if (current) return current;
 
-      const generation = runtime.tunnelGeneration;
-      const routeExpiresAt = runtime.tunnelRouteExpiresAt;
-      const renewal = getTunnelRenewalCredential(runtime.profileId, generation)
-        .then((accessToken) =>
-          renewRemoteEnvironment(environmentId, {
-            generation,
-            routeExpiresAt,
-            accessToken,
-          }),
-        )
+      const generation = runtime.leaseGeneration;
+      const renewal = renewRemoteEnvironment(environmentId, { generation })
         .then((renewed) =>
-          updateTunnelRoute({
+          updateRemoteLease({
             profileId: runtime.profileId,
             generation: renewed.generation,
-            leaseExpiresAt: renewed.leaseExpiresAt,
-            tunnelRoute: renewed.tunnelRoute
-              ? toNativeTunnelRoute(renewed.tunnelRoute)
-              : null,
+            leaseExpiresAt: renewed.lease_expires_at,
           }),
         )
         .then(() => undefined)
         .catch((error) => {
-          // The local SOCKS bridge remains fail-closed while connectivity or
-          // the Server is unavailable. A definitive refresh 401 is handled by
-          // the global authentication-expiry coordinator.
+          // A failed renewal is retried on the next sweep. A definitive
+          // refresh 401 is handled by the global authentication-expiry
+          // coordinator.
           console.warn(
             `[runtime-supervisor] failed to renew remote environment ${environmentId}`,
             error,
@@ -125,18 +109,4 @@ export function useRuntimeSupervisor() {
       document.removeEventListener('visibilitychange', renewWhenVisible);
     };
   }, []);
-}
-
-function toNativeTunnelRoute(route: RemoteTunnelRoute): TunnelRoute {
-  return {
-    transport: route.transport,
-    endpoint: route.endpoint,
-    tlsEnabled: route.tls_enabled,
-    accessToken: route.access_token,
-    expiresAt: route.expires_at,
-    generation: route.generation,
-    exitId: route.exit_id,
-    expectedExitIp: route.expected_exit_ip,
-    directFallback: route.direct_fallback,
-  };
 }

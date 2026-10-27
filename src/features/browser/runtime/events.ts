@@ -172,7 +172,7 @@ export function closedRemoteEnvironmentLeases(
   const leases = new Map<string, RemoteEnvironmentLease>();
   for (const profile of explicitlyClosedProfiles) {
     const environmentId = parseRemoteEnvironmentProfileId(profile.profileId);
-    const generation = profile.tunnelGeneration;
+    const generation = profile.leaseGeneration;
     if (
       environmentId !== null &&
       typeof generation === 'number' &&

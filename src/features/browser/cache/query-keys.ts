@@ -13,7 +13,6 @@ export const browserQueryKeys = {
   all: ['browser'] as const,
   status: () => [...browserQueryKeys.all, 'status'] as const,
   settings: () => [...browserQueryKeys.all, 'settings'] as const,
-  egressLines: () => [...browserQueryKeys.all, 'egress-lines'] as const,
   profiles: () => [...browserQueryKeys.all, 'profiles'] as const,
   profilesList: (filters?: ProfileListRequest) =>
     [...browserQueryKeys.profiles(), 'list', filtersKey(filters)] as const,

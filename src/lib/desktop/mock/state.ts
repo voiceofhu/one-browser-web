@@ -12,8 +12,6 @@ export const mockSettings: AppSettings = {
   chromiumPath: null,
   profileRoot: '/tmp/one-browser/profiles',
   defaultStartUrl: 'https://ip.huzhihui.com/',
-  egressSelectionMode: 'auto',
-  preferredEgressId: null,
   preProxy: {
     mode: 'system',
     type: 'socks5',

@@ -232,8 +232,7 @@ export function useEnvironmentActions({
     if (
       !requireDesktopApp({
         title: '在 App 中打开环境',
-        description:
-          '启动浏览器环境需要本机 Chromium、代理隧道与进程管理能力。',
+        description: '启动浏览器环境需要本机 Chromium、代理与进程管理能力。',
       })
     ) {
       return false;

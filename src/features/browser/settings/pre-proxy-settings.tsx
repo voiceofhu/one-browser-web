@@ -37,7 +37,7 @@ const MODE_CHOICES: {
   {
     value: 'off',
     title: '直连',
-    description: '不经过任何前置代理，从本机网络直接连接代理和线路',
+    description: '不经过任何前置代理，从本机网络直接连接代理',
   },
   {
     value: 'system',
@@ -142,7 +142,7 @@ export function PreProxySettings({
       <section>
         <h3 className="mb-1 text-xs font-medium">连接方式</h3>
         <p className="text-muted-foreground mb-2 text-[12px] leading-relaxed font-normal">
-          环境代理、直连环境和平台线路都会先经过前置代理再连出去。在需要翻墙才能访问代理的网络里，用它代替
+          环境代理和直连环境都会先经过前置代理再连出去。在需要翻墙才能访问代理的网络里，用它代替
           TUN 模式。本机和局域网地址不经过前置代理。
         </p>
 

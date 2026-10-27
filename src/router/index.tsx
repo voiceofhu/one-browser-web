@@ -42,7 +42,6 @@ const SystemUserPage = lazy(() => import('@/views/system/user'));
 const SystemRolePage = lazy(() => import('@/views/system/role'));
 const SystemMenuPage = lazy(() => import('@/views/system/menu'));
 const SystemNoticePage = lazy(() => import('@/views/system/notice'));
-const EgressNodePage = lazy(() => import('@/views/system/egress/node'));
 const OperationLogPage = lazy(() => import('@/views/system/log/operation'));
 const LoginLogPage = lazy(() => import('@/views/system/log/login'));
 const HealthPage = lazy(() => import('@/views/monitor/health'));
@@ -59,10 +58,7 @@ export function AppRouter() {
         fallback={
           <>
             <RouteProgressPending />
-            <AppLoading
-              className="min-h-dvh"
-              label="正在加载工作区"
-            />
+            <AppLoading className="min-h-dvh" label="正在加载工作区" />
           </>
         }
       >
@@ -87,7 +83,6 @@ export function AppRouter() {
             <Route path="/browser/roles" element={<TeamRolesPage />} />
             <Route path="/system/menu" element={<SystemMenuPage />} />
             <Route path="/system/notice" element={<SystemNoticePage />} />
-            <Route path="/system/egress/node" element={<EgressNodePage />} />
             <Route
               path="/system/log/operation"
               element={<OperationLogPage />}

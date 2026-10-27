@@ -78,20 +78,43 @@ export function mockOpenProfile(
     ws: { puppeteer: null, selenium: null },
     webdriver: null,
     errorMessage: null,
-    tunnelGeneration: null,
-    tunnelLeaseExpiresAt: null,
-    tunnelRouteExpiresAt: null,
+    leaseGeneration: mockLease(request).generation,
+    leaseExpiresAt: mockLease(request).expiresAt,
   };
   mockRuntime.set(profileId, runtime);
   return runtime;
+}
+
+export function mockUpdateRemoteLease(
+  request?: Record<string, unknown>,
+): RuntimeProfile | null {
+  const profileId = stringValue(request?.profileId) ?? '';
+  const runtime = mockRuntime.get(profileId);
+  if (!runtime || runtime.leaseGeneration !== request?.generation) return null;
+  const updated: RuntimeProfile = {
+    ...runtime,
+    leaseExpiresAt: stringValue(request?.leaseExpiresAt) ?? null,
+  };
+  mockRuntime.set(profileId, updated);
+  return updated;
+}
+
+function mockLease(request?: Record<string, unknown>) {
+  const lease = request?.lease as
+    { generation?: unknown; expiresAt?: unknown } | null | undefined;
+  return {
+    generation: typeof lease?.generation === 'number' ? lease.generation : null,
+    expiresAt: stringValue(lease?.expiresAt) ?? null,
+  };
 }
 
 export function mockCloseProfile(
   request?: Record<string, unknown>,
 ): CloseProfileResult {
   const profileId = stringValue(request?.profileId) ?? '';
+  const leaseGeneration = mockRuntime.get(profileId)?.leaseGeneration ?? null;
   mockRuntime.delete(profileId);
-  return { profileId, closed: true };
+  return { profileId, closed: true, leaseGeneration };
 }
 
 export function mockCloseAllProfiles(): CloseAllProfilesResult {

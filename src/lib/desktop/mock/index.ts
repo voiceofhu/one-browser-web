@@ -33,6 +33,7 @@ import {
   mockProfileProxyStatus,
   mockRefreshIp,
   mockUpdateProfileProxy,
+  mockUpdateRemoteLease,
 } from '@/lib/desktop/mock/runtime';
 import {
   mockProfiles,
@@ -119,26 +120,6 @@ export function invokeMockCommand<T>(
             ? '当前为直连模式，未使用前置代理'
             : '已通过前置代理访问外网',
       });
-    case 'probe_egress_lines':
-      return mockResult<T>(
-        Array.isArray(request?.targets)
-          ? request.targets.map((target) => ({
-              egressId:
-                typeof target === 'object' &&
-                target !== null &&
-                'egressId' in target &&
-                typeof target.egressId === 'string'
-                  ? target.egressId
-                  : '',
-              success: false,
-              latencyMs: null,
-              successfulSamples: 0,
-              failedSamples: 3,
-            }))
-          : [],
-      );
-    case 'sync_tray_egress_lines':
-      return mockResult<T>(undefined);
     case 'validate_chromium_path':
       return mockResult<T>(mockChromiumPath(request?.chromiumPath));
     case 'get_chromium_download_target':
@@ -196,9 +177,10 @@ export function invokeMockCommand<T>(
       return mockResult<T>(mockCloseProfile(request));
     case 'close_all_profiles':
       return mockResult<T>(mockCloseAllProfiles());
-    case 'get_tunnel_renewal_credential':
-      throw new Error('Mock runtimes do not carry Egress renewal credentials');
-    case 'update_tunnel_route':
-      return mockResult<T>(mockRuntime.get(String(request?.profileId)) ?? null);
+    case 'complete_dev_login':
+    case 'sync_tray_environments':
+      return mockResult<T>(undefined);
+    case 'update_remote_lease':
+      return mockResult<T>(mockUpdateRemoteLease(request));
   }
 }

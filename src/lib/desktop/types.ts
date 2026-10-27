@@ -14,6 +14,7 @@ export type DesktopCommand =
   | 'read_desktop_auth_session'
   | 'refresh_desktop_auth_session'
   | 'clear_desktop_auth_session'
+  | 'complete_dev_login'
   | 'open_path'
   | 'write_clipboard_text'
   | 'complete_remote_environment_exit_sync'
@@ -22,8 +23,6 @@ export type DesktopCommand =
   | 'update_settings'
   | 'detect_system_proxy'
   | 'test_pre_proxy'
-  | 'probe_egress_lines'
-  | 'sync_tray_egress_lines'
   | 'validate_chromium_path'
   | 'get_chromium_download_target'
   | 'download_chromium'
@@ -47,8 +46,8 @@ export type DesktopCommand =
   | 'open_profile'
   | 'close_profile'
   | 'close_all_profiles'
-  | 'update_tunnel_route'
-  | 'get_tunnel_renewal_credential';
+  | 'update_remote_lease'
+  | 'sync_tray_environments';
 
 export type DesktopCommandArgs = Record<string, unknown>;
 

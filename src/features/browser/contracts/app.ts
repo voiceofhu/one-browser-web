@@ -11,8 +11,6 @@ export interface AppSettings {
   chromiumPath: string | null;
   profileRoot: string;
   defaultStartUrl: string;
-  egressSelectionMode: 'auto' | 'manual';
-  preferredEgressId: string | null;
   /** Absent on desktop clients built before the pre-proxy existed. */
   preProxy?: PreProxySettings;
   apiEnabled: boolean;

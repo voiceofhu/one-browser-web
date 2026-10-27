@@ -1,7 +1,7 @@
 import { http } from '@/lib/http';
 
-import type { EgressOpenSelectionRequest } from '../egress/types';
 import type {
+  OpenedRemoteEnvironmentResource,
   RemoteCreatedResource,
   RemoteEnvironmentListItem,
   RemoteEnvironmentPayload,
@@ -72,13 +72,9 @@ export async function setRemoteEnvironmentStatus(
   return response.data;
 }
 
-export async function openRemoteEnvironment(
-  environmentId: number,
-  selection?: EgressOpenSelectionRequest,
-) {
-  const response = await http.post<RemoteEnvironmentResource>(
+export async function openRemoteEnvironment(environmentId: number) {
+  const response = await http.post<OpenedRemoteEnvironmentResource>(
     `${environmentPath}/${environmentId}/open`,
-    selection,
   );
   return response.data;
 }

@@ -2,10 +2,10 @@ import { DesktopApiError } from '@/lib/desktop';
 
 import type {
   CreateProfileRequest,
+  InlineProxyConfig,
   ProfileMode,
   UpdateProfileRequest,
 } from '../contracts';
-import { prepareEgressOpenSelection } from '../egress/selection';
 import { createProfile, getProfile, updateProfile } from '../profiles/api';
 import { closeProfile, openProfile } from '../runtime/api';
 import { toastEnvironmentWarnings } from '../runtime/environment-warnings';
@@ -20,7 +20,10 @@ import {
   openRemoteEnvironment,
 } from './api';
 import { remoteEnvironmentProfileId } from './runtime-profile-id';
-import type { RemoteEnvironmentResource } from './types';
+import type {
+  RemoteEnvironmentLaunchProxyConfig,
+  RemoteEnvironmentResource,
+} from './types';
 
 type LocalProfileUpsertRequest = CreateProfileRequest & UpdateProfileRequest;
 
@@ -66,25 +69,17 @@ export async function openRemoteEnvironmentLocally(environmentId: number) {
 
   toastBrowserOpenPending(
     '正在同步启动配置',
-    '正在保存本地环境、测试线路并申请启动权限',
+    '正在申请启动权限并保存本地环境',
     5,
     8,
   );
-  const [egressSelection] = await Promise.all([
-    prepareEgressOpenSelection(),
-    upsertLocalProfile(request),
-  ]);
-  const openedEnvironment = await openRemoteEnvironment(
-    environmentId,
-    egressSelection,
-  );
-
-  const tunnelRoute =
-    openedEnvironment.tunnelRoute ?? openedEnvironment.tunnel_route;
+  const openedEnvironment = await openRemoteEnvironment(environmentId);
+  const { launch } = openedEnvironment;
   try {
-    if (!tunnelRoute) {
-      throw new Error('服务器未返回 Egress 隧道路由，已阻止浏览器直连');
-    }
+    await upsertLocalProfile({
+      ...request,
+      proxyConfig: toInlineProxyConfig(launch.proxy_config),
+    });
     toastBrowserOpenPending(
       '正在启动浏览器',
       '环境已就绪，正在进行启动前检查',
@@ -95,30 +90,20 @@ export async function openRemoteEnvironmentLocally(environmentId: number) {
       profileId: request.profileId,
       mode: request.mode,
       headless: request.advanced?.headless,
-      tunnelRoute: {
-        transport: tunnelRoute.transport,
-        endpoint: tunnelRoute.endpoint,
-        tlsEnabled: tunnelRoute.tls_enabled,
-        accessToken: tunnelRoute.access_token,
-        expiresAt: tunnelRoute.expires_at,
-        generation: tunnelRoute.generation,
-        exitId: tunnelRoute.exit_id,
-        expectedExitIp: tunnelRoute.expected_exit_ip,
-        directFallback: tunnelRoute.direct_fallback,
+      lease: {
+        generation: launch.generation,
+        expiresAt: launch.lease_expires_at,
       },
+      expectedExitIp: launch.expected_exit_ip,
     });
     toastEnvironmentWarnings(runtime.environmentWarnings);
-    // The route token is an ephemeral launch credential. The native tunnel
-    // owns it after openProfile returns, so do not retain it in mutation state.
-    return {
-      ...openedEnvironment,
-      tunnel_route: undefined,
-      tunnelRoute: undefined,
-    };
+    // The launch payload carries decrypted proxy credentials. They now live in
+    // the local profile, so do not retain them in mutation state.
+    const { launch: _launch, ...environment } = openedEnvironment;
+    return environment;
   } catch (error) {
     try {
-      if (tunnelRoute)
-        await closeRemoteEnvironment(environmentId, tunnelRoute.generation);
+      await closeRemoteEnvironment(environmentId, launch.generation);
     } catch (rollbackError) {
       console.error(
         '[remote-environment] failed to release remote environment after local open failure',
@@ -158,11 +143,37 @@ function remoteEnvironmentToProfileRequest(
     tabs: [],
     mode: normalizeProfileMode(environment.mode),
     proxyId: null,
-    // The Egress connector owns the original proxy credentials. Keeping this
-    // mirror profile credential-free prevents accidental direct fallback.
+    // Replaced with the launch proxy returned by the open call.
     proxyConfig: null,
     fingerprintConfig: environment.fingerprint_config ?? undefined,
     advanced: environment.advanced ?? undefined,
+  };
+}
+
+function toInlineProxyConfig(
+  config: RemoteEnvironmentLaunchProxyConfig | null,
+): InlineProxyConfig {
+  if (!config) {
+    return {
+      type: 'no_proxy',
+      host: null,
+      port: null,
+      username: null,
+      password: null,
+      server: null,
+      pacUrl: null,
+      bypassList: [],
+    };
+  }
+  return {
+    type: config.type,
+    host: config.host,
+    port: config.port,
+    username: config.username,
+    password: config.password,
+    server: config.server,
+    pacUrl: config.pac_url,
+    bypassList: config.bypass_list ?? [],
   };
 }
 

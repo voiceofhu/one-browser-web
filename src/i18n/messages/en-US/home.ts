@@ -5,14 +5,13 @@ export const homeMessages = {
   切换到中文: 'Switch to Chinese',
   '一台电脑，': 'One computer,',
   管好成百上千个浏览器环境: 'hundreds of browser environments, kept in order',
-  '有个浏览器为每个账号准备独立的指纹环境，搭配平台线路、自有代理和前置代理，团队成员共享环境、分权协作。':
-    'One Browser gives every account its own fingerprint environment, with platform lines, your own proxies and a pre-proxy, so your team can share environments with role-based access.',
+  '有个浏览器为每个账号准备独立的指纹环境，搭配自有代理和前置代理，团队成员共享环境、分权协作。':
+    'One Browser gives every account its own fingerprint environment, with your own proxies and a pre-proxy, so your team can share environments with role-based access.',
   进入控制台: 'Open dashboard',
   了解功能: 'See features',
   '未登录时会先跳转到 One 账号授权登录。':
     'If you are not signed in, you will be sent to One account sign-in first.',
   独立指纹环境: 'Isolated fingerprints',
-  平台线路: 'Platform lines',
   下载桌面客户端: 'Download the desktop app',
   '浏览器环境在桌面客户端中运行，支持 macOS、Windows 与 Linux。':
     'Browser environments run in the desktop app, available for macOS, Windows and Linux.',
@@ -25,13 +24,11 @@ export const homeMessages = {
   批量管理环境: 'Manage environments in bulk',
   '分组、备注与批量操作，环境配置保存在账号下，网页与客户端看到的是同一份。':
     'Groups, notes and bulk actions. Environment settings live in your account, so the web and the desktop app see the same data.',
-  '内置平台 Egress 线路，自动选择或固定默认线路，无需自备代理也能上手。':
-    'Built-in platform egress lines: pick automatically or pin a default, no proxy of your own required to get started.',
   自有代理: 'Your own proxies',
   '支持 HTTP、SOCKS5 等代理并检测出口 IP，每个环境可绑定不同代理。':
     'Bring HTTP, SOCKS5 and other proxies, check their outbound IP, and bind a different proxy to each environment.',
-  '可跟随 Clash、v2rayN 等系统代理或手动指定，让线路与代理先经过本机代理再连接。':
-    'Follow the system proxy from Clash, v2rayN and similar tools, or set one manually, so lines and proxies connect through your local proxy first.',
+  '可跟随 Clash、v2rayN 等系统代理或手动指定，让环境代理先经过本机代理再连接。':
+    'Follow the system proxy from Clash, v2rayN and similar tools, or set one manually, so environment proxies connect through your local proxy first.',
   团队与权限: 'Teams and permissions',
   '邀请成员、按角色分配权限，环境在团队内共享，操作有日志可查。':
     'Invite members, assign permissions by role, share environments within the team, and review activity in the logs.',

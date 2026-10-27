@@ -19,7 +19,6 @@ import {
   Globe02Icon,
   Layers01Icon,
   Route01Icon,
-  ServerStack01Icon,
   ShieldKeyIcon,
   UserGroupIcon,
 } from '@hugeicons/core-free-icons';
@@ -30,7 +29,7 @@ const APP_LOGO_SRC = '/pwa-512x512.png';
 
 const highlights = [
   '独立指纹环境',
-  '平台线路',
+  '自有代理',
   '前置代理',
   '团队协作',
 ] as const;
@@ -49,12 +48,6 @@ const features = [
       '分组、备注与批量操作，环境配置保存在账号下，网页与客户端看到的是同一份。',
   },
   {
-    icon: ServerStack01Icon,
-    title: '平台线路',
-    description:
-      '内置平台 Egress 线路，自动选择或固定默认线路，无需自备代理也能上手。',
-  },
-  {
     icon: Route01Icon,
     title: '自有代理',
     description:
@@ -64,7 +57,7 @@ const features = [
     icon: ShieldKeyIcon,
     title: '前置代理',
     description:
-      '可跟随 Clash、v2rayN 等系统代理或手动指定，让线路与代理先经过本机代理再连接。',
+      '可跟随 Clash、v2rayN 等系统代理或手动指定，让环境代理先经过本机代理再连接。',
   },
   {
     icon: UserGroupIcon,
@@ -93,7 +86,7 @@ export function HomePage() {
               </span>
             </h1>
             <p className="text-muted-foreground mt-5 max-w-md text-sm leading-7">
-              有个浏览器为每个账号准备独立的指纹环境，搭配平台线路、自有代理和前置代理，团队成员共享环境、分权协作。
+              有个浏览器为每个账号准备独立的指纹环境，搭配自有代理和前置代理，团队成员共享环境、分权协作。
             </p>
             <div className="mt-6 flex flex-wrap items-center gap-2">
               <Button

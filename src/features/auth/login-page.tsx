@@ -21,6 +21,7 @@ import { isUnauthorizedAuthError } from '@/features/auth/auth-errors';
 import { AppDownloadCard } from '@/features/app-download/download-card';
 import { requestDownloadPrompt } from '@/features/app-download/session';
 import { desktopInvoke, isTauriRuntime } from '@/lib/desktop';
+import { http } from '@/lib/http';
 import { Globe02Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -315,7 +316,7 @@ export function LoginPage({ authManaged = false }: LoginPageProps) {
             {authNotice || !canOpenLogin ? (
               <Alert
                 variant="destructive"
-                className="mt-3 rounded-md border-destructive/20 bg-destructive/5 px-2.5 py-2"
+                className="border-destructive/20 bg-destructive/5 mt-3 rounded-md px-2.5 py-2"
                 aria-live="polite"
               >
                 <AlertDescription>
@@ -387,7 +388,7 @@ export function LoginPage({ authManaged = false }: LoginPageProps) {
         {authNotice || !canOpenLogin ? (
           <Alert
             variant="destructive"
-            className="mt-4 w-full cursor-text border-destructive/20 bg-destructive/5 text-left select-text"
+            className="border-destructive/20 bg-destructive/5 mt-4 w-full cursor-text text-left select-text"
             aria-live="polite"
           >
             <AlertDescription>
@@ -415,6 +416,7 @@ export function LoginPage({ authManaged = false }: LoginPageProps) {
             {opening ? copy.openingAuthLogin : copy.openAuthLogin}
           </SweepShine>
         </Button>
+        {import.meta.env.DEV ? <DevLoginButton /> : null}
       </section>
     </main>
   );
@@ -503,5 +505,42 @@ function isBase64Url256(value: string) {
   return (
     value.length === 43 &&
     [...value].every((character) => /[A-Za-z0-9_-]/.test(character))
+  );
+}
+
+/**
+ * Development builds only: signs in as the backend's `DEV_LOGIN_USER`
+ * without going through One User.
+ */
+function DevLoginButton() {
+  const [pending, setPending] = React.useState(false);
+
+  async function login() {
+    setPending(true);
+    try {
+      const response = await http.post<{
+        callback_url: string;
+        user_name: string;
+      }>('/auth/dev/login');
+      await desktopInvoke('complete_dev_login', {
+        url: response.data.callback_url,
+      });
+      toast.success(`已用开发账号 ${response.data.user_name} 登录`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : '开发登录失败');
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <Button
+      className="mt-2 h-8 w-full rounded-lg px-3 text-xs"
+      variant="ghost"
+      disabled={pending}
+      onClick={() => void login()}
+    >
+      {pending ? '登录中…' : '开发登录（跳过 One User）'}
+    </Button>
   );
 }

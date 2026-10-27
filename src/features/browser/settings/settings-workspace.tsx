@@ -23,18 +23,12 @@ import {
   Link04Icon,
   PaintBoardIcon,
   Refresh01Icon,
-  Route01Icon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import type { CSSProperties, ComponentProps, ReactNode } from 'react';
 
 export type SettingsSectionId =
-  | 'general'
-  | 'egress'
-  | 'pre-proxy'
-  | 'appearance'
-  | 'local-api'
-  | 'client';
+  'general' | 'pre-proxy' | 'appearance' | 'local-api' | 'client';
 
 type SettingsSection = {
   id: SettingsSectionId;
@@ -47,11 +41,6 @@ const sections: SettingsSection[] = [
     id: 'general',
     label: '常规',
     icon: BrowserIcon,
-  },
-  {
-    id: 'egress',
-    label: '线路',
-    icon: Route01Icon,
   },
   {
     id: 'pre-proxy',
@@ -94,7 +83,7 @@ export function SettingsWorkspace({
     >
       <Sidebar
         collapsible="none"
-        className="hidden border-r border-sidebar-border md:flex"
+        className="border-sidebar-border hidden border-r md:flex"
       >
         <SidebarHeader className="h-10 justify-center border-b px-3 py-0">
           <span className="font-heading text-[12px] font-semibold">设置</span>
@@ -134,7 +123,10 @@ export function SettingsWorkspace({
               onSectionChange(value as SettingsSectionId)
             }
           >
-            <SelectTrigger className="h-8 w-full rounded-sm shadow-none" aria-label="设置分类">
+            <SelectTrigger
+              className="h-8 w-full rounded-sm shadow-none"
+              aria-label="设置分类"
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent position="popper" align="start">
@@ -148,7 +140,7 @@ export function SettingsWorkspace({
             </SelectContent>
           </Select>
         </div>
-        <div className="min-h-0 flex-1 touch-pan-y overflow-y-auto overscroll-y-contain px-3 py-3 [scrollbar-gutter:stable] md:px-4">
+        <div className="min-h-0 flex-1 touch-pan-y [scrollbar-gutter:stable] overflow-y-auto overscroll-y-contain px-3 py-3 md:px-4">
           {children}
         </div>
       </main>

@@ -24,8 +24,8 @@ describe('remote close generation', () => {
   it('carries the source generation, deduplicates it, and skips missing leases', () => {
     const closed = (
       profileId: string,
-      tunnelGeneration?: number,
-    ): CloseProfileResult => ({ profileId, tunnelGeneration, closed: true });
+      leaseGeneration?: number,
+    ): CloseProfileResult => ({ profileId, leaseGeneration, closed: true });
     expect(
       closedRemoteEnvironmentLeases([
         closed('remote-env-42', 7),
@@ -47,7 +47,7 @@ describe('remote close generation', () => {
     const queryClient = {
       getQueryData: vi
         .fn()
-        .mockReturnValue([{ profileId: 'remote-env-42', tunnelGeneration: 9 }]),
+        .mockReturnValue([{ profileId: 'remote-env-42', leaseGeneration: 9 }]),
       setQueryData: vi.fn(),
       invalidateQueries: vi.fn(),
     };
@@ -61,7 +61,7 @@ describe('remote close generation', () => {
       detail: {
         runtime: [],
         closedProfiles: [
-          { profileId: 'remote-env-42', tunnelGeneration: 7, closed: true },
+          { profileId: 'remote-env-42', leaseGeneration: 7, closed: true },
         ],
       },
     } as unknown as Event);

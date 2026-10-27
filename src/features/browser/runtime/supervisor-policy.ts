@@ -4,17 +4,17 @@ export const runtimeRenewJitterMs = 5_000;
 type RuntimeRenewCandidate = {
   profileId: string;
   status: string;
-  tunnelGeneration: number | null;
-  tunnelRouteExpiresAt: string | null;
+  leaseGeneration: number | null;
+  leaseExpiresAt: string | null;
 };
 
 export function isRuntimeRenewCandidate(runtime: RuntimeRenewCandidate) {
   return (
     runtime.status === 'active' &&
     /^remote-env-[1-9]\d*$/.test(runtime.profileId) &&
-    runtime.tunnelGeneration !== null &&
-    runtime.tunnelGeneration > 0 &&
-    Boolean(runtime.tunnelRouteExpiresAt)
+    runtime.leaseGeneration !== null &&
+    runtime.leaseGeneration > 0 &&
+    Boolean(runtime.leaseExpiresAt)
   );
 }
 

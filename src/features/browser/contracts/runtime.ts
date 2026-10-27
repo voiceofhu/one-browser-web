@@ -27,9 +27,8 @@ export interface RuntimeProfile {
   webdriver: string | null;
   errorMessage: string | null;
   environmentWarnings: string[];
-  tunnelGeneration: number | null;
-  tunnelLeaseExpiresAt: string | null;
-  tunnelRouteExpiresAt: string | null;
+  leaseGeneration: number | null;
+  leaseExpiresAt: string | null;
 }
 
 export type OpenProfileProgressStep =
@@ -50,26 +49,19 @@ export interface OpenProfileRequest {
   tabs?: string[];
   mode?: ProfileMode;
   headless?: boolean;
-  tunnelRoute?: TunnelRoute;
-}
-
-export interface TunnelRoute {
-  transport: 'h2';
-  endpoint: string;
-  tlsEnabled: boolean;
-  accessToken: string;
-  expiresAt: string;
-  generation: number;
-  exitId: string;
+  lease?: RemoteLease | null;
   expectedExitIp?: string | null;
-  directFallback: false;
 }
 
-export interface UpdateTunnelRouteRequest {
+export interface RemoteLease {
+  generation: number;
+  expiresAt: string;
+}
+
+export interface UpdateRemoteLeaseRequest {
   profileId: string;
   generation: number;
-  leaseExpiresAt?: string | null;
-  tunnelRoute?: TunnelRoute | null;
+  leaseExpiresAt: string | null;
 }
 
 export interface CloseProfileRequest {
@@ -79,7 +71,7 @@ export interface CloseProfileRequest {
 export interface CloseProfileResult {
   profileId: string;
   closed: boolean;
-  tunnelGeneration?: number | null;
+  leaseGeneration?: number | null;
 }
 
 export interface CloseAllProfilesResult {

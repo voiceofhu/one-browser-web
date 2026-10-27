@@ -18,12 +18,12 @@ describe('runtime supervisor policy', () => {
     );
   });
 
-  it('renews only active remote runtimes with complete tunnel metadata', () => {
+  it('renews only active remote runtimes with complete lease metadata', () => {
     const runtime = {
       profileId: 'remote-env-42',
       status: 'active',
-      tunnelGeneration: 7,
-      tunnelRouteExpiresAt: '2026-08-04T00:00:00Z',
+      leaseGeneration: 7,
+      leaseExpiresAt: '2026-08-04T00:00:00Z',
     };
 
     expect(isRuntimeRenewCandidate(runtime)).toBe(true);
@@ -33,11 +33,11 @@ describe('runtime supervisor policy', () => {
     expect(isRuntimeRenewCandidate({ ...runtime, status: 'stopping' })).toBe(
       false,
     );
-    expect(
-      isRuntimeRenewCandidate({ ...runtime, tunnelGeneration: null }),
-    ).toBe(false);
-    expect(
-      isRuntimeRenewCandidate({ ...runtime, tunnelRouteExpiresAt: null }),
-    ).toBe(false);
+    expect(isRuntimeRenewCandidate({ ...runtime, leaseGeneration: null })).toBe(
+      false,
+    );
+    expect(isRuntimeRenewCandidate({ ...runtime, leaseExpiresAt: null })).toBe(
+      false,
+    );
   });
 });

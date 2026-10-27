@@ -1,6 +1,7 @@
 import { useAuthRuntimeCleanup } from '@/features/auth/runtime-cleanup';
 import { useRuntimeEvents } from '@/features/browser/runtime/events';
 import { useRuntimeSupervisor } from '@/features/browser/runtime/supervisor';
+import { useTrayEnvironments } from '@/features/browser/runtime/tray';
 import { useChromiumAutoUpdate } from '@/features/browser/status/auto-update';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 // import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
@@ -37,6 +38,7 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
   );
   useRuntimeEvents(queryClient);
   useRuntimeSupervisor();
+  useTrayEnvironments(queryClient);
   useAuthRuntimeCleanup(queryClient);
   useChromiumAutoUpdate(queryClient);
 

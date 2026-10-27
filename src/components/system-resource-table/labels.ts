@@ -10,7 +10,6 @@ export const fieldLabels: Record<string, string> = {
   dict_name: '字典名称',
   dict_type: '字典类型',
   display_name: '显示名称',
-  egress_id: '节点 ID',
   email: '邮箱',
   environment: '环境',
   expires_in: '剩余秒数',

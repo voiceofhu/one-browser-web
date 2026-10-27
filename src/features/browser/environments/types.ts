@@ -2,12 +2,7 @@ import type { FingerprintConfig, ProfileAdvancedConfig } from '../contracts';
 
 export type RemoteStatusFlag = '0' | '1';
 export type RemoteRuntimeStatus =
-  | 'inactive'
-  | 'starting'
-  | 'active'
-  | 'stopping'
-  | 'error'
-  | (string & {});
+  'inactive' | 'starting' | 'active' | 'stopping' | 'error' | (string & {});
 
 export interface RemoteListParams {
   page?: number;
@@ -60,32 +55,37 @@ export interface RemoteEnvironmentResource extends RemoteEnvironmentListItem {
   remark: string;
   fingerprint_config?: RemoteEnvironmentFingerprintConfig | null;
   advanced?: Partial<ProfileAdvancedConfig> | null;
-  tunnel_route?: RemoteTunnelRoute | null;
-  tunnelRoute?: RemoteTunnelRoute | null;
 }
 
-export interface RemoteTunnelRoute {
-  transport: 'h2';
-  endpoint: string;
-  tls_enabled: boolean;
-  access_token: string;
-  expires_at: string;
+export interface RemoteEnvironmentLaunchProxyConfig {
+  type: 'http' | 'https' | 'socks5' | 'fixed_servers' | 'pac_script';
+  host: string | null;
+  port: number | null;
+  username: string | null;
+  password: string | null;
+  server: string | null;
+  pac_url: string | null;
+  bypass_list: string[];
+}
+
+export interface RemoteEnvironmentLaunch {
   generation: number;
-  exit_id: string;
+  lease_expires_at: string;
   expected_exit_ip: string | null;
-  direct_fallback: false;
+  proxy_config: RemoteEnvironmentLaunchProxyConfig | null;
+}
+
+export interface OpenedRemoteEnvironmentResource extends RemoteEnvironmentResource {
+  launch: RemoteEnvironmentLaunch;
 }
 
 export interface RenewRemoteEnvironmentRequest {
-  accessToken: string;
   generation: number;
-  routeExpiresAt: string;
 }
 
 export interface RenewRemoteEnvironmentResource {
   generation: number;
-  leaseExpiresAt: string;
-  tunnelRoute?: RemoteTunnelRoute | null;
+  lease_expires_at: string;
 }
 
 export interface RemoteEnvironmentPayload {

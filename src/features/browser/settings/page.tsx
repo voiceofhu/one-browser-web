@@ -29,7 +29,6 @@ import { type ReactNode, useState } from 'react';
 import { AdvancedSettings } from './advanced-settings';
 import { AppearanceSettings } from './appearance-settings';
 import { BrowserRuntimeSettings } from './browser-runtime-settings';
-import { DefaultEgressSettings } from './default-egress-settings';
 import { LocalApiSettings } from './local-api-settings';
 import { PreProxySettings } from './pre-proxy-settings';
 import { useSettingsQuery } from './queries';
@@ -56,7 +55,7 @@ export function SettingsDialog({
         <ResponsiveDialogHeader className="sr-only">
           <ResponsiveDialogTitle>设置</ResponsiveDialogTitle>
           <ResponsiveDialogDescription>
-            配置浏览器、线路、外观、本地 API 和客户端操作。
+            配置浏览器、前置代理、外观、本地 API 和客户端操作。
           </ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
         <ResponsiveDialogBody className="overflow-hidden p-0">
@@ -167,8 +166,6 @@ function SettingsSection({
           settings={settings}
         />
       );
-    case 'egress':
-      return <DefaultEgressSettings settings={settings} />;
     case 'pre-proxy':
       return settings.preProxy ? (
         <PreProxySettings
