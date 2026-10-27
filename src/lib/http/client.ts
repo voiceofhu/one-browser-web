@@ -270,7 +270,7 @@ export class HttpClient {
         hasBody: Boolean(response.body),
       });
     }
-    return parseHttpResponse<T>(response);
+    return parseHttpResponse<T>(response, fullURL);
   }
 
   private async refreshAuthTokens() {

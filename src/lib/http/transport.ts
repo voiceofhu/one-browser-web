@@ -7,7 +7,7 @@ import type {
   RequestOptions,
 } from '@/lib/http/types';
 import { HttpError } from '@/lib/http/types';
-import { isSuccessCode } from '@/lib/http/url';
+import { getUrlPath, isSuccessCode } from '@/lib/http/url';
 
 export async function sendHttpRequest(
   fullURL: string,
@@ -33,12 +33,24 @@ export async function sendHttpRequest(
   };
 }
 
-export function parseHttpResponse<T>(response: HttpResponse): ApiResponse<T> {
+export function parseHttpResponse<T>(
+  response: HttpResponse,
+  requestUrl?: string,
+): ApiResponse<T> {
   const contentType = getHeader(response.headers, 'content-type');
+  // An API call answered with a web page means the request missed the API
+  // (wrong base URL or a path without /api), never a valid result.
+  if (contentType?.includes('text/html')) {
+    const path = requestUrl ? getUrlPath(requestUrl) : '';
+    throw new HttpError(
+      response.status,
+      'UNEXPECTED_HTML',
+      `接口返回了网页而不是数据${path ? `（${path}）` : ''}，请检查 API 地址`,
+    );
+  }
   if (contentType?.includes('application/json')) {
     const jsonResponse = parseJsonResponseBody(response.body) as
-      | BackendResponse<T>
-      | BackendErrorResponse;
+      BackendResponse<T> | BackendErrorResponse;
     if (!response.ok) {
       throw new HttpError(
         response.status,
