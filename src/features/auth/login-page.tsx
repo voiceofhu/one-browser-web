@@ -202,7 +202,10 @@ export function LoginPage({ authManaged = false }: LoginPageProps) {
           applyAuthSession();
           return;
         }
-        const authorization = await authorizeDesktopHandoff(handoff.state);
+        const authorization = await authorizeDesktopHandoff(
+          handoff.state,
+          handoff.from,
+        );
         window.location.assign(authorization.callback_url);
       })
       .catch((error: unknown) => {
@@ -498,7 +501,8 @@ function parseDesktopHandoff(searchParams: URLSearchParams) {
   if (!isBase64Url256(state) || !isBase64Url256(codeChallenge)) {
     return null;
   }
-  return { state, codeChallenge };
+  const from = searchParams.get('from')?.trim() || undefined;
+  return { state, codeChallenge, from };
 }
 
 function isBase64Url256(value: string) {

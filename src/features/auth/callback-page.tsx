@@ -58,6 +58,7 @@ export function CallbackPage() {
         if (isDesktopCallback(result.returnTo)) {
           const authorization = await authorizeDesktopHandoff(
             desktopHandoffState(result.returnTo),
+            desktopHandoffFrom(result.returnTo),
           );
           if (import.meta.env.DEV) {
             console.info('[auth-deep-link]', authorization.callback_url);
@@ -194,6 +195,17 @@ function desktopHandoffState(returnTo: string) {
     return isBase64Url256(state) && isBase64Url256(challenge)
       ? state
       : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function desktopHandoffFrom(returnTo: string) {
+  try {
+    return (
+      new URL(returnTo, window.location.origin).searchParams.get('from') ||
+      undefined
+    );
   } catch {
     return undefined;
   }
