@@ -51,6 +51,8 @@ export interface OpenProfileRequest {
   headless?: boolean;
   lease?: RemoteLease | null;
   expectedExitIp?: string | null;
+  /** Checker that measured expectedExitIp; the launch probe must reuse it. */
+  ipChecker?: string | null;
 }
 
 export interface RemoteLease {

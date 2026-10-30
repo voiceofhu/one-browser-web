@@ -95,6 +95,8 @@ export async function openRemoteEnvironmentLocally(environmentId: number) {
         expiresAt: launch.lease_expires_at,
       },
       expectedExitIp: launch.expected_exit_ip,
+      // Older backends omit the checker; the desktop falls back to its default.
+      ipChecker: launch.ip_checker ?? null,
     });
     toastEnvironmentWarnings(runtime.environmentWarnings);
     // The launch payload carries decrypted proxy credentials. They now live in

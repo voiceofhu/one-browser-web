@@ -72,6 +72,7 @@ export interface RemoteEnvironmentLaunch {
   generation: number;
   lease_expires_at: string;
   expected_exit_ip: string | null;
+  ip_checker: string | null;
   proxy_config: RemoteEnvironmentLaunchProxyConfig | null;
 }
 
