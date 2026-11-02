@@ -11,6 +11,7 @@ export const apiFetch = createApiFetch({
       '/api/browser/assets/uploads/direct',
       '/api/health/stream',
       '/api/integrations/telegram/webhook',
+      '/api/app-downloads/update/latest.json',
     ].includes(pathname) ||
     /^\/api\/app-downloads\/assets\/[^/]+\/download$/.test(pathname) ||
     /^\/api\/browser\/assets\/uploads\/[^/]+\/parts$/.test(pathname),

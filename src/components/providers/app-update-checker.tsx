@@ -1,8 +1,15 @@
 import { UpdateAvailableNotice } from '@/components/update-available-notice';
 import { reloadForUpdate, startAppUpdateCheck } from '@/lib/app-update';
 import { desktopInvoke, isTauriRuntime } from '@/lib/desktop';
+import {
+  hasAppUpdate,
+  useAppUpdateStatus,
+  useCheckAppUpdateOnShow,
+  useInstallAppUpdate,
+} from '@/lib/desktop/app-updater';
 import { onDesktopForeground } from '@/lib/desktop/foreground';
 import * as React from 'react';
+import { toast } from 'sonner';
 
 import {
   DESKTOP_APP_DOWNLOAD_URL,
@@ -12,6 +19,13 @@ import {
 
 export function AppUpdateChecker() {
   const [pageUpdateAvailable, setPageUpdateAvailable] = React.useState(false);
+  // Apps with the in-app updater download, verify, install and restart;
+  // older apps get the download page.
+  const native = useAppUpdateStatus();
+  const nativeUpdate = native.data;
+  const install = useInstallAppUpdate();
+  const [dismissed, setDismissed] = React.useState<string | null>(null);
+  useCheckAppUpdateOnShow(native.isSuccess);
   const [desktopUpdate, setDesktopUpdate] =
     React.useState<DesktopAppUpdate | null>(null);
   const desktopCheckInFlight = React.useRef(false);
@@ -32,11 +46,7 @@ export function AppUpdateChecker() {
   }, []);
 
   const requestDesktopCheck = React.useCallback(async (source: string) => {
-    if (
-      !import.meta.env.PROD ||
-      !isTauriRuntime() ||
-      desktopCheckInFlight.current
-    ) {
+    if (desktopCheckInFlight.current) {
       return;
     }
 
@@ -51,8 +61,9 @@ export function AppUpdateChecker() {
     }
   }, []);
 
+  const legacy = native.isError;
   React.useEffect(() => {
-    if (!import.meta.env.PROD || !isTauriRuntime()) {
+    if (!legacy) {
       return;
     }
 
@@ -67,7 +78,7 @@ export function AppUpdateChecker() {
       window.clearTimeout(mountCheck);
       stopForeground();
     };
-  }, [requestDesktopCheck]);
+  }, [legacy, requestDesktopCheck]);
 
   async function openDesktopDownloadPage() {
     try {
@@ -80,12 +91,41 @@ export function AppUpdateChecker() {
     }
   }
 
+  async function installNativeUpdate() {
+    try {
+      await install.mutateAsync();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : '更新失败');
+    }
+  }
+
+  const nativeVersion = nativeUpdate?.version ?? null;
+  const showNative =
+    hasAppUpdate(nativeUpdate) &&
+    nativeVersion !== null &&
+    dismissed !== nativeVersion;
+
   return (
     <div className="fixed right-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-50 flex w-[calc(100%-2rem)] max-w-sm flex-col gap-2 sm:right-6 sm:bottom-[max(1.5rem,env(safe-area-inset-bottom))] sm:w-full">
       <UpdateAvailableNotice
         open={pageUpdateAvailable}
         onOpenChange={setPageUpdateAvailable}
         onUpdate={reloadForUpdate}
+      />
+      <UpdateAvailableNotice
+        open={showNative}
+        onOpenChange={(open) => {
+          if (!open) setDismissed(nativeVersion);
+        }}
+        onUpdate={installNativeUpdate}
+        currentVersion={nativeUpdate?.current}
+        latestVersion={nativeVersion ?? undefined}
+        description="会先关闭正在运行的浏览器环境，再安装并重新打开 One Browser。"
+        updateLabel="下载并重启"
+        updatingLabel={
+          nativeUpdate?.state === 'installing' ? '正在安装…' : '正在下载…'
+        }
+        resetUpdatingAfterUpdate
       />
       <UpdateAvailableNotice
         open={desktopUpdate !== null}

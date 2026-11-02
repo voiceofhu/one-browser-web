@@ -47,7 +47,10 @@ export type DesktopCommand =
   | 'close_profile'
   | 'close_all_profiles'
   | 'update_remote_lease'
-  | 'sync_tray_environments';
+  | 'sync_tray_environments'
+  | 'update_status'
+  | 'update_check'
+  | 'update_install';
 
 export type DesktopCommandArgs = Record<string, unknown>;
 

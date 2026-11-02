@@ -57,6 +57,10 @@ export function invokeMockCommand<T>(
     case 'send_system_notification':
     case 'open_notification_settings':
       return Promise.reject(new Error('系统通知需要 One Browser 桌面客户端'));
+    case 'update_status':
+    case 'update_check':
+    case 'update_install':
+      return Promise.reject(new Error('应用更新需要 One Browser 桌面客户端'));
     case 'get_app_release_identity':
       return mockResult<T>(mockAppReleaseIdentity());
     case 'get_app_status':

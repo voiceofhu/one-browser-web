@@ -21,6 +21,7 @@ import { HugeiconsIcon } from '@hugeicons/react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
+import { AppUpdateSettings } from './app-update-settings';
 import { SettingsDivider, SettingsGroup, SettingsRow } from './settings-group';
 import { NotificationSettings } from './notification-settings';
 
@@ -44,6 +45,7 @@ export function AdvancedSettings() {
 
   return (
     <FieldGroup className="gap-3">
+      <AppUpdateSettings />
       <NotificationSettings />
       <SettingsGroup title="诊断与维护">
         <SettingsRow
