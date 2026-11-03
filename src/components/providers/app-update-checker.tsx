@@ -19,8 +19,8 @@ import {
 
 export function AppUpdateChecker() {
   const [pageUpdateAvailable, setPageUpdateAvailable] = React.useState(false);
-  // Apps with the in-app updater download, verify, install and restart;
-  // older apps get the download page.
+  // Apps with the in-app updater download in the background, then one click
+  // installs and restarts; older apps get the download page.
   const native = useAppUpdateStatus();
   const nativeUpdate = native.data;
   const install = useInstallAppUpdate();
@@ -100,8 +100,9 @@ export function AppUpdateChecker() {
   }
 
   const nativeVersion = nativeUpdate?.version ?? null;
+  // Clicked while the update still had to download: stays up through it.
   const showNative =
-    hasAppUpdate(nativeUpdate) &&
+    (hasAppUpdate(nativeUpdate) || install.isPending) &&
     nativeVersion !== null &&
     dismissed !== nativeVersion;
 
@@ -120,8 +121,9 @@ export function AppUpdateChecker() {
         onUpdate={installNativeUpdate}
         currentVersion={nativeUpdate?.current}
         latestVersion={nativeVersion ?? undefined}
-        description="会先关闭正在运行的浏览器环境，再安装并重新打开 One Browser。"
-        updateLabel="下载并重启"
+        title="新版本已就绪"
+        description="会先关闭正在运行的浏览器环境，更新后自动重新打开 One Browser。"
+        updateLabel="立即更新"
         updatingLabel={
           nativeUpdate?.state === 'installing' ? '正在安装…' : '正在下载…'
         }

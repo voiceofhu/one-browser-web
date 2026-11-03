@@ -6,7 +6,13 @@ import { useEffect } from 'react';
 /** The in-app updater (app/src-tauri/src/updater.rs); `update-status` events carry the same shape. */
 export interface AppUpdateStatus {
   state:
-    'idle' | 'checking' | 'available' | 'downloading' | 'installing' | 'error';
+    | 'idle'
+    | 'checking'
+    | 'available'
+    | 'downloading'
+    | 'ready'
+    | 'installing'
+    | 'error';
   current: string;
   version: string | null;
   notes: string | null;
@@ -68,15 +74,15 @@ export function useAppUpdateStatus() {
   return query;
 }
 
-/** Finds out only; nothing downloads until 下载并重启. */
+/** Checks now; a found update downloads in the background. */
 export function checkAppUpdate() {
   return desktopInvoke<AppUpdateStatus>('update_check');
 }
 
 /**
- * Nothing checks in the background: the window checks when it comes up and
- * each time it comes back to the foreground. `enabled` once the shell is known
- * to have the updater.
+ * The shell also checks on its own (20 s after start, then every 6 h); the
+ * window checks when it comes up and each time it comes back to the
+ * foreground. `enabled` once the shell is known to have the updater.
  */
 export function useCheckAppUpdateOnShow(enabled: boolean) {
   const qc = useQueryClient();
@@ -99,7 +105,7 @@ export function useCheckAppUpdateOnShow(enabled: boolean) {
   }, [enabled, qc]);
 }
 
-/** 下载并重启: only failures come back. */
+/** 立即更新: installs the downloaded update (downloading first if needed) and restarts; only failures come back. */
 export function useInstallAppUpdate() {
   const qc = useQueryClient();
   return useMutation({
@@ -109,7 +115,7 @@ export function useInstallAppUpdate() {
         s
           ? {
               ...s,
-              state: 'downloading',
+              state: s.state === 'ready' ? 'installing' : 'downloading',
               received: 0,
               total: null,
               error: null,
@@ -120,10 +126,14 @@ export function useInstallAppUpdate() {
   });
 }
 
-/** A newer version this copy can install (or is installing). */
+/**
+ * A newer version ready for one click: downloaded, or (its background download
+ * failed, or an app from before background downloads) to be downloaded by that
+ * click; or being installed. A background download in progress does not count.
+ */
 export const hasAppUpdate = (s: AppUpdateStatus | undefined) =>
   (s?.state === 'available' && !s.blocked) ||
-  s?.state === 'downloading' ||
+  s?.state === 'ready' ||
   s?.state === 'installing';
 
 /** Download progress for the status line. */

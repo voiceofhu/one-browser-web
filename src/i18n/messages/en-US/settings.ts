@@ -1,7 +1,10 @@
 export const settingsMessages = {
   应用更新: 'App updates',
   检查更新: 'Check for updates',
-  下载并重启: 'Download and restart',
+  立即更新: 'Update now',
+  新版本已就绪: 'A new version is ready',
+  '已下载，会先关闭正在运行的浏览器环境':
+    'downloaded; running browser environments close first',
   已是最新版本: "You're up to date",
   尚未检查: 'Not checked yet',
   '正在检查…': 'Checking…',
@@ -12,8 +15,8 @@ export const settingsMessages = {
   发现新版本: 'New version',
   会先关闭正在运行的浏览器环境: 'running browser environments close first',
   '检查更新失败，请稍后重试': "Couldn't check for updates. Try again later.",
-  '会先关闭正在运行的浏览器环境，再安装并重新打开 One Browser。':
-    'Running browser environments close first, then One Browser installs and reopens.',
+  '会先关闭正在运行的浏览器环境，更新后自动重新打开 One Browser。':
+    'Running browser environments close first; One Browser reopens after the update.',
   '配置浏览器、前置代理、外观、本地 API 和客户端操作。':
     'Configure the browser, pre-proxy, appearance, local API, and app actions.',
   常规: 'General',

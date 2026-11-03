@@ -14,9 +14,10 @@ import { toast } from 'sonner';
 import { SettingsGroup, SettingsRow } from './settings-group';
 
 /**
- * 客户端 → 应用更新: 「检查更新」 finds out (the window also checks when it comes
- * up and back to the foreground); nothing downloads until 「下载并重启」. Hidden
- * on apps released before the in-app updater.
+ * 客户端 → 应用更新: 「检查更新」 checks now (the shell also checks on its own and
+ * the window when it comes back to the foreground); a found version downloads
+ * in the background, then 「立即更新」 installs and restarts. Hidden on apps
+ * released before the in-app updater.
  */
 export function AppUpdateSettings() {
   const qc = useQueryClient();
@@ -30,7 +31,8 @@ export function AppUpdateSettings() {
   if (!s) return null;
   const checking = check.isPending || s.state === 'checking';
   const busy = s.state === 'downloading' || s.state === 'installing';
-  const canInstall = s.state === 'available' && !s.blocked;
+  const canInstall =
+    (s.state === 'available' && !s.blocked) || s.state === 'ready';
 
   let status: ReactNode = s.checkedAt ? '已是最新版本' : '尚未检查';
   let failed = false;
@@ -44,7 +46,15 @@ export function AppUpdateSettings() {
     );
   else if (s.state === 'installing')
     status = <SweepShine>正在关闭浏览器环境并安装…</SweepShine>;
-  else if (s.state === 'available') {
+  else if (s.state === 'ready') {
+    failed = Boolean(s.error);
+    status = s.error ?? (
+      <>
+        <span>v{s.version}</span>{' '}
+        <span>已下载，会先关闭正在运行的浏览器环境</span>
+      </>
+    );
+  } else if (s.state === 'available') {
     // A failed download or install keeps the update, with its error.
     failed = Boolean(s.error);
     status = s.blocked ?? s.error ?? (
@@ -73,7 +83,7 @@ export function AppUpdateSettings() {
           </span>
         }
       >
-        {canInstall || busy ? (
+        {canInstall || s.state === 'installing' ? (
           <Button
             type="button"
             size="sm"
@@ -89,7 +99,7 @@ export function AppUpdateSettings() {
                 )
             }
           >
-            下载并重启
+            立即更新
           </Button>
         ) : (
           <Button
@@ -97,7 +107,7 @@ export function AppUpdateSettings() {
             variant="outline"
             size="sm"
             className="min-w-24 px-2.5 text-[12px] font-medium"
-            disabled={checking}
+            disabled={checking || busy}
             onClick={() => check.mutate()}
           >
             检查更新
