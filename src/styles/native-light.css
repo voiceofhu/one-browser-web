@@ -1,0 +1,217 @@
+/*
+ * Light mode drawn like a native macOS app (Finder, Mail, System Settings):
+ * a white content area, an opaque grey sidebar, flat surfaces separated by
+ * hairlines, and controls with the small shadow of an AppKit push button.
+ *
+ * Dark mode keeps Solid Glass as designed. Tokens sit on `:root:not(.dark)`
+ * so they beat Solid Glass's `:root`; rules are scoped with
+ * `:where(:root:not(.dark))`, which adds no specificity, so the One Browser
+ * compat rules (sticky table cells, toolbars) still win where they are more
+ * specific.
+ */
+
+:root:not(.dark) {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.22 0 0);
+
+  --panel: oklch(1 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.22 0 0);
+  --popover: oklch(0.99 0 0 / 94%);
+  --popover-foreground: oklch(0.22 0 0);
+
+  --secondary: oklch(0 0 0 / 5%);
+  --secondary-foreground: oklch(0.22 0 0);
+  --muted: oklch(0 0 0 / 4%);
+  --muted-foreground: oklch(0.52 0 0);
+  --accent: oklch(0 0 0 / 5%);
+  --accent-foreground: oklch(0.22 0 0);
+  --border: oklch(0 0 0 / 10%);
+  --input: oklch(0 0 0 / 14%);
+
+  /* No light behind the page, no line of light along a pane's top. */
+  --light-1: transparent;
+  --light-2: transparent;
+  --light-3: transparent;
+  --glass-rim: transparent;
+  --glass-inner: transparent;
+  --glass-edge: oklch(0 0 0 / 10%);
+  --popover-edge: oklch(0 0 0 / 14%);
+  --popover-under: transparent;
+  --glass-shade: oklch(0 0 0 / 22%);
+  --glass-contact: oklch(0 0 0 / 8%);
+  --glass-lift: oklch(0 0 0 / 10%);
+  --glass-control: oklch(1 0 0);
+  --glass-control-rim: transparent;
+  --glass-state: oklch(0 0 0 / 7%);
+  --glass-state-rim: transparent;
+  --glass-state-edge: oklch(0 0 0 / 10%);
+  --hover: oklch(0 0 0 / 5%);
+  --hover-faint: oklch(0 0 0 / 3%);
+  --glass-blur: blur(30px) saturate(160%);
+  --glass-blur-control: none;
+
+  --primary-solid: 100%;
+  --primary-rim: oklch(1 0 0 / 22%);
+  --primary-under: transparent;
+  --primary-inner: transparent;
+  --primary-edge: oklch(0 0 0 / 12%);
+
+  --field: oklch(1 0 0);
+  --field-rim: transparent;
+  --field-edge: oklch(0 0 0 / 15%);
+  --focus-line: color-mix(in oklch, var(--primary) 70%, transparent);
+  --well-shade: oklch(0 0 0 / 8%);
+  --well-rim: transparent;
+
+  --sidebar: oklch(0.955 0.002 265);
+  --sidebar-foreground: oklch(0.25 0 0);
+  --sidebar-accent: oklch(0 0 0 / 8%);
+  --sidebar-accent-foreground: oklch(0.2 0 0);
+  --sidebar-border: oklch(0 0 0 / 10%);
+
+  --browser-table-surface: oklch(1 0 0);
+  --browser-table-heading: oklch(0.975 0 0);
+  --browser-table-hover: oklch(0.965 0.003 265);
+  --browser-table-selected: oklch(0.94 0.012 255);
+}
+
+/* Panes are flat: a hairline, no blur, no shadow. Menus and dialogs keep the
+   translucent material and the lift macOS gives a floating window. */
+:where(:root:not(.dark)) :is(.bg-card, .glass-panel) {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: 0 0 0 1px var(--glass-edge);
+}
+
+:where(:root:not(.dark)) .bg-sidebar {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+:where(:root:not(.dark)) [data-slot='dashboard-metric-card'] {
+  box-shadow: 0 0 0 1px var(--glass-edge);
+}
+
+/* The window's toolbar strip continues the sidebar on the left and the
+   white content on the right, as a unified macOS title bar does. */
+@media (min-width: 768px) {
+  :where(:root:not(.dark)) [data-slot='app-titlebar'] {
+    border-bottom-color: transparent;
+    background-color: var(--background);
+    background-image:
+      linear-gradient(var(--sidebar-border), var(--sidebar-border)),
+      linear-gradient(var(--sidebar), var(--sidebar));
+    background-position:
+      calc(var(--sidebar-width) - 1px) 0,
+      0 0;
+    background-size:
+      1px 100%,
+      var(--sidebar-width) 100%;
+    background-repeat: no-repeat;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: none;
+  }
+}
+
+:where(:root:not(.dark))
+  :is(
+    [data-slot='app-footer'],
+    [data-slot='browser-table-toolbar'],
+    [data-slot='table-pagination']
+  ) {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+
+/* Push buttons: white, a hairline, and the half-pixel shadow they stand on. */
+:where(:root:not(.dark))
+  :is([data-slot='button'], .group\/button):is(
+    [data-variant='outline'],
+    [data-variant='secondary'],
+    .bg-background,
+    .bg-secondary
+  ) {
+  background-color: oklch(1 0 0);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow:
+    0 0.5px 1.5px oklch(0 0 0 / 12%),
+    var(--tw-ring-shadow, 0 0 #0000);
+}
+
+:where(:root:not(.dark))
+  :is([data-slot='button'], .group\/button):is(
+    [data-variant='outline'],
+    [data-variant='secondary'],
+    .bg-background,
+    .bg-secondary
+  ):not(:focus-visible):not([aria-invalid='true']) {
+  border-color: oklch(0 0 0 / 13%);
+}
+
+:where(:root:not(.dark))
+  :is([data-slot='button'], .group\/button):is(
+    [data-variant='outline'],
+    [data-variant='secondary'],
+    .bg-background,
+    .bg-secondary
+  ):is(:hover, [aria-expanded='true'], [data-popup-open], [data-pressed]) {
+  background-color: oklch(0.97 0 0);
+}
+
+:where(:root:not(.dark))
+  :is([data-slot='button'], .group\/button):is(
+    [data-variant='outline'],
+    [data-variant='secondary'],
+    .bg-background,
+    .bg-secondary
+  ):active {
+  background-color: oklch(0.94 0 0);
+}
+
+/* The default button is the accent colour, flat, with the same small shadow. */
+:where(:root:not(.dark))
+  :is(button, a, [role='button']).bg-primary:not([data-slot='badge']),
+:where(:root:not(.dark)) .glass-primary {
+  background-color: var(--primary);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow:
+    inset 0 0.5px 0 var(--primary-rim),
+    0 0.5px 1.5px oklch(0 0 0 / 20%),
+    var(--tw-ring-shadow, 0 0 #0000);
+}
+
+:where(:root:not(.dark))
+  :is(button, a, [role='button']).bg-primary:not([data-slot='badge']):hover,
+:where(:root:not(.dark)) .glass-primary:hover {
+  background-color: color-mix(in oklch, var(--primary) 90%, black);
+}
+
+:where(:root:not(.dark))
+  :is(button, a, [role='button']).bg-primary:not([data-slot='badge']):active,
+:where(:root:not(.dark)) .glass-primary:active {
+  background-color: color-mix(in oklch, var(--primary) 80%, black);
+  box-shadow:
+    0 0.5px 1px oklch(0 0 0 / 16%),
+    var(--tw-ring-shadow, 0 0 #0000);
+}
+
+/* Fields: white, a hairline, a faint inner shade along the top. */
+:where(:root:not(.dark))
+  :is(
+    [data-slot='input'],
+    [data-slot='textarea'],
+    [data-slot='select-trigger'],
+    [data-slot='native-select'],
+    [data-slot='input-group'],
+    [data-slot='combobox-chips'],
+    [data-slot='sidebar-input']
+  ) {
+  box-shadow:
+    inset 0 0.5px 1px oklch(0 0 0 / 6%),
+    var(--tw-ring-shadow, 0 0 #0000);
+}

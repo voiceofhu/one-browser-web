@@ -3,6 +3,7 @@
 @import 'shadcn/tailwind.css';
 @import './styles/solid-glass.css';
 @import './styles/solid-glass-compat.css';
+@import './styles/native-light.css';
 
 @custom-variant dark (&:is(.dark *));
 

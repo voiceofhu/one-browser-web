@@ -85,10 +85,12 @@ export default function DashboardOverviewPage() {
   );
 
   return (
-    <section className="bg-muted/30 flex min-h-0 flex-1 flex-col overflow-auto">
-      <div className="mx-auto flex w-full max-w-[96rem] flex-col gap-2 p-2 sm:p-3">
-        <div className="bg-card flex min-h-9 flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-sm border px-2.5 py-1">
-          <h1 className="text-sm font-semibold">工作台</h1>
+    <section className="bg-background flex min-h-0 flex-1 flex-col overflow-auto">
+      <div className="mx-auto flex w-full max-w-[96rem] flex-col gap-3 px-3 pt-2 pb-4 sm:px-5">
+        <div className="flex min-h-10 flex-wrap items-center justify-between gap-x-3 gap-y-1">
+          <h1 className="text-[1.0625rem] font-semibold tracking-tight">
+            工作台
+          </h1>
           <div className="flex min-w-0 flex-wrap items-center gap-2">
             {data ? (
               <span
@@ -109,7 +111,7 @@ export default function DashboardOverviewPage() {
         </div>
 
         {!query.isLoading && visibleMetrics.length ? (
-          <div className="bg-border grid grid-cols-2 gap-px overflow-hidden rounded-sm border md:grid-cols-3 xl:grid-cols-6">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
             {visibleMetrics.map((metric) => (
               <MetricCard key={metric.key} metric={metric} />
             ))}
@@ -118,11 +120,11 @@ export default function DashboardOverviewPage() {
 
         {query.isLoading ? (
           <LoadingState
-            className="bg-card min-h-48 rounded-sm border"
+            className="bg-card min-h-48 rounded-lg"
             label="工作台加载中..."
           />
         ) : query.isError ? (
-          <Empty className="bg-card min-h-48 rounded-sm border">
+          <Empty className="bg-card min-h-48 rounded-lg">
             <EmptyHeader>
               <EmptyTitle>Dashboard 加载失败</EmptyTitle>
               <EmptyDescription>{query.error.message}</EmptyDescription>
@@ -131,7 +133,7 @@ export default function DashboardOverviewPage() {
         ) : data ? (
           <>
             {hasChartScope ? (
-              <div className="grid gap-2 lg:grid-cols-2">
+              <div className="grid gap-3 lg:grid-cols-2">
                 {resourceData.length ? (
                   <ResourceDistributionChart
                     data={resourceData}
@@ -152,25 +154,25 @@ export default function DashboardOverviewPage() {
             ) : null}
 
             {quickLinks.length ? (
-              <section className="bg-card overflow-hidden rounded-sm border">
-                <h2 className="bg-muted/30 border-b px-2.5 py-1.5 text-xs font-semibold">
+              <section className="bg-card overflow-hidden rounded-lg p-1.5">
+                <h2 className="px-2 pt-1 pb-1.5 text-[0.8125rem] font-semibold">
                   快捷入口
                 </h2>
-                <div className="bg-border grid gap-px sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                <div className="grid gap-0.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   {quickLinks.map((item) => (
                     <Button
                       asChild
                       key={item.href}
                       variant="ghost"
-                      className="bg-card h-8 min-w-0 justify-start gap-2 rounded-none px-2.5"
+                      className="h-8 min-w-0 justify-start gap-2 rounded-md px-2"
                     >
                       <Link to={item.href}>
                         <HugeiconsIcon
                           icon={item.icon}
                           strokeWidth={2}
-                          className="text-muted-foreground size-3.5"
+                          className="text-primary size-4"
                         />
-                        <span className="min-w-0 flex-1 truncate text-xs font-medium">
+                        <span className="min-w-0 flex-1 truncate text-[0.8125rem] font-normal">
                           {item.title}
                         </span>
                         <HugeiconsIcon
@@ -200,27 +202,25 @@ function MetricCard({ metric }: { metric: DashboardMetric }) {
       asChild
       data-slot="dashboard-metric-card"
       variant="ghost"
-      className="bg-card h-auto min-w-0 justify-start gap-2 rounded-none px-2.5 py-2 text-left whitespace-normal"
+      className="bg-card hover:bg-card active:bg-muted h-auto min-w-0 flex-col items-stretch gap-1.5 rounded-lg px-3 py-2.5 text-left whitespace-normal"
     >
       <Link to={metric.href}>
-        <HugeiconsIcon
-          icon={Icon}
-          strokeWidth={2}
-          className="text-muted-foreground size-4"
-        />
-        <div className="min-w-0 flex-1">
-          <div className="flex items-baseline justify-between gap-2">
-            <p className="text-muted-foreground truncate text-xs">
-              {metric.title}
-            </p>
-            <p className="shrink-0 text-lg leading-6 font-semibold tabular-nums">
-              {metric.value}
-            </p>
-          </div>
-          <p className="text-muted-foreground truncate text-[0.6875rem] font-normal">
-            {metric.secondary_label} {metric.secondary_value}
+        <div className="flex items-center gap-1.5">
+          <HugeiconsIcon
+            icon={Icon}
+            strokeWidth={2}
+            className="text-primary size-4"
+          />
+          <p className="text-muted-foreground truncate text-xs font-medium">
+            {metric.title}
           </p>
         </div>
+        <p className="text-[1.375rem] leading-7 font-semibold tracking-tight tabular-nums">
+          {metric.value}
+        </p>
+        <p className="text-muted-foreground truncate text-[0.6875rem] font-normal">
+          {metric.secondary_label} {metric.secondary_value}
+        </p>
       </Link>
     </Button>
   );

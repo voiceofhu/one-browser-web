@@ -59,7 +59,7 @@ export function ResourceDistributionChart({
             value: item.value,
             itemStyle: {
               color: palette.primary,
-              borderRadius: 0,
+              borderRadius: [4, 4, 0, 0],
             },
           })),
           barMaxWidth: 24,
@@ -98,16 +98,13 @@ export function StatusPieChart({
     () => ({
       color: COLORS,
       tooltip: { trigger: 'item' },
-      legend: {
-        bottom: 0,
-        textStyle: { color: palette.muted },
-      },
       series: [
         {
           type: 'pie',
-          radius: ['45%', '70%'],
-          center: ['50%', '43%'],
+          radius: ['52%', '72%'],
+          center: ['50%', '50%'],
           avoidLabelOverlap: true,
+          itemStyle: { borderColor: palette.surface, borderWidth: 2 },
           label: { color: palette.text, formatter: '{b} ({c})' },
           data: data.map((item) => ({ name: item.label, value: item.value })),
         },
@@ -192,14 +189,16 @@ function ChartCard({
     <Card
       size="sm"
       className={cn(
-        'bg-card border shadow-none ring-0 data-[size=sm]:gap-0 data-[size=sm]:py-0',
+        'bg-card rounded-lg shadow-none ring-0 data-[size=sm]:gap-0 data-[size=sm]:py-0',
         className,
       )}
     >
-      <CardHeader className="bg-muted/30 rounded-none border-b py-1.5 group-data-[size=sm]/card:px-2.5 group-data-[size=sm]/card:[.border-b]:pb-1.5">
-        <CardTitle className="text-xs font-semibold">{title}</CardTitle>
+      <CardHeader className="pt-2.5 pb-0 group-data-[size=sm]/card:px-3">
+        <CardTitle className="text-[0.8125rem] font-semibold">
+          {title}
+        </CardTitle>
       </CardHeader>
-      <CardContent className="py-1 group-data-[size=sm]/card:px-2">
+      <CardContent className="py-1.5 group-data-[size=sm]/card:px-2">
         {children}
       </CardContent>
     </Card>
@@ -220,12 +219,14 @@ function useChartPalette() {
           text: '#e2e8f0',
           muted: '#94a3b8',
           grid: '#334155',
+          surface: '#1f1f1f',
           primary,
         }
       : {
-          text: '#0f172a',
-          muted: '#64748b',
-          grid: '#e2e8f0',
+          text: '#1d1d1f',
+          muted: '#86868b',
+          grid: '#ececec',
+          surface: '#ffffff',
           primary,
         };
   }, [resolvedTheme]);

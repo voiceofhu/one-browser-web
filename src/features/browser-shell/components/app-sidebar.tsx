@@ -149,9 +149,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       }
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : '账号操作失败，请重试',
+        error instanceof Error ? error.message : '账号操作失败，请重试',
       );
     } finally {
       setIsLoggingOut(false);
@@ -213,7 +211,10 @@ function SidebarNavGroup({
   return (
     <Collapsible className="group/collapsible" defaultOpen>
       <SidebarGroup className="py-0.5">
-        <SidebarGroupLabel asChild className="h-6">
+        <SidebarGroupLabel
+          asChild
+          className="text-sidebar-foreground/55 h-6 text-[0.6875rem] font-semibold"
+        >
           <CollapsibleTrigger className="w-full cursor-pointer justify-between gap-2 text-left">
             <span className="min-w-0 flex-1 truncate text-left">
               {group.title}
@@ -247,9 +248,9 @@ function SidebarNavItem({
         asChild
         size="sm"
         className={cn(
-          'h-11 gap-1.5 md:h-7 [&_svg]:size-3.5',
+          '[&_svg]:text-sidebar-primary h-11 gap-2 text-[0.8125rem] md:h-7 [&_svg]:size-4',
           active &&
-            'bg-sidebar-primary/10 text-sidebar-primary hover:bg-sidebar-primary/15 hover:text-sidebar-primary font-medium',
+            'bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent font-medium',
         )}
         tooltip={item.title}
       >
