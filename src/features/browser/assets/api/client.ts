@@ -3,6 +3,7 @@ import { http } from '@/lib/http';
 import type {
   BrowserAssetCompletePayload,
   BrowserAssetCompleteResult,
+  BrowserAssetGithubSyncResult,
   BrowserAssetListParams,
   BrowserAssetMultipartCreatePayload,
   BrowserAssetPageResponse,
@@ -89,4 +90,11 @@ export async function setCurrentBrowserAsset(assetId: number) {
 
 export async function deleteBrowserAsset(assetId: number) {
   await http.delete<void>(`${browserAssetPath}/${assetId}`);
+}
+
+export async function syncBrowserAssetsFromGithub() {
+  const response = await http.post<BrowserAssetGithubSyncResult>(
+    `${browserAssetPath}/sync-github`,
+  );
+  return response.data;
 }

@@ -1,5 +1,38 @@
 import { HttpError } from '@/lib/http/types';
 
+const DEFAULT_BACKEND_ORIGIN = 'https://browser.aicbe.com';
+
+/**
+ * True when the Web runs from the desktop app bundle: `tauri://localhost`
+ * on macOS/Linux, `http(s)://tauri.localhost` on Windows.
+ */
+export function isBundledDesktopPage() {
+  if (typeof window === 'undefined') return false;
+  const { protocol, hostname } = window.location;
+  return protocol === 'tauri:' || hostname === 'tauri.localhost';
+}
+
+/**
+ * Origin of the backend site. The website and the dev server are served
+ * from it, so it is the page origin; the bundled desktop page is not, and
+ * uses `VITE_BACKEND_ORIGIN` instead.
+ */
+export function getBackendOrigin() {
+  if (!isBundledDesktopPage()) {
+    return typeof window === 'undefined'
+      ? DEFAULT_BACKEND_ORIGIN
+      : window.location.origin;
+  }
+  const configured = import.meta.env.VITE_BACKEND_ORIGIN?.trim();
+  return (configured || DEFAULT_BACKEND_ORIGIN).replace(/\/+$/, '');
+}
+
+/** Absolute URL for a backend path such as `/api/...`; others pass through. */
+export function toBackendUrl(path: string) {
+  if (!path.startsWith('/') || !isBundledDesktopPage()) return path;
+  return `${getBackendOrigin()}${path}`;
+}
+
 export function getApiBaseUrl() {
   const envApiUrl = import.meta.env.VITE_API_URL?.trim();
   return envApiUrl ? envApiUrl.replace(/\/$/, '') : '/api';

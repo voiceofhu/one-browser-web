@@ -9,6 +9,8 @@ interface ImportMetaEnv {
   readonly VITE_BASE_URL?: string;
   readonly VITE_DEV_BACKEND_URL?: string;
   readonly VITE_WEB_LOGIN_URL?: string;
+  /** Backend origin the desktop-bundled Web calls, e.g. https://browser.aicbe.com. */
+  readonly VITE_BACKEND_ORIGIN?: string;
   readonly VITE_TURNSTILE_SITE_KEY?: string;
   readonly VITE_DESKTOP_API_MOCK?: string;
 }

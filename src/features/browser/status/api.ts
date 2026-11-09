@@ -11,6 +11,7 @@ import {
   isTauriRuntime,
 } from '@/lib/desktop';
 import { http } from '@/lib/http';
+import { getBackendOrigin } from '@/lib/http/url';
 
 export interface ChromiumDownloadManifest {
   platform: string;
@@ -166,7 +167,7 @@ function resolveChromiumDownloadUrl(value: string) {
     return value;
   }
 
-  return new URL(value, window.location.origin).toString();
+  return new URL(value, getBackendOrigin()).toString();
 }
 
 export async function getChromiumDownloadManifest(version?: string | null) {

@@ -20,9 +20,10 @@ export const mockSettings: AppSettings = {
     username: null,
     hasPassword: false,
   },
-  apiEnabled: true,
+  apiEnabled: false,
   apiHost: '127.0.0.1',
   apiPort: 27523,
+  apiToken: 'mock-local-api-token',
 };
 
 export const mockProxyCheck: ProxyCheckResult = {

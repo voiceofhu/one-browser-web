@@ -249,6 +249,14 @@ function HomeHeader() {
         </Button>
         <Button
           variant="ghost"
+          size="sm"
+          className="hidden h-8 text-xs sm:inline-flex"
+          asChild
+        >
+          <Link to="/docs">开发文档</Link>
+        </Button>
+        <Button
+          variant="ghost"
           size="icon-sm"
           className="text-muted-foreground"
           aria-label={

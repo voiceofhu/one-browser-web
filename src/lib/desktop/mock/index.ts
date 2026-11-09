@@ -93,8 +93,11 @@ export function invokeMockCommand<T>(
     case 'get_settings':
       return mockResult<T>(mockSettings);
     case 'update_settings': {
-      const { preProxy, ...rest } = patch ?? {};
+      const { preProxy, regenerateApiToken, ...rest } = patch ?? {};
       Object.assign(mockSettings, rest);
+      if (regenerateApiToken) {
+        mockSettings.apiToken = `mock-${crypto.randomUUID()}`;
+      }
       if (preProxy) {
         const { password, ...settings } = preProxy;
         mockSettings.preProxy = {

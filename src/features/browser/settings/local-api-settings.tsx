@@ -1,4 +1,19 @@
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { CopyButton } from '@/components/ui/copy-button';
+import {
+  AlertDialogActionButton,
+  AlertDialogCancelButton,
+} from '@/components/ui/dialog-action-button';
 import { FieldGroup } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -47,7 +62,7 @@ export function LocalApiSettings({ settings }: { settings: AppSettings }) {
         <SettingsRow
           label="启用服务"
           htmlFor="local-api"
-          description="为本机自动化工具提供受限接口，不向局域网或公网暴露"
+          description="供本机自动化脚本调用；网页无法访问，每个请求都要带令牌"
         >
           <div className="flex shrink-0 items-center gap-2">
             <Badge
@@ -86,6 +101,57 @@ export function LocalApiSettings({ settings }: { settings: AppSettings }) {
                 }}
                 className="h-7 w-full max-w-20 shrink-0 text-center font-mono text-[12px] font-normal md:text-[12px]"
               />
+            </SettingsRow>
+            <SettingsDivider />
+            <SettingsRow
+              label="访问令牌"
+              description="请求头带 Authorization: Bearer <令牌>；不要分享给他人"
+            >
+              <div className="flex shrink-0 items-center gap-1.5">
+                <CopyButton
+                  text={settings.apiToken ?? null}
+                  disabled={!settings.apiToken}
+                  idleLabel="复制令牌"
+                  successMessage="令牌已复制"
+                  variant="outline"
+                  size="sm"
+                  className="px-2.5 text-[12px] font-medium"
+                />
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={updateSettingsMutation.isPending}
+                      className="px-2.5 text-[12px] font-medium"
+                    >
+                      重新生成
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent size="sm">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>重新生成访问令牌？</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        旧令牌立即失效，正在使用它的脚本需要换成新令牌。
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancelButton />
+                      <AlertDialogActionButton
+                        onClick={() =>
+                          updateSettingsMutation.mutate(
+                            { regenerateApiToken: true },
+                            { onSuccess: () => toast.success('已生成新令牌') },
+                          )
+                        }
+                      >
+                        重新生成
+                      </AlertDialogActionButton>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
             </SettingsRow>
           </>
         ) : null}

@@ -57,8 +57,10 @@ import {
   BrowserAssetsPagination,
   CurrentBadge,
   TargetCell,
+  UploadModeBadge,
   assetDisplayName,
 } from './assets-table-parts';
+import { BrowserAssetGithubSyncButton } from './github-sync-button';
 
 type CurrentFilter = 'all' | 'current';
 const CURRENT_FILTERS = [
@@ -221,6 +223,12 @@ export function BrowserAssetsPageContent() {
         meta: { headerClassName: 'w-28', cellClassName: 'w-28' },
       },
       {
+        accessorKey: 'upload_mode',
+        header: '来源',
+        cell: ({ row }) => <UploadModeBadge mode={row.original.upload_mode} />,
+        meta: { headerClassName: 'w-32', cellClassName: 'w-32' },
+      },
+      {
         accessorKey: 'is_current',
         header: '状态',
         cell: ({ row }) => <CurrentBadge active={row.original.is_current} />,
@@ -233,7 +241,7 @@ export function BrowserAssetsPageContent() {
           const value = row.original.updated_at || row.original.created_at;
           return (
             <span
-              className="block truncate text-muted-foreground"
+              className="text-muted-foreground block truncate"
               title={formatDateTimeTitle(value)}
             >
               {formatDisplayDateTime(value)}
@@ -276,7 +284,7 @@ export function BrowserAssetsPageContent() {
   }
 
   return (
-    <div className="relative flex min-h-0 flex-1 flex-col bg-background">
+    <div className="bg-background relative flex min-h-0 flex-1 flex-col">
       <BrowserTableToolbar
         filters={
           <>
@@ -311,6 +319,15 @@ export function BrowserAssetsPageContent() {
               successMessage="版本列表已刷新"
             />
             {canUpload ? (
+              <BrowserAssetGithubSyncButton
+                onSynced={() =>
+                  queryClient.invalidateQueries({
+                    queryKey: browserAssetQueryKeys.all,
+                  })
+                }
+              />
+            ) : null}
+            {canUpload ? (
               <Button size="sm" onClick={() => setUploadOpen(true)}>
                 <HugeiconsIcon
                   icon={Add01Icon}
@@ -342,7 +359,7 @@ export function BrowserAssetsPageContent() {
             data={assets}
             columns={columns}
             emptyTitle="暂无安装包"
-            emptyDescription="上传浏览器安装包后，客户端会读取当前版本下载地址。"
+            emptyDescription="上传或从 GitHub 同步浏览器安装包后，客户端会读取当前版本下载地址。"
             getRowId={(record) => String(record.asset_id)}
             isLoading={assetsQuery.isLoading}
             density="compact"
@@ -413,7 +430,8 @@ export function BrowserAssetsPageContent() {
               {deleteTargets.length > 1
                 ? `确认删除选中的 ${deleteTargets.length} 个安装包？`
                 : `确认删除 ${deleteTargets[0] ? assetDisplayName(deleteTargets[0]) : '该安装包'}？`}
-              删除后不会移除 OneFile 对象，只会移除后台资产记录。
+              删除后不会移除 OneFile 对象或 GitHub Release
+              文件，只会移除后台资产记录。
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

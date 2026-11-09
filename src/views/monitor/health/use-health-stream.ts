@@ -1,6 +1,6 @@
 import { isTauriRuntime } from '@/lib/desktop';
 import { http } from '@/lib/http';
-import { getApiBaseUrl } from '@/lib/http/url';
+import { getApiBaseUrl, toBackendUrl } from '@/lib/http/url';
 import * as React from 'react';
 
 import type { HealthSnapshot } from './types';
@@ -50,7 +50,7 @@ export function useHealthStream() {
     };
 
     const startBrowserStream = () => {
-      const url = `${getApiBaseUrl()}${HEALTH_PATH}/stream`;
+      const url = toBackendUrl(`${getApiBaseUrl()}${HEALTH_PATH}/stream`);
       source = new EventSource(url, { withCredentials: true });
       source.onopen = () => {
         if (disposed) return;

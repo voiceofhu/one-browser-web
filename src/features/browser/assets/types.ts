@@ -25,7 +25,7 @@ export interface BrowserAssetResource {
   bucket_id: string;
   object_key: string;
   download_url: string;
-  upload_mode: 'direct' | 'multipart' | (string & {});
+  upload_mode: 'direct' | 'multipart' | 'github_release' | (string & {});
   is_current: boolean;
   created_by: string;
   created_at: string;
@@ -91,4 +91,13 @@ export interface BrowserAssetCompletePayload {
 export interface BrowserAssetCompleteResult {
   asset: BrowserAssetResource;
   onefile: unknown;
+}
+
+export interface BrowserAssetGithubSyncResult {
+  releases: number;
+  created: number;
+  updated: number;
+  unchanged: number;
+  made_current: number;
+  skipped: number;
 }

@@ -77,10 +77,10 @@ export function AssetBulkActions({
 }) {
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-12 flex justify-center px-4 md:left-(--sidebar-width)">
-      <div className="pointer-events-auto flex max-w-[calc(100vw-2rem)] items-center gap-2 rounded-lg border bg-popover p-2 text-popover-foreground shadow-lg">
+      <div className="bg-popover text-popover-foreground pointer-events-auto flex max-w-[calc(100vw-2rem)] items-center gap-2 rounded-lg border p-2 shadow-lg">
         <Badge
           variant="outline"
-          className="h-6 rounded-md bg-muted/40 px-2.5 text-xs"
+          className="bg-muted/40 h-6 rounded-md px-2.5 text-xs"
         >
           <span className="font-semibold tabular-nums">{selectedCount}</span>
           <span className="text-muted-foreground">已选</span>
@@ -129,7 +129,7 @@ export function AssetNameCell({ record }: { record: BrowserAssetResource }) {
           <HugeiconsIcon
             icon={CheckmarkCircle02Icon}
             strokeWidth={2}
-            className="size-4 shrink-0 text-primary"
+            className="text-primary size-4 shrink-0"
           />
         ) : null}
         <span
@@ -140,7 +140,7 @@ export function AssetNameCell({ record }: { record: BrowserAssetResource }) {
         </span>
       </div>
       <span
-        className="block max-w-80 min-w-0 truncate text-xs text-muted-foreground"
+        className="text-muted-foreground block max-w-80 min-w-0 truncate text-xs"
         title={record.object_key || record.download_url}
       >
         {record.object_key || record.download_url}
@@ -156,6 +156,20 @@ export function TargetCell({ record }: { record: BrowserAssetResource }) {
       <Badge variant="outline">{record.arch}</Badge>
     </div>
   );
+}
+
+const UPLOAD_MODE_LABELS: Record<string, string> = {
+  direct: '直传',
+  multipart: '分片上传',
+  github_release: 'GitHub Release',
+};
+
+export function UploadModeBadge({
+  mode,
+}: {
+  mode: BrowserAssetResource['upload_mode'];
+}) {
+  return <Badge variant="outline">{UPLOAD_MODE_LABELS[mode] ?? mode}</Badge>;
 }
 
 export function CurrentBadge({ active }: { active: boolean }) {

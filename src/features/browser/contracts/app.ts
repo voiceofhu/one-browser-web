@@ -16,6 +16,8 @@ export interface AppSettings {
   apiEnabled: boolean;
   apiHost: '127.0.0.1';
   apiPort: number;
+  /** Bearer token for the local API. Absent on desktop clients before 11-09. */
+  apiToken?: string;
 }
 
 export type PreProxyMode = 'off' | 'system' | 'manual';
@@ -155,8 +157,12 @@ export interface AppReleaseIdentity {
   executableSha256: string;
 }
 
-export type UpdateSettingsRequest = Partial<Omit<AppSettings, 'preProxy'>> & {
+export type UpdateSettingsRequest = Partial<
+  Omit<AppSettings, 'preProxy' | 'apiToken'>
+> & {
   preProxy?: PreProxyPatch;
+  /** Replaces the local API token; scripts using the old one stop working. */
+  regenerateApiToken?: boolean;
 };
 
 export interface ValidateChromiumPathRequest {
