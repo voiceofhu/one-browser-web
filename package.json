@@ -1,7 +1,7 @@
 {
   "name": "one-browser-web",
   "appName": "One Browser",
-  "version": "26.1109.1511",
+  "version": "26.1109.1710",
   "private": true,
   "type": "module",
   "scripts": {
