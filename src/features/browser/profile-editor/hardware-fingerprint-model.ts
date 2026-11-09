@@ -1,11 +1,6 @@
 import type { CompactTabOption } from './editor-controls';
 
-export type NoiseFieldName =
-  | 'webglNoise'
-  | 'canvasNoise'
-  | 'audioContextNoise'
-  | 'clientRectsNoise'
-  | 'speechVoicesNoise';
+export type NoiseFieldName = 'canvasNoise' | 'audioContextNoise';
 export type RealManualMode = 'real' | 'manual';
 export type AutoManualMode = 'auto' | 'manual';
 export type RealManualRandomMode = 'real' | 'manual' | 'random';
@@ -16,11 +11,8 @@ export type NumericValueOption = { value: string; label: string };
 export type ModeOption<T extends string> = CompactTabOption<T>;
 
 export const noiseFields: Array<{ key: NoiseFieldName; label: string }> = [
-  { key: 'webglNoise', label: 'WebGL' },
   { key: 'canvasNoise', label: 'Canvas' },
   { key: 'audioContextNoise', label: 'AudioContext' },
-  { key: 'clientRectsNoise', label: 'ClientRects' },
-  { key: 'speechVoicesNoise', label: 'SpeechVoices' },
 ];
 
 export const realManualOptions: Array<ModeOption<RealManualMode>> = [

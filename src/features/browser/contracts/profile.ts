@@ -39,11 +39,8 @@ export interface FingerprintConfig {
   webglVendor: string | null;
   webglRenderer: string | null;
   webgpuMode: string | null;
-  webglNoise: string | null;
   canvasNoise: string | null;
   audioContextNoise: string | null;
-  clientRectsNoise: string | null;
-  speechVoicesNoise: string | null;
   screenMode: string | null;
   screenResolution: string | null;
   fontsMode: string | null;

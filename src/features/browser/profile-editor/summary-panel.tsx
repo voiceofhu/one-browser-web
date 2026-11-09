@@ -33,19 +33,10 @@ export function SummaryPanel({
     ['语言', languageLabel(form)],
     ['WebGL 信息', webglInfoLabel(form, defaults)],
     ['WebGPU', webgpuLabel(form.webgpuMode, defaults.webgpuMode)],
-    ['WebGL', noiseLabel(form.webglNoise, defaults.webglNoise)],
     ['Canvas', noiseLabel(form.canvasNoise, defaults.canvasNoise)],
     [
       '音频上下文',
       noiseLabel(form.audioContextNoise, defaults.audioContextNoise),
-    ],
-    [
-      '客户端矩形',
-      noiseLabel(form.clientRectsNoise, defaults.clientRectsNoise),
-    ],
-    [
-      '语音列表',
-      noiseLabel(form.speechVoicesNoise, defaults.speechVoicesNoise),
     ],
     ['屏幕', screenLabel(form, defaults)],
     ['字体', fontsLabel(form, defaults)],
@@ -58,7 +49,7 @@ export function SummaryPanel({
   ];
 
   return (
-    <Card className="sticky top-0 hidden h-fit max-h-[calc(min(90dvh,42rem)-7rem)] gap-0 overflow-hidden bg-muted/40 py-0 shadow-none lg:flex">
+    <Card className="bg-muted/40 sticky top-0 hidden h-fit max-h-[calc(min(90dvh,42rem)-7rem)] gap-0 overflow-hidden py-0 shadow-none lg:flex">
       <CardHeader className="flex flex-row items-center justify-between gap-2 border-b px-3 py-1 [.border-b]:pb-1">
         <CardTitle className="text-sm">摘要</CardTitle>
         {onGenerateRandomFingerprint ? (
@@ -68,7 +59,7 @@ export function SummaryPanel({
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="-my-1 -mr-1 size-7 text-muted-foreground hover:text-foreground"
+                className="text-muted-foreground hover:text-foreground -my-1 -mr-1 size-7"
                 aria-label="生成新指纹"
                 onClick={onGenerateRandomFingerprint}
               >
@@ -90,7 +81,7 @@ export function SummaryPanel({
             className="grid grid-cols-[5rem_minmax(0,1fr)] gap-2 text-xs"
           >
             <div className="text-muted-foreground">{label}</div>
-            <div className="min-w-0 break-words text-right font-medium">
+            <div className="min-w-0 text-right font-medium break-words">
               {value}
             </div>
           </div>

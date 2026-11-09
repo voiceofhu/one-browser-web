@@ -27,7 +27,7 @@ export type LanguageOption = {
   label: string;
   acceptLanguages: string;
 };
-export type WebglSystemValue = 'macos' | 'windows';
+export type WebglSystemValue = 'macos' | 'windows' | 'linux';
 export type WebglVendorOption = {
   value: string;
   label: string;
@@ -118,58 +118,131 @@ const languageOptions: LanguageOption[] = [
   { value: 'vi', label: 'Vietnamese', acceptLanguages: 'vi' },
 ];
 
+// WebGL presets are complete pairs in the exact form real Chrome reports
+// (vendor = "Google Inc. (<ANGLE vendor>)", renderer = the ANGLE string of the
+// declared OS: D3D11 on Windows, Metal on macOS, OpenGL on Linux). One Browser
+// also normalizes plain legacy values such as "NVIDIA" / "Apple M1" into this
+// form and hides WebGL extensions / caps limits the declared GPU backend never
+// has, but extensions and limits the host lacks cannot be added, so the most
+// convincing preset is a GPU of the same family as this machine's.
+const windowsAngle = (vendor: string, model: string, deviceId: string) =>
+  `ANGLE (${vendor}, ${model} (0x0000${deviceId}) Direct3D11 vs_5_0 ps_5_0, D3D11)`;
+const metalAngle = (vendor: string, model: string) =>
+  `ANGLE (${vendor}, ANGLE Metal Renderer: ${model}, Unspecified Version)`;
+
 const webglVendorOptions: WebglVendorOption[] = [
   {
-    value: 'Apple',
+    value: 'Google Inc. (Apple)',
     label: 'Apple',
     iconUrl: 'https://cdn.simpleicons.org/apple/111111',
     systems: ['macos'],
     renderers: [
-      'ANGLE (Apple, ANGLE Metal Renderer: Apple M3 Max, Unspecified Version)',
-      'ANGLE (Apple, Apple M1 Ultra, OpenGL 4.1)',
-      'Apple M2 Pro',
       'Apple M1',
-    ],
+      'Apple M1 Pro',
+      'Apple M1 Max',
+      'Apple M2',
+      'Apple M2 Pro',
+      'Apple M3',
+      'Apple M3 Pro',
+      'Apple M4',
+      'Apple M4 Pro',
+    ].map((model) => metalAngle('Apple', model)),
   },
   {
-    value: 'Intel',
-    label: 'Intel',
+    value: 'Google Inc. (Intel)',
+    // Only coherent on an Intel Mac: an Apple Silicon host keeps its own
+    // WebGL limits and WebGPU behaviour.
+    label: 'Intel（仅 Intel 芯片 Mac，Apple 芯片有风险）',
     iconUrl: 'https://cdn.simpleicons.org/intel/0071C5',
-    systems: ['macos', 'windows'],
+    systems: ['macos'],
     renderers: [
-      'Intel(R) Iris(TM) Graphics 650',
-      'Intel HD Graphics 4000 OpenGL Engine',
-      'Intel(R) Iris(TM) Plus Graphics OpenGL Engine',
-      'Intel(R) UHD Graphics 630, Version 13.4.1',
-      'Intel(R) Iris(TM) Plus Graphics 640',
-      'Intel Iris Pro OpenGL Engine',
+      'Intel(R) Iris(TM) Plus Graphics',
+      'Intel(R) UHD Graphics 630',
       'Intel(R) Iris(TM) Plus Graphics 655',
-      'Intel(R) UHD Graphics 620',
-    ],
+    ].map((model) => metalAngle('Intel', model)),
   },
   {
-    value: 'NVIDIA',
+    value: 'Google Inc. (NVIDIA)',
     label: 'NVIDIA',
     iconUrl: 'https://cdn.simpleicons.org/nvidia/76B900',
     systems: ['windows'],
     renderers: [
-      'NVIDIA GeForce RTX 4090',
-      'NVIDIA GeForce RTX 3080',
-      'NVIDIA GeForce GTX 1660 Ti',
+      windowsAngle('NVIDIA', 'NVIDIA GeForce RTX 4090', '2684'),
+      windowsAngle('NVIDIA', 'NVIDIA GeForce RTX 4070', '2786'),
+      windowsAngle('NVIDIA', 'NVIDIA GeForce RTX 4060', '2882'),
+      windowsAngle('NVIDIA', 'NVIDIA GeForce RTX 3080', '2206'),
+      windowsAngle('NVIDIA', 'NVIDIA GeForce RTX 3060', '2503'),
+      windowsAngle('NVIDIA', 'NVIDIA GeForce GTX 1660 SUPER', '21C4'),
+      windowsAngle('NVIDIA', 'NVIDIA GeForce GTX 1650', '1F82'),
     ],
   },
   {
-    value: 'AMD',
+    value: 'Google Inc. (AMD)',
     label: 'AMD',
     iconUrl: 'https://cdn.simpleicons.org/amd/ED1C24',
     systems: ['windows'],
     renderers: [
-      'AMD Radeon RX 7900 XT',
-      'AMD Radeon RX 6800 XT',
-      'AMD Radeon(TM) Graphics',
+      windowsAngle('AMD', 'AMD Radeon RX 7900 XTX', '744C'),
+      windowsAngle('AMD', 'AMD Radeon RX 6700 XT', '73DF'),
+      windowsAngle('AMD', 'AMD Radeon RX 6600', '73FF'),
+      windowsAngle('AMD', 'AMD Radeon(TM) Graphics', '1638'),
+    ],
+  },
+  {
+    value: 'Google Inc. (Intel)',
+    label: 'Intel',
+    iconUrl: 'https://cdn.simpleicons.org/intel/0071C5',
+    systems: ['windows'],
+    renderers: [
+      windowsAngle('Intel', 'Intel(R) UHD Graphics 620', '5917'),
+      windowsAngle('Intel', 'Intel(R) UHD Graphics 630', '3E92'),
+      windowsAngle('Intel', 'Intel(R) UHD Graphics 770', '4680'),
+      windowsAngle('Intel', 'Intel(R) Iris(R) Xe Graphics', '9A49'),
+    ],
+  },
+  {
+    value: 'Google Inc. (NVIDIA Corporation)',
+    label: 'NVIDIA',
+    iconUrl: 'https://cdn.simpleicons.org/nvidia/76B900',
+    systems: ['linux'],
+    renderers: [
+      'ANGLE (NVIDIA Corporation, NVIDIA GeForce RTX 3060/PCIe/SSE2, OpenGL 4.5.0)',
+      'ANGLE (NVIDIA Corporation, NVIDIA GeForce GTX 1660 SUPER/PCIe/SSE2, OpenGL 4.5.0)',
+    ],
+  },
+  {
+    value: 'Google Inc. (Intel)',
+    label: 'Intel',
+    iconUrl: 'https://cdn.simpleicons.org/intel/0071C5',
+    systems: ['linux'],
+    renderers: [
+      'ANGLE (Intel, Mesa Intel(R) UHD Graphics 620 (KBL GT2), OpenGL 4.6)',
+      'ANGLE (Intel, Mesa Intel(R) UHD Graphics 630 (CFL GT2), OpenGL 4.6)',
+    ],
+  },
+  {
+    value: 'Google Inc. (AMD)',
+    label: 'AMD',
+    iconUrl: 'https://cdn.simpleicons.org/amd/ED1C24',
+    systems: ['linux'],
+    renderers: [
+      'ANGLE (AMD, AMD Radeon RX 6600 (radeonsi, navi23, LLVM 15.0.7, DRM 3.54, 6.5.0), OpenGL 4.6)',
     ],
   },
 ];
+
+// "ANGLE (NVIDIA, NVIDIA GeForce RTX 4090 (0x00002684) Direct3D11 ...)" ->
+// "NVIDIA GeForce RTX 4090", for compact picker labels.
+export function webglRendererLabel(renderer: string) {
+  const match = /^ANGLE \([^,]+, (.*), [^,]+\)$/.exec(renderer.trim());
+  if (!match) return renderer;
+  return match[1]
+    .replace(/^ANGLE Metal Renderer: /, '')
+    .replace(/^Mesa /, '')
+    .replace(/ \(0x[0-9A-Fa-f]+\).*$/, '')
+    .replace(/\/PCIe\/SSE2$/, '')
+    .replace(/ \((?:KBL|CFL|radeonsi)[^)]*\)$/, '');
+}
 
 export function timeZoneOptions(
   defaultTimeZone: string,
@@ -269,11 +342,16 @@ export function selectedLanguageOption(
 }
 
 export function resolveWebglSystem(system: string): WebglSystemValue {
-  return /win/i.test(system) ? 'windows' : 'macos';
+  if (/win/i.test(system)) return 'windows';
+  if (/linux|\bx11\b/i.test(system)) return 'linux';
+  return 'macos';
 }
 
 export function preferredWebglVendor(system: WebglSystemValue) {
-  return system === 'windows' ? 'Intel' : 'Apple';
+  return (
+    webglVendorOptions.find((vendor) => vendor.systems.includes(system))
+      ?.value ?? ''
+  );
 }
 
 export function webglVendorsForSystem(
@@ -292,7 +370,7 @@ export function webglVendorsForSystem(
       {
         value: trimmedVendor,
         label: trimmedVendor,
-        iconUrl: webglVendorOptions[system === 'windows' ? 1 : 0].iconUrl,
+        iconUrl: (vendors[0] ?? webglVendorOptions[0]).iconUrl,
         systems: [system],
         renderers: [trimmedVendor],
       },
@@ -319,14 +397,17 @@ export function webglRenderersForVendor(
 ) {
   const renderers = vendor.renderers.map((renderer) => ({
     value: renderer,
-    label: renderer,
+    label: webglRendererLabel(renderer),
   }));
   const trimmedRenderer = currentRenderer.trim();
   if (
     trimmedRenderer &&
     !renderers.some((renderer) => renderer.value === trimmedRenderer)
   ) {
-    return [{ value: trimmedRenderer, label: trimmedRenderer }, ...renderers];
+    return [
+      { value: trimmedRenderer, label: webglRendererLabel(trimmedRenderer) },
+      ...renderers,
+    ];
   }
   return renderers;
 }

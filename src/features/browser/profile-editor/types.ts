@@ -23,11 +23,8 @@ export interface SystemFingerprintDefaults {
   webglVendor: string;
   webglRenderer: string;
   webgpuMode: string;
-  webglNoise: string;
   canvasNoise: string;
   audioContextNoise: string;
-  clientRectsNoise: string;
-  speechVoicesNoise: string;
   screenMode: string;
   screenResolution: string;
   fontsMode: string;
@@ -93,11 +90,8 @@ export interface ProfileEditorForm {
   webglVendor: string;
   webglRenderer: string;
   webgpuMode: string;
-  webglNoise: string;
   canvasNoise: string;
   audioContextNoise: string;
-  clientRectsNoise: string;
-  speechVoicesNoise: string;
   screenMode: string;
   screenResolution: string;
   fontsMode: string;
@@ -169,11 +163,8 @@ export const emptyForm: ProfileEditorForm = {
   webglVendor: '',
   webglRenderer: '',
   webgpuMode: 'off',
-  webglNoise: '',
   canvasNoise: '',
   audioContextNoise: '',
-  clientRectsNoise: '',
-  speechVoicesNoise: '',
   screenMode: 'real',
   screenResolution: '',
   fontsMode: 'auto',
