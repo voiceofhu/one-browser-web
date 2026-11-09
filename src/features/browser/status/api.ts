@@ -5,11 +5,7 @@ import type {
   ChromiumDownloadStartResult,
   ChromiumDownloadTarget,
 } from '@/features/browser/contracts';
-import {
-  DesktopApiError,
-  desktopInvoke,
-  isTauriRuntime,
-} from '@/lib/desktop';
+import { DesktopApiError, desktopInvoke, isTauriRuntime } from '@/lib/desktop';
 import { http } from '@/lib/http';
 import { getBackendOrigin } from '@/lib/http/url';
 
