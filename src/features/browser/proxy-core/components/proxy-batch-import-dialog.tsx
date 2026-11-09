@@ -58,7 +58,7 @@ export function ProxyBatchImportDialog({
 }: ProxyBatchImportDialogProps) {
   const [rawText, setRawText] = useState('');
   const [defaultType, setDefaultType] = useState<EditableProxyType>('socks5');
-  const [ipChecker, setIpChecker] = useState<IpCheckerValue>('ip-api');
+  const [ipChecker, setIpChecker] = useState<IpCheckerValue>('ipwhere');
   const [checkStates, setCheckStates] = useState<
     Record<string, BatchProxyCheckState>
   >({});
@@ -98,7 +98,7 @@ export function ProxyBatchImportDialog({
   function resetForm() {
     setRawText('');
     setDefaultType('socks5');
-    setIpChecker('ip-api');
+    setIpChecker('ipwhere');
     setCheckStates({});
   }
   function handleOpenChange(nextOpen: boolean) {

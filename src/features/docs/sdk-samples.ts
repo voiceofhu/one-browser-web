@@ -38,7 +38,7 @@ const profileId = '你的环境 ID';
 const browser = await ob.connect(profileId, { puppeteer });
 try {
   const [page] = await browser.pages();
-  await page.goto('https://ip.huzhihui.com/');
+  await page.goto('https://ipwhere.net/');
   console.log(await page.title());
 } finally {
   await browser.disconnect(); // 断开脚本连接
@@ -61,7 +61,7 @@ try {
   // 必须用默认 context：环境的 Cookie 与登录状态都在这里
   const context = browser.contexts()[0];
   const page = context.pages()[0] ?? (await context.newPage());
-  await page.goto('https://ip.huzhihui.com/');
+  await page.goto('https://ipwhere.net/');
   console.log(await page.title());
 } finally {
   await ob.stop(profileId);
@@ -81,7 +81,7 @@ with ob.session("你的环境 ID") as s, sync_playwright() as p:
     browser = p.chromium.connect_over_cdp(s.ws_endpoint)
     context = browser.contexts[0]  # 默认 context，带环境的 Cookie
     page = context.pages[0] if context.pages else context.new_page()
-    page.goto("https://ip.huzhihui.com/")
+    page.goto("https://ipwhere.net/")
     print(page.title())`,
   },
   {
@@ -98,7 +98,7 @@ with ob.session("你的环境 ID") as s:
     options.debugger_address = s.debugger_address  # 例如 127.0.0.1:51234
     # chromedriver 主版本需要和 One Browser 内核一致
     driver = webdriver.Chrome(options=options)
-    driver.get("https://ip.huzhihui.com/")
+    driver.get("https://ipwhere.net/")
     print(driver.title)`,
   },
 ];

@@ -89,6 +89,6 @@ export function ipCheckerLabel(value: string | null) {
   if (value === 'ip2location' || value === 'local:ip2location') {
     return 'IP2Location';
   }
-  if (value?.includes('ip-api')) return 'IP-API';
-  return 'IP-API';
+  if (value?.includes('ip-api.com')) return 'IP-API';
+  return 'ipwhere.net';
 }

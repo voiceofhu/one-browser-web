@@ -9,14 +9,23 @@ export const proxyTypes = [
   { value: 'https', label: 'HTTPS' },
 ] satisfies Array<{ value: EditableProxyType; label: string }>;
 
-export const ipCheckerValues = ['ip-api', 'ip2location'] as const;
+export const ipCheckerValues = ['ipwhere', 'ip-api', 'ip2location'] as const;
 export type IpCheckerValue = (typeof ipCheckerValues)[number];
 
+/**
+ * `ipwhere` (ipwhere.net, One IP) is the default: exit IP plus IANA time zone, network
+ * type and risk in one call. The desktop fills any checker's missing time zone from it.
+ */
 export const ipCheckerOptions = [
+  {
+    value: 'ipwhere',
+    label: 'ipwhere.net',
+    url: 'ipwhere',
+  },
   {
     value: 'ip-api',
     label: 'IP-API',
-    url: 'http://ip-api.com/json/?fields=status,message,query,country,countryCode,regionName,as',
+    url: 'http://ip-api.com/json/?fields=status,message,query,country,countryCode,regionName,timezone,as',
   },
   {
     value: 'ip2location',
@@ -70,13 +79,18 @@ export function initialType(proxy?: ProxyConfig | null): EditableProxyType {
 }
 
 export function ipCheckerValue(proxy?: ProxyConfig | null): IpCheckerValue {
-  if (!proxy?.ipChecker) {
-    return 'ip-api';
+  const checker = proxy?.ipChecker?.trim();
+  if (!checker || checker === 'ip-api' || checker === 'local:ip-api') {
+    return 'ipwhere';
   }
 
   return (
-    ipCheckerOptions.find((item) => item.url === proxy.ipChecker)?.value ??
-    (proxy.ipChecker === 'local:ip2location' ? 'ip2location' : 'ip-api')
+    ipCheckerOptions.find((item) => item.url === checker)?.value ??
+    (checker === 'local:ip2location'
+      ? 'ip2location'
+      : checker.includes('ip-api.com')
+        ? 'ip-api'
+        : 'ipwhere')
   );
 }
 
