@@ -253,7 +253,7 @@ function HomeHeader() {
           className="hidden h-8 text-xs sm:inline-flex"
           asChild
         >
-          <Link to="/docs">开发文档</Link>
+          <Link to="/developers">开发文档</Link>
         </Button>
         <Button
           variant="ghost"

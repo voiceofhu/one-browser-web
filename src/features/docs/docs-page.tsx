@@ -3,8 +3,8 @@ import { ThemeToggleButton } from '@/components/theme/theme-toggle-button';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import type { ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, type ReactNode } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 
 import { CodeBlock, CodeTabs } from './code-block';
 import {
@@ -99,6 +99,8 @@ const notes: readonly ReactNode[] = [
 ];
 
 export function DocsPage() {
+  useScrollToHash();
+
   return (
     <main className="bg-background text-foreground h-dvh overflow-y-auto scroll-smooth px-5 pt-[env(safe-area-inset-top)] pb-[max(2rem,env(safe-area-inset-bottom))] sm:px-8">
       <title>开发文档 · One Browser</title>
@@ -207,7 +209,8 @@ export function DocsPage() {
             <Section id="headless" title="无界面运行">
               <P>
                 无界面模式只能在 <Code>dev</Code> 模式下使用，SDK
-                会自动处理。无界面运行时显卡、屏幕等信息和有界面时不同，对风控敏感的网站建议用有界面模式。
+                会自动处理。当前版本的无界面模式 User-Agent 中会带有
+                HeadlessChrome，显卡、屏幕等信息也和有界面时不同，只适合内部测试和不做风控的网站；登录账号、对风控敏感的网站请用有界面模式。
               </P>
               <CodeTabs samples={headlessSamples} />
             </Section>
@@ -258,6 +261,16 @@ export function DocsPage() {
       </div>
     </main>
   );
+}
+
+// The route is lazy-loaded, so the browser's own anchor jump runs before the
+// sections exist; repeat it once the page has rendered.
+function useScrollToHash() {
+  const { hash } = useLocation();
+  useEffect(() => {
+    const id = decodeURIComponent(hash.slice(1));
+    if (id) document.getElementById(id)?.scrollIntoView();
+  }, [hash]);
 }
 
 function Section({

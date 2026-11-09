@@ -23,7 +23,7 @@ import {
 const HomePage = lazy(() => import('@/views/home'));
 const LoginPage = lazy(() => import('@/views/auth/login'));
 const DownloadPage = lazy(() => import('@/views/download'));
-const DocsPage = lazy(() => import('@/views/docs'));
+const DocsPage = lazy(() => import('@/views/developers'));
 const CallbackPage = lazy(() => import('@/views/auth/callback'));
 const TeamInvitePage = lazy(() => import('@/views/auth/team-invite'));
 const DashboardOverviewPage = lazy(() => import('@/views/dashboard'));
@@ -73,7 +73,7 @@ export function AppRouter() {
           ))}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/download" element={<DownloadPage />} />
-          <Route path="/docs" element={<DocsPage />} />
+          <Route path="/developers" element={<DocsPage />} />
           <Route path="/callback" element={<CallbackPage />} />
           <Route path="/team-invite" element={<TeamInvitePage />} />
           <Route path="/index" element={<Navigate to="/dashboard" replace />} />

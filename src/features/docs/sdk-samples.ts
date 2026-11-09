@@ -150,7 +150,7 @@ export const startResponseSample = `{
   "msg": "success",
   "data": {
     "profile_id": "你的环境 ID",
-    "status": "active",
+    "status": "Active",
     "pid": 48211,
     "debug_port": 51234,
     "ws": {
