@@ -66,7 +66,7 @@ export default function DashboardOverviewPage() {
   });
 
   if (!canView) {
-    return <Navigate replace to={quickLinks[0]?.href ?? '/account/profile'} />;
+    return <Navigate replace to={quickLinks[0]?.href ?? '/settings/profile'} />;
   }
 
   const data = query.data;

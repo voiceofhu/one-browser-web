@@ -63,10 +63,10 @@ export function profileToForm(profile: ProfileConfig): ProfileEditorForm {
       profile.fingerprintConfig.accuracy != null
         ? String(profile.fingerprintConfig.accuracy)
         : '',
-    webglMode: profile.fingerprintConfig.webglMode ?? 'off',
+    webglMode: profile.fingerprintConfig.webglMode ?? 'real',
     webglVendor: profile.fingerprintConfig.webglVendor ?? '',
     webglRenderer: profile.fingerprintConfig.webglRenderer ?? '',
-    webgpuMode: profile.fingerprintConfig.webgpuMode ?? 'off',
+    webgpuMode: profile.fingerprintConfig.webgpuMode ?? 'on',
     canvasNoise: profile.fingerprintConfig.canvasNoise ?? '',
     audioContextNoise: profile.fingerprintConfig.audioContextNoise ?? '',
     screenMode: profile.fingerprintConfig.screenMode ?? 'real',

@@ -46,7 +46,7 @@ export function WebglInfoField({
   form: ProfileEditorForm;
   updateField: UpdateProfileEditorField;
 }) {
-  const mode = form.webglMode || 'off';
+  const mode = form.webglMode || 'real';
   const system = resolveWebglSystem(form.system || defaults.system);
   const vendors = useMemo(
     () => webglVendorsForSystem(system, form.webglVendor),

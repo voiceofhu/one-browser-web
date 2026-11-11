@@ -3,7 +3,6 @@ import {
   RouteProgress,
   RouteProgressPending,
 } from '@/components/route-progress';
-import { AccountSettingsLayout } from '@/features/account/profile/account-settings-layout';
 import { AuthGate } from '@/features/auth/auth-gate';
 import { DashboardShell } from '@/features/browser-shell/dashboard-shell';
 import { isTauriRuntime } from '@/lib/desktop';
@@ -13,7 +12,6 @@ import NotFound from '@/views/error/not-found';
 import { lazy, Suspense, useDeferredValue } from 'react';
 import {
   Navigate,
-  Outlet,
   Route,
   Routes,
   useLocation,
@@ -34,11 +32,6 @@ const TeamRolesPage = lazy(() => import('@/views/browser/roles'));
 const MembersPage = lazy(() => import('@/views/browser/members'));
 const VersionsPage = lazy(() => import('@/views/browser/versions'));
 const SettingsPage = lazy(() => import('@/views/browser/settings'));
-const AccountProfilePage = lazy(() => import('@/views/account/profile'));
-const AccountPasswordPage = lazy(
-  () => import('@/views/account/password/redirect'),
-);
-const AccountInvitePage = lazy(() => import('@/views/account/invite'));
 const SystemUserPage = lazy(() => import('@/views/system/user'));
 const SystemRolePage = lazy(() => import('@/views/system/role'));
 const SystemMenuPage = lazy(() => import('@/views/system/menu'));
@@ -105,13 +98,7 @@ export function AppRouter() {
               element={<Navigate to="/system/menu" replace />}
             />
             <Route path="/versions" element={<VersionsPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/account/password" element={<AccountPasswordPage />} />
-            <Route path="/account" element={<AccountLayout />}>
-              <Route index element={<Navigate to="profile" replace />} />
-              <Route path="profile" element={<AccountProfilePage />} />
-              <Route path="invite" element={<AccountInvitePage />} />
-            </Route>
+            <Route path="/settings/:section?" element={<SettingsPage />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
@@ -150,13 +137,5 @@ function RouteLoading() {
       <RouteProgressPending />
       <AppLoading className="bg-card min-h-0" />
     </>
-  );
-}
-
-function AccountLayout() {
-  return (
-    <AccountSettingsLayout>
-      <Outlet />
-    </AccountSettingsLayout>
   );
 }

@@ -13,6 +13,7 @@ import {
 } from '@/components/responsive-dialog';
 import {
   SidebarMenu,
+  SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
@@ -49,48 +50,24 @@ export function WebDesktopActions() {
 
   return (
     <>
-      <SidebarMenu className="gap-1">
+      <SidebarMenu>
         <SidebarMenuItem>
           <SidebarMenuButton
-            size="lg"
-            tooltip="下载 One Browser"
-            onClick={() => setDownloadOpen(true)}
-          >
-            <span className="bg-primary/10 text-primary flex size-7 shrink-0 items-center justify-center rounded-md">
-              <HugeiconsIcon icon={Download01Icon} strokeWidth={2} />
-            </span>
-            <span className="grid min-w-0 flex-1 gap-1 text-left leading-none">
-              <span className="truncate text-[0.8125rem] font-medium">
-                下载浏览器
-              </span>
-              <span className="text-muted-foreground truncate text-[0.6875rem]">
-                查询最新版安装包
-              </span>
-            </span>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-        <SidebarMenuItem>
-          <SidebarMenuButton
-            size="lg"
-            tooltip="打开 One Browser"
+            tooltip="用当前账号打开桌面客户端"
+            className="h-11 gap-2 text-[0.8125rem] md:h-8"
             onClick={() => void launchDesktopApp()}
           >
-            <span className="bg-primary/10 text-primary flex size-7 shrink-0 items-center justify-center rounded-md">
-              <img
-                src="/pwa-512x512.png"
-                alt=""
-                className="size-5 rounded-sm"
-              />
-            </span>
-            <span className="grid min-w-0 flex-1 gap-1 text-left leading-none">
-              <span className="truncate text-[0.8125rem] font-medium">
-                打开 One Browser
-              </span>
-              <span className="text-muted-foreground truncate text-[0.6875rem]">
-                使用桌面客户端
-              </span>
-            </span>
+            <img src="/pwa-512x512.png" alt="" className="size-4 rounded-sm" />
+            <span className="truncate">打开桌面客户端</span>
           </SidebarMenuButton>
+          <SidebarMenuAction
+            aria-label="下载桌面客户端"
+            title="下载桌面客户端"
+            className="top-1! size-9 md:size-6"
+            onClick={() => setDownloadOpen(true)}
+          >
+            <HugeiconsIcon icon={Download01Icon} strokeWidth={2} />
+          </SidebarMenuAction>
         </SidebarMenuItem>
       </SidebarMenu>
 
@@ -100,7 +77,7 @@ export function WebDesktopActions() {
       >
         <ResponsiveDialogContent className="sm:max-w-2xl">
           <ResponsiveDialogHeader>
-            <ResponsiveDialogTitle>下载浏览器</ResponsiveDialogTitle>
+            <ResponsiveDialogTitle>下载桌面客户端</ResponsiveDialogTitle>
             <ResponsiveDialogDescription>
               自动推荐当前系统，也可以手动选择其他安装包。
             </ResponsiveDialogDescription>

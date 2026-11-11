@@ -217,7 +217,7 @@ export function AccountProfilePage() {
               onChooseAvatar={handleChooseAvatar}
             />
 
-            <FieldGroup className="rounded-lg bg-background p-3 sm:p-4">
+            <FieldGroup className="rounded-lg border bg-card p-3 sm:p-4">
               <div className="grid gap-4 md:grid-cols-2">
                 <ReadonlyCopyField
                   label="用户名"
@@ -395,7 +395,7 @@ function ProfileAvatarBlock({
   user: CurrentUser;
 }) {
   return (
-    <div className="flex flex-col gap-3 rounded-lg bg-background p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4">
+    <div className="flex flex-col gap-3 rounded-lg border bg-card p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4">
       <div className="flex min-w-0 items-center gap-3">
         <Avatar className="size-14" size="lg">
           <AvatarImage src={avatar || undefined} alt={displayName} />

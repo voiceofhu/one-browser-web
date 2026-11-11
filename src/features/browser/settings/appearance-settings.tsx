@@ -89,12 +89,12 @@ export function AppearanceSettings() {
   }
 
   return (
-    <div className="flex min-h-full flex-col">
-      <FieldGroup className="flex-1 gap-3 pb-3">
+    <div className="flex flex-col">
+      <FieldGroup className="gap-3 pb-3">
         <SettingsGroup title="语言">
           <SettingsRow
             label="界面语言"
-            description="切换后立即应用，并保存在当前客户端"
+            description="切换后立即应用，并保存在当前设备"
             htmlFor="interface-language"
           >
             <Select
@@ -207,7 +207,7 @@ export function AppearanceSettings() {
         </SettingsGroup>
       </FieldGroup>
 
-      <div className="sticky bottom-0 -mx-3 -mb-3 mt-auto flex flex-wrap items-center justify-between gap-2 border-t bg-background px-3 py-2 md:-mx-4 md:px-4">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t pt-2">
         <FieldDescription className="text-[12px] leading-relaxed font-normal">
           {isDefaultAppearance ? '当前为默认设置' : '设置已修改'}
         </FieldDescription>

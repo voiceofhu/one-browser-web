@@ -1,30 +1,13 @@
 import { ThemeModeToggle } from '@/components/theme/theme-mode-toggle';
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogMedia,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+import { AlertDialog } from '@/components/ui/alert-dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import {
-  AlertDialogActionButton,
-  AlertDialogCancelButton,
-} from '@/components/ui/dialog-action-button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
   DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
+  DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
@@ -37,71 +20,48 @@ import {
   DefaultUserAvatar,
   getDefaultUserAvatarSeed,
 } from '@/features/account/avatar';
-import { openOneUserPasswordPage } from '@/features/account/one-user-account';
 import type { CurrentUser } from '@/features/auth/types';
-import { type Locale } from '@/i18n';
-import { useI18n } from '@/i18n/provider';
-import { reloadClient } from '@/lib/desktop/reload-client';
-import { useDesktopAppGate } from '@/lib/desktop/app-gate';
+import { useLogout } from '@/features/auth/use-logout';
+import { LogoutConfirmContent } from '@/features/browser/settings/account-security-settings';
 import {
-  EllipsisVerticalIcon,
-  LanguageCircleIcon,
+  type SettingsSectionId,
+  settingsPath,
+} from '@/features/browser/settings/settings-sections';
+import { settingsShortcutLabel } from '@/features/browser-shell/use-settings-shortcut';
+import { isTauriRuntime } from '@/lib/desktop';
+import {
   Logout03Icon,
   PaintBrush01Icon,
-  Refresh01Icon,
   Settings02Icon,
-  Shield01Icon,
+  UnfoldMoreIcon,
   UserAdd01Icon,
   UserIcon,
+  UserSwitchIcon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { Link } from 'react-router-dom';
 import * as React from 'react';
-import { toast } from 'sonner';
+import { Link } from 'react-router-dom';
 
-const SettingsDialog = React.lazy(() =>
-  import('@/features/browser/settings/page').then((module) => ({
-    default: module.SettingsDialog,
-  })),
-);
+type UserMenuItem = {
+  label: string;
+  section: SettingsSectionId;
+  icon: typeof UserIcon;
+};
 
-const accountMenuItems = [
-  {
-    label: '个人信息',
-    href: '/account/profile',
-    icon: UserIcon,
-  },
-  {
-    label: '修改密码',
-    href: 'one-user-password',
-    icon: Shield01Icon,
-    external: true,
-  },
-  {
-    label: '邀请好友',
-    href: '/account/invite',
-    icon: UserAdd01Icon,
-    external: false,
-  },
-] as const;
+const userMenuItems: UserMenuItem[] = [
+  { label: '个人信息', section: 'profile', icon: UserIcon },
+  { label: '邀请好友', section: 'invite', icon: UserAdd01Icon },
+];
 
-export function AppNavUser({
-  isLoggingOut,
-  onLogout,
-  onSwitchAccount,
-  user,
-}: {
-  isLoggingOut?: boolean;
-  onLogout: () => void;
-  onSwitchAccount: () => void;
-  user: CurrentUser;
-}) {
+/**
+ * Sidebar footer identity: who is signed in, the way into settings, and the
+ * session actions. Everything else lives on the settings page.
+ */
+export function AppNavUser({ user }: { user: CurrentUser }) {
   const { isMobile } = useSidebar();
-  const { locale, setLocale } = useI18n();
-  const { requireDesktopApp } = useDesktopAppGate();
+  const { isLoggingOut, logout, switchAccount } = useLogout();
   const [confirmOpen, setConfirmOpen] = React.useState(false);
-  const [menuOpen, setMenuOpen] = React.useState(false);
-  const [settingsOpen, setSettingsOpen] = React.useState(false);
+  const isDesktop = isTauriRuntime();
   const displayName = user.nick_name || user.user_name || '未登录';
   const email = user.email || '未绑定邮箱';
   const avatar = user.avatar || '';
@@ -116,9 +76,12 @@ export function AppNavUser({
     <>
       <SidebarMenu>
         <SidebarMenuItem>
-          <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
+          <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <SidebarMenuButton className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground h-10 gap-2 px-2 py-1">
+              <SidebarMenuButton
+                aria-label={`账户菜单：${displayName}`}
+                className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground h-11 gap-2 px-2 py-1 md:h-10"
+              >
                 <UserAvatar
                   avatar={avatar}
                   avatarSeed={avatarSeed}
@@ -140,131 +103,56 @@ export function AppNavUser({
                   </span>
                 </div>
                 <HugeiconsIcon
-                  icon={EllipsisVerticalIcon}
+                  icon={UnfoldMoreIcon}
                   strokeWidth={2}
                   className="size-3.5 shrink-0"
                 />
               </SidebarMenuButton>
             </DropdownMenuTrigger>
             <DropdownMenuContent
-              className="min-w-64"
-              side={isMobile ? 'bottom' : 'right'}
+              className="min-w-56"
+              side={isMobile ? 'top' : 'right'}
               align="end"
               sideOffset={4}
             >
               <DropdownMenuGroup>
-                <DropdownMenuLabel>账户</DropdownMenuLabel>
-                {accountMenuItems.map((item) =>
-                  'external' in item && item.external ? (
-                    <DropdownMenuItem
-                      key={item.href}
-                      onSelect={(event) => {
-                        event.preventDefault();
-                        setMenuOpen(false);
-                        void openOneUserPasswordPage().catch((error) =>
-                          toast.error(
-                            error instanceof Error
-                              ? error.message
-                              : '无法打开 One User 修改密码页面',
-                          ),
-                        );
-                      }}
-                    >
+                {userMenuItems.map((item) => (
+                  <DropdownMenuItem key={item.section} asChild>
+                    <Link to={settingsPath(item.section)}>
                       <HugeiconsIcon icon={item.icon} strokeWidth={2} />
                       {item.label}
-                    </DropdownMenuItem>
-                  ) : (
-                    <DropdownMenuItem key={item.href} asChild>
-                      <Link to={item.href}>
-                        <HugeiconsIcon icon={item.icon} strokeWidth={2} />
-                        {item.label}
-                      </Link>
-                    </DropdownMenuItem>
-                  ),
-                )}
+                    </Link>
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuItem asChild>
+                  <Link to={settingsPath()}>
+                    <HugeiconsIcon icon={Settings02Icon} strokeWidth={2} />
+                    设置
+                    {isDesktop ? (
+                      <DropdownMenuShortcut>
+                        {settingsShortcutLabel}
+                      </DropdownMenuShortcut>
+                    ) : null}
+                  </Link>
+                </DropdownMenuItem>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
-              <DropdownMenuGroup>
-                <DropdownMenuLabel>偏好设置</DropdownMenuLabel>
-                <DropdownMenuItem
-                  onSelect={(event) => {
-                    event.preventDefault();
-                    setMenuOpen(false);
-                    if (
-                      !requireDesktopApp({
-                        title: '在 App 中打开客户端设置',
-                        description:
-                          '客户端设置会修改本机浏览器、节点与系统能力，请在 One Browser App 中继续。',
-                      })
-                    ) {
-                      return;
-                    }
-                    setSettingsOpen(true);
-                  }}
-                >
-                  <HugeiconsIcon icon={Settings02Icon} strokeWidth={2} />
-                  设置
-                </DropdownMenuItem>
-                <div className="flex min-h-6 items-center gap-2 rounded-md px-2 py-0.5 text-xs/relaxed">
-                  <HugeiconsIcon
-                    icon={PaintBrush01Icon}
-                    strokeWidth={2}
-                    className="size-3.5 shrink-0"
-                  />
-                  <span>主题</span>
-                  <ThemeModeToggle className="ml-auto" />
-                </div>
-                <DropdownMenuSub>
-                  <DropdownMenuSubTrigger>
-                    <HugeiconsIcon icon={LanguageCircleIcon} strokeWidth={2} />
-                    <span className="min-w-0 flex-1">语言</span>
-                    <span className="text-muted-foreground">
-                      {locale === 'zh-CN' ? '简体中文' : 'English'}
-                    </span>
-                  </DropdownMenuSubTrigger>
-                  <DropdownMenuSubContent>
-                    <DropdownMenuRadioGroup
-                      value={locale}
-                      onValueChange={(value) => {
-                        setLocale(value as Locale);
-                        setMenuOpen(false);
-                      }}
-                    >
-                      <DropdownMenuRadioItem value="zh-CN">
-                        简体中文
-                      </DropdownMenuRadioItem>
-                      <DropdownMenuRadioItem value="en-US">
-                        English
-                      </DropdownMenuRadioItem>
-                    </DropdownMenuRadioGroup>
-                  </DropdownMenuSubContent>
-                </DropdownMenuSub>
-                <DropdownMenuItem
-                  onSelect={(event) => {
-                    event.preventDefault();
-                    setMenuOpen(false);
-                    if (
-                      requireDesktopApp({
-                        title: '在 App 中重载客户端',
-                        description:
-                          '重载客户端需要 One Browser App 的本机运行环境。',
-                      })
-                    ) {
-                      reloadClient();
-                    }
-                  }}
-                >
-                  <HugeiconsIcon icon={Refresh01Icon} strokeWidth={2} />
-                  重载客户端
-                </DropdownMenuItem>
-              </DropdownMenuGroup>
+              <div className="flex min-h-6 items-center gap-2 rounded-md px-2 py-0.5 text-xs/relaxed">
+                <HugeiconsIcon
+                  icon={PaintBrush01Icon}
+                  strokeWidth={2}
+                  className="size-3.5 shrink-0"
+                />
+                <span>主题</span>
+                <ThemeModeToggle className="ml-auto" />
+              </div>
               <DropdownMenuSeparator />
               <DropdownMenuGroup>
                 <DropdownMenuItem
                   disabled={isLoggingOut}
-                  onSelect={onSwitchAccount}
+                  onSelect={switchAccount}
                 >
-                  <HugeiconsIcon icon={UserIcon} strokeWidth={2} />
+                  <HugeiconsIcon icon={UserSwitchIcon} strokeWidth={2} />
                   切换账号
                 </DropdownMenuItem>
                 <DropdownMenuItem
@@ -273,19 +161,13 @@ export function AppNavUser({
                   onSelect={() => setConfirmOpen(true)}
                 >
                   <HugeiconsIcon icon={Logout03Icon} strokeWidth={2} />
-                  退出当前应用
+                  退出登录
                 </DropdownMenuItem>
               </DropdownMenuGroup>
             </DropdownMenuContent>
           </DropdownMenu>
         </SidebarMenuItem>
       </SidebarMenu>
-
-      {settingsOpen ? (
-        <React.Suspense fallback={null}>
-          <SettingsDialog open onOpenChange={setSettingsOpen} />
-        </React.Suspense>
-      ) : null}
 
       <AlertDialog
         open={confirmOpen}
@@ -295,32 +177,7 @@ export function AppNavUser({
           }
         }}
       >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogMedia>
-              <HugeiconsIcon icon={Logout03Icon} strokeWidth={2} />
-            </AlertDialogMedia>
-            <AlertDialogTitle>退出当前应用？</AlertDialogTitle>
-            <AlertDialogDescription>
-              退出 One Browser 后，One User 和其他应用将保持登录。再次登录时可选择账号。
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancelButton disabled={isLoggingOut} />
-            <AlertDialogActionButton
-              variant="destructive"
-              disabled={isLoggingOut}
-              loading={isLoggingOut}
-              loadingText="退出中..."
-              onClick={(event) => {
-                event.preventDefault();
-                onLogout();
-              }}
-            >
-              确认退出
-            </AlertDialogActionButton>
-          </AlertDialogFooter>
-        </AlertDialogContent>
+        <LogoutConfirmContent isLoggingOut={isLoggingOut} onConfirm={logout} />
       </AlertDialog>
     </>
   );

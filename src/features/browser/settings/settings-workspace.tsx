@@ -3,147 +3,114 @@ import {
   SelectContent,
   SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarProvider,
-} from '@/components/ui/sidebar';
-import {
-  ApiIcon,
-  BrowserIcon,
-  Link04Icon,
-  PaintBoardIcon,
-  Refresh01Icon,
-} from '@hugeicons/core-free-icons';
+import { cn } from '@/lib/utils';
+import { useRouter } from '@/router/compat';
 import { HugeiconsIcon } from '@hugeicons/react';
-import type { CSSProperties, ComponentProps, ReactNode } from 'react';
+import type { ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 
-export type SettingsSectionId =
-  'general' | 'pre-proxy' | 'appearance' | 'local-api' | 'client';
+import {
+  type SettingsNavGroup,
+  type SettingsSection,
+  settingsPath,
+} from './settings-sections';
 
-type SettingsSection = {
-  id: SettingsSectionId;
-  label: string;
-  icon: ComponentProps<typeof HugeiconsIcon>['icon'];
-};
-
-const sections: SettingsSection[] = [
-  {
-    id: 'general',
-    label: '常规',
-    icon: BrowserIcon,
-  },
-  {
-    id: 'pre-proxy',
-    label: '前置代理',
-    icon: Link04Icon,
-  },
-  {
-    id: 'appearance',
-    label: '外观与语言',
-    icon: PaintBoardIcon,
-  },
-  {
-    id: 'local-api',
-    label: '本地 API',
-    icon: ApiIcon,
-  },
-  {
-    id: 'client',
-    label: '客户端',
-    icon: Refresh01Icon,
-  },
-];
-
+/**
+ * One settings surface for account, app and device settings: a grouped nav on
+ * the left (a select on narrow screens) and the active section on the right.
+ * The section lives in the URL, so every section can be linked to.
+ */
 export function SettingsWorkspace({
   children,
-  onSectionChange,
+  groups,
   section,
 }: {
   children: ReactNode;
-  onSectionChange: (section: SettingsSectionId) => void;
-  section: SettingsSectionId;
+  groups: SettingsNavGroup[];
+  section: SettingsSection;
 }) {
-  const activeSection =
-    sections.find((candidate) => candidate.id === section) ?? sections[0];
+  const router = useRouter();
 
   return (
-    <SidebarProvider
-      className="h-full min-h-0 items-stretch overflow-hidden"
-      style={{ '--sidebar-width': '152px' } as CSSProperties}
-    >
-      <Sidebar
-        collapsible="none"
-        className="border-sidebar-border hidden border-r md:flex"
+    <div className="flex h-full min-h-0 flex-col md:flex-row">
+      <nav
+        aria-label="设置分类"
+        className="bg-sidebar hidden w-44 shrink-0 flex-col gap-3 overflow-y-auto border-r px-2 py-3 md:flex"
       >
-        <SidebarHeader className="h-10 justify-center border-b px-3 py-0">
-          <span className="font-heading text-[12px] font-semibold">设置</span>
-        </SidebarHeader>
-        <SidebarContent className="px-1.5 py-1.5">
-          <SidebarGroup className="p-0">
-            <SidebarGroupContent>
-              <SidebarMenu className="gap-0.5">
-                {sections.map((item) => (
-                  <SidebarMenuItem key={item.id}>
-                    <SidebarMenuButton
-                      className="h-8 rounded-sm px-2 text-xs font-normal data-active:font-medium"
-                      isActive={item.id === activeSection.id}
-                      onClick={() => onSectionChange(item.id)}
-                    >
-                      <HugeiconsIcon icon={item.icon} strokeWidth={2} />
-                      <span>{item.label}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        </SidebarContent>
-      </Sidebar>
+        <h1 className="font-heading px-2 text-sm font-semibold">设置</h1>
+        {groups.map((group) => (
+          <div key={group.title} className="flex flex-col gap-0.5">
+            <div className="text-muted-foreground px-2 pb-0.5 text-[0.6875rem] font-semibold">
+              {group.title}
+            </div>
+            {group.sections.map((item) => {
+              const active = item.id === section.id;
+              return (
+                <Link
+                  key={item.id}
+                  to={settingsPath(item.id)}
+                  aria-current={active ? 'page' : undefined}
+                  className={cn(
+                    'text-sidebar-foreground hover:bg-sidebar-accent focus-visible:ring-ring flex h-7 items-center gap-2 rounded-sm px-2 text-[0.8125rem] outline-none focus-visible:ring-2 [&_svg]:size-4 [&_svg]:shrink-0',
+                    active
+                      ? 'bg-sidebar-accent text-sidebar-accent-foreground [&_svg]:text-sidebar-primary font-medium'
+                      : '[&_svg]:text-muted-foreground',
+                  )}
+                >
+                  <HugeiconsIcon icon={item.icon} strokeWidth={2} />
+                  <span className="truncate">{item.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+        ))}
+      </nav>
 
-      <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-        <header className="flex h-10 shrink-0 items-center border-b px-3 pr-12 md:px-4">
-          <h2 className="font-heading text-[13px] font-semibold">
-            {activeSection.label}
-          </h2>
-        </header>
-        <div className="shrink-0 border-b px-3 py-1.5 md:hidden">
-          <Select
-            value={activeSection.id}
-            onValueChange={(value) =>
-              onSectionChange(value as SettingsSectionId)
-            }
+      <div className="shrink-0 border-b px-3 py-2 md:hidden">
+        <Select
+          value={section.id}
+          onValueChange={(value) =>
+            router.push(settingsPath(value as SettingsSection['id']))
+          }
+        >
+          <SelectTrigger
+            className="h-11 w-full rounded-sm shadow-none"
+            aria-label="设置分类"
           >
-            <SelectTrigger
-              className="h-8 w-full rounded-sm shadow-none"
-              aria-label="设置分类"
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent position="popper" align="start">
-              <SelectGroup>
-                {sections.map((item) => (
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent position="popper" align="start">
+            {groups.map((group) => (
+              <SelectGroup key={group.title}>
+                <SelectLabel>{group.title}</SelectLabel>
+                {group.sections.map((item) => (
                   <SelectItem key={item.id} value={item.id}>
                     {item.label}
                   </SelectItem>
                 ))}
               </SelectGroup>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="min-h-0 flex-1 touch-pan-y [scrollbar-gutter:stable] overflow-y-auto overscroll-y-contain px-3 py-3 md:px-4">
-          {children}
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <main className="min-h-0 min-w-0 flex-1 touch-pan-y [scrollbar-gutter:stable] overflow-y-auto overscroll-y-contain">
+        <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col gap-4 px-3 py-4 md:px-6 md:py-5">
+          <header className="flex flex-col gap-1">
+            <h2 className="font-heading text-base font-semibold">
+              {section.label}
+            </h2>
+            <p className="text-muted-foreground text-xs leading-relaxed">
+              {section.description}
+            </p>
+          </header>
+          <div className="flex min-w-0 flex-1 flex-col">{children}</div>
         </div>
       </main>
-    </SidebarProvider>
+    </div>
   );
 }

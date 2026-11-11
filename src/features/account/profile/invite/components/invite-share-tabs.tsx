@@ -86,7 +86,7 @@ export function InviteShareTabs({
 }) {
   const [mode, setMode] = React.useState<InviteShareMode>('link');
   return (
-    <div className="rounded-lg bg-background p-3 sm:p-4">
+    <div className="rounded-lg border bg-card p-3 sm:p-4">
       <AnimatedSegmentedTabs
         label="邀请方式"
         value={mode}

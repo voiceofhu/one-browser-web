@@ -67,7 +67,7 @@ export function AccountInvitePage() {
           invitedCount={invitedCount}
           activeCount={activeCount}
         />
-        <div className="rounded-lg bg-background p-3 sm:p-4">
+        <div className="rounded-lg border bg-card p-3 sm:p-4">
           <div className="mb-3 flex items-center justify-between gap-3">
             <div className="text-sm font-medium">已邀请好友</div>
             <div className="text-xs text-muted-foreground">

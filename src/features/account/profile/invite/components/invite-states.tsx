@@ -18,7 +18,7 @@ export function InviteLoadingState() {
     >
       <CardContent className="p-0 group-data-[size=sm]/card:px-0">
         <LoadingState
-          className="bg-background min-h-56 rounded-lg"
+          className="bg-card min-h-56 rounded-lg border"
           label="邀请信息加载中..."
         />
       </CardContent>
@@ -41,7 +41,7 @@ export function InviteStateCard({
       className="overflow-visible bg-transparent p-0 shadow-none ring-0 data-[size=sm]:py-0"
     >
       <CardContent className="p-0 group-data-[size=sm]/card:px-0">
-        <Empty className="min-h-56 rounded-lg bg-background">
+        <Empty className="min-h-56 rounded-lg border bg-card">
           <EmptyHeader>
             <EmptyMedia variant="icon">
               <HugeiconsIcon icon={icon} strokeWidth={2} />

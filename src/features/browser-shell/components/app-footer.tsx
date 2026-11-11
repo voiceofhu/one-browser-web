@@ -15,8 +15,9 @@ import {
 import { useAppStatusQuery } from '@/features/browser/status/queries';
 import { cn } from '@/lib/utils';
 import { desktopInvoke, isTauriRuntime } from '@/lib/desktop';
-import { useDesktopAppGate } from '@/lib/desktop/app-gate';
+import { settingsPath } from '@/features/browser/settings/settings-sections';
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import {
@@ -121,7 +122,6 @@ function StatusDot({ tone, label }: { tone: StatusTone; label: string }) {
 
 export function AppFooter() {
   const tauriRuntimeAvailable = isTauriRuntime();
-  const { requireDesktopApp } = useDesktopAppGate();
   const statusQuery = useAppStatusQuery({ enabled: tauriRuntimeAvailable });
   const {
     errorMessage: chromiumDownloadErrorMessage,
@@ -210,20 +210,14 @@ export function AppFooter() {
         data-slot="app-footer"
         className="border-border/60 bg-muted/40 text-muted-foreground flex min-h-9 shrink-0 items-center gap-1 border-t px-1.5 pb-[env(safe-area-inset-bottom)] text-[0.6875rem] leading-none md:h-5 md:min-h-0 md:pb-0"
       >
-        <button
-          type="button"
+        <Link
+          to={settingsPath('desktop')}
+          title="网页版不读取本机状态，点击查看桌面客户端"
           className="text-foreground hover:bg-accent inline-flex h-full items-center gap-1 rounded-sm px-1 font-medium transition-colors"
-          onClick={() =>
-            requireDesktopApp({
-              title: '在 App 中查看本机状态',
-              description:
-                '本机 API、Chromium 和数据目录状态只能由 One Browser App 读取。',
-            })
-          }
         >
-          <StatusDot tone="muted" label="Web" />
-          {appVersion}
-        </button>
+          <StatusDot tone="muted" label="网页版" />
+          网页版 {appVersion}
+        </Link>
       </footer>
     );
   }

@@ -17,8 +17,6 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { logout, prepareWebLoginUrl } from '@/features/auth/api';
-import { desktopInvoke, isTauriRuntime } from '@/lib/desktop';
 import { useAuth } from '@/features/auth/auth-gate';
 import {
   hasAnyTeamPermission,
@@ -26,7 +24,6 @@ import {
 } from '@/features/auth/permissions';
 import type { AuthRoute } from '@/features/auth/types';
 import { cn } from '@/lib/utils';
-import { http } from '@/lib/http';
 import {
   ArrowRight01Icon,
   DashboardBrowsingIcon,
@@ -37,12 +34,10 @@ import {
   UserMultipleIcon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { useQueryClient } from '@tanstack/react-query';
 import * as React from 'react';
 import { Link } from 'react-router-dom';
-import { toast } from 'sonner';
 
-import { usePathname, useRouter } from '@/router/compat';
+import { usePathname } from '@/router/compat';
 import { resolveRouteIcon } from '@/features/browser-shell/route-icons';
 
 import { AppNavUser } from './app-nav-user';
@@ -103,10 +98,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   React.useEffect(() => {
     setOpenMobile(false);
   }, [pathname, setOpenMobile]);
-  const router = useRouter();
-  const queryClient = useQueryClient();
   const { access, user } = useAuth();
-  const [isLoggingOut, setIsLoggingOut] = React.useState(false);
   const navGroups = React.useMemo(
     () => buildNavGroups(access.routes),
     [access.routes],
@@ -114,47 +106,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const showTeamShortcuts =
     hasPermission(access, 'browser:team:list') ||
     hasAnyTeamPermission(access, 'browser:team:list');
-
-  async function handleLogout(switchAccount = false) {
-    if (isLoggingOut) {
-      return;
-    }
-
-    setIsLoggingOut(true);
-    try {
-      const loginUrl = switchAccount
-        ? await prepareWebLoginUrl('/dashboard', true)
-        : undefined;
-      try {
-        await logout();
-      } finally {
-        if (isTauriRuntime()) {
-          http.updateTokens(null);
-          await queryClient.cancelQueries();
-          queryClient.clear();
-          router.replace('/login');
-        }
-      }
-      if (isTauriRuntime()) {
-        if (loginUrl) {
-          await desktopInvoke('open_external_url', {
-            request: { url: loginUrl },
-          });
-        }
-      } else {
-        http.updateTokens(null);
-        await queryClient.cancelQueries();
-        queryClient.clear();
-        window.location.replace(loginUrl ?? '/login?prompt=select_account');
-      }
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : '账号操作失败，请重试',
-      );
-    } finally {
-      setIsLoggingOut(false);
-    }
-  }
 
   return (
     <Sidebar collapsible="offcanvas" {...props}>
@@ -176,12 +127,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarContent>
       <SidebarFooter>
         <WebDesktopActions />
-        <AppNavUser
-          user={user}
-          isLoggingOut={isLoggingOut}
-          onLogout={() => void handleLogout()}
-          onSwitchAccount={() => void handleLogout(true)}
-        />
+        <AppNavUser user={user} />
       </SidebarFooter>
     </Sidebar>
   );

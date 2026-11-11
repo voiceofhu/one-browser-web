@@ -15,6 +15,7 @@ import { AppSidebar } from './components/app-sidebar';
 import { SiteHeader } from './components/site-header';
 import { TeamOnboardingGate } from './components/team-onboarding-gate';
 import { BrowserShellProvider } from './browser-shell-context';
+import { useSettingsShortcut } from './use-settings-shortcut';
 
 export { useBrowserShell } from './browser-shell-context';
 
@@ -22,6 +23,7 @@ export function DashboardShell({ children }: React.PropsWithChildren) {
   const platform = useDesktopPlatform();
   const isMobile = useIsMobile();
   const showSiteHeader = isTauriRuntime() && platform === 'macos';
+  useSettingsShortcut();
 
   return (
     <BrowserShellProvider>
