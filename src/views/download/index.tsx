@@ -11,7 +11,6 @@ import {
 import { AppDownloadCard } from '@/features/app-download/download-card';
 import { locales, type Locale } from '@/i18n';
 import { useI18n } from '@/i18n/provider';
-import { HugeiconsIcon } from '@hugeicons/react';
 import { Languages } from 'lucide-react';
 
 export default function DownloadPage() {
