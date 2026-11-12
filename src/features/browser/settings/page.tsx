@@ -12,9 +12,13 @@ import { AccountInvitePage } from '@/features/account/profile/invite-page';
 import { AccountProfilePage } from '@/features/account/profile/page';
 import type { AppSettings } from '@/features/browser/contracts';
 import { isTauriRuntime } from '@/lib/desktop';
+import {
+  isSettingsWindow,
+  useSettingsWindowNavigation,
+} from '@/lib/desktop/settings-window';
 import { resolveErrorState } from '@/views/error/error-state';
-import type { ReactNode } from 'react';
-import { Navigate, useParams } from 'react-router-dom';
+import { type ReactNode, useCallback } from 'react';
+import { Navigate, useNavigate, useParams } from 'react-router-dom';
 
 import { AccountSecuritySettings } from './account-security-settings';
 import { AdvancedSettings } from './advanced-settings';
@@ -36,8 +40,16 @@ import { SettingsWorkspace } from './settings-workspace';
 /** `/settings/:section` — account, app and (in the App) device settings. */
 export function SettingsPage() {
   const params = useParams<{ section?: string }>();
+  const navigate = useNavigate();
   const isDesktop = isTauriRuntime();
   const section = resolveSettingsSection(params.section, isDesktop);
+  // Invalid ids fall through to the redirect below.
+  useSettingsWindowNavigation(
+    useCallback(
+      (target: string) => navigate(`/settings/${target}`),
+      [navigate],
+    ),
+  );
 
   if (!section) {
     return (
@@ -46,6 +58,18 @@ export function SettingsPage() {
   }
   if (section.id !== params.section) {
     return <Navigate to={settingsPath(section.id)} replace />;
+  }
+
+  if (isSettingsWindow()) {
+    return (
+      <SettingsWorkspace
+        groups={getSettingsNavGroups(isDesktop)}
+        section={section}
+        inWindow
+      >
+        <SettingsSectionContent section={section.id} />
+      </SettingsWorkspace>
+    );
   }
 
   return (
@@ -81,7 +105,7 @@ function SettingsSectionContent({ section }: { section: SettingsSectionId }) {
         <DeviceSettings>
           {(settings) => (
             <BrowserRuntimeSettings
-              key={`${settings.chromiumPath ?? ''}:${settings.defaultStartUrl}:${settings.profileRoot}`}
+              key={`${settings.chromiumPath ?? ''}:${settings.profileRoot}`}
               settings={settings}
             />
           )}

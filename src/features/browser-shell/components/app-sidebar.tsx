@@ -52,8 +52,14 @@ type NavItem = {
 
 type NavGroup = {
   id: number;
+  /** The group's own overview page, opened from its title. */
+  href?: string;
   items: NavItem[];
   title?: string;
+};
+
+const groupPageByAuthPath: Record<string, string> = {
+  '/browser': '/browser',
 };
 
 const navItemByAuthPath: Record<string, Omit<NavItem, 'title'>> = {
@@ -157,21 +163,46 @@ function SidebarNavGroup({
   return (
     <Collapsible className="group/collapsible" defaultOpen>
       <SidebarGroup className="py-0.5">
-        <SidebarGroupLabel
-          asChild
-          className="text-sidebar-foreground/55 h-6 text-[0.6875rem] font-semibold"
-        >
-          <CollapsibleTrigger className="w-full cursor-pointer justify-between gap-2 text-left">
-            <span className="min-w-0 flex-1 truncate text-left">
+        {group.href ? (
+          <SidebarGroupLabel className="text-sidebar-foreground/55 h-6 gap-1 pr-0 text-[0.6875rem] font-semibold">
+            <Link
+              to={group.href}
+              aria-current={pathname === group.href ? 'page' : undefined}
+              className={cn(
+                'hover:text-sidebar-foreground min-w-0 flex-1 truncate text-left transition-colors',
+                pathname === group.href && 'text-sidebar-primary',
+              )}
+            >
               {group.title}
-            </span>
-            <HugeiconsIcon
-              icon={ArrowRight01Icon}
-              strokeWidth={2}
-              className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90"
-            />
-          </CollapsibleTrigger>
-        </SidebarGroupLabel>
+            </Link>
+            <CollapsibleTrigger
+              className="hover:bg-sidebar-accent flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md"
+              aria-label={`折叠${group.title}`}
+            >
+              <HugeiconsIcon
+                icon={ArrowRight01Icon}
+                strokeWidth={2}
+                className="size-4 transition-transform group-data-[state=open]/collapsible:rotate-90"
+              />
+            </CollapsibleTrigger>
+          </SidebarGroupLabel>
+        ) : (
+          <SidebarGroupLabel
+            asChild
+            className="text-sidebar-foreground/55 h-6 text-[0.6875rem] font-semibold"
+          >
+            <CollapsibleTrigger className="w-full cursor-pointer justify-between gap-2 text-left">
+              <span className="min-w-0 flex-1 truncate text-left">
+                {group.title}
+              </span>
+              <HugeiconsIcon
+                icon={ArrowRight01Icon}
+                strokeWidth={2}
+                className="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90"
+              />
+            </CollapsibleTrigger>
+          </SidebarGroupLabel>
+        )}
         <CollapsibleContent>{items}</CollapsibleContent>
       </SidebarGroup>
     </Collapsible>
@@ -231,6 +262,9 @@ function buildNavGroups(routes: AuthRoute[] | undefined): NavGroup[] {
         id: route.id,
         items,
         ...(route.menu_type === 'M' ? { title: route.meta.title } : {}),
+        ...(route.menu_type === 'M' && groupPageByAuthPath[route.path]
+          ? { href: groupPageByAuthPath[route.path] }
+          : {}),
       },
     ];
   });

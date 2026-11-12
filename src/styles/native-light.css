@@ -109,6 +109,9 @@
       1px 100%,
       var(--sidebar-width) 100%;
     background-repeat: no-repeat;
+    /* Paint under the transparent bottom border too, or the white
+       background colour shows through it as a line across the sidebar. */
+    background-origin: border-box;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
     box-shadow: none;

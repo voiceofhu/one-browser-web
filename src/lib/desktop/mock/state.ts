@@ -11,7 +11,6 @@ export const mockNow = new Date(0).toISOString();
 export const mockSettings: AppSettings = {
   chromiumPath: null,
   profileRoot: '/tmp/one-browser/profiles',
-  defaultStartUrl: 'https://ipwhere.net/',
   preProxy: {
     mode: 'system',
     type: 'socks5',

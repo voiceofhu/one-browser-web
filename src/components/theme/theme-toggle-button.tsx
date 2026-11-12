@@ -23,6 +23,7 @@ type DocumentWithViewTransition = Document & {
 type ThemeToggleButtonProps = {
   className?: string;
   label?: string;
+  size?: 'icon-sm' | 'icon' | 'icon-lg';
 };
 
 const THEME_TOGGLE_VIEW_TRANSITION_CSS = `
@@ -62,6 +63,7 @@ function ThemeToggleViewTransitionStyles() {
 export function ThemeToggleButton({
   className,
   label = '切换主题',
+  size = 'icon-sm',
 }: ThemeToggleButtonProps) {
   const { resolvedTheme, setTheme } = useTheme();
 
@@ -138,11 +140,11 @@ export function ThemeToggleButton({
       <Button
         aria-label={label}
         className={cn(
-          'shrink-0 border-border/60 bg-muted text-foreground shadow-none hover:bg-muted dark:bg-muted dark:hover:bg-muted',
+          'border-border/60 bg-muted text-foreground hover:bg-muted dark:bg-muted dark:hover:bg-muted shrink-0 shadow-none',
           className,
         )}
         onClick={handleToggle}
-        size="icon-sm"
+        size={size}
         title={label}
         variant="outline"
       >

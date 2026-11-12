@@ -1,5 +1,6 @@
 import { settingsPath } from '@/features/browser/settings/settings-sections';
 import { isTauriRuntime } from '@/lib/desktop';
+import { openSettingsWindow } from '@/lib/desktop/settings-window';
 import { useRouter } from '@/router/compat';
 import * as React from 'react';
 
@@ -11,7 +12,7 @@ const isMac =
 export const settingsShortcutLabel = isMac ? '⌘,' : 'Ctrl+,';
 
 /**
- * ⌘, / Ctrl+, opens settings in the App, as desktop apps do. Not bound on the
+ * ⌘, / Ctrl+, opens the settings window in the App, as desktop apps do. Not bound on the
  * web, where the shortcut belongs to the browser itself.
  */
 export function useSettingsShortcut() {
@@ -32,7 +33,9 @@ export function useSettingsShortcut() {
         return;
       }
       event.preventDefault();
-      router.push(settingsPath());
+      void openSettingsWindow().then((opened) => {
+        if (!opened) router.push(settingsPath());
+      });
     }
 
     window.addEventListener('keydown', onKeyDown);

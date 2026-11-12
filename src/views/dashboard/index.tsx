@@ -1,21 +1,12 @@
 import { RefreshButton } from '@/components/refresh-button';
 import { LoadingState } from '@/components/loading-state';
-import { Button } from '@/components/ui/button';
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyTitle,
-} from '@/components/ui/empty';
 import { useAuth } from '@/features/auth/auth-gate';
 import { hasPermission } from '@/features/auth/permissions';
 import type { AuthRoute } from '@/features/auth/types';
-import { resolveRouteIcon } from '@/features/browser-shell/route-icons';
-import { formatDateTimeTitle, formatDisplayDateTime } from '@/lib/date-time';
-import { useRouter } from '@/router/compat';
+import { formatDateTimeTitle, formatUpdatedAt } from '@/lib/date-time';
 import { useQuery } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
 import {
-  ArrowRight01Icon,
   DashboardSquare01Icon,
   Notification01Icon,
   PackageOpenIcon,
@@ -27,14 +18,29 @@ import { HugeiconsIcon } from '@hugeicons/react';
 import { Navigate, Link } from 'react-router-dom';
 
 import { getDashboardOverview } from './api';
-import {
-  ActivityChart,
-  ResourceDistributionChart,
-  StatusPieChart,
-} from './charts';
-import type { DashboardActivityPoint, DashboardMetric } from './types';
+import { RecentEnvironments } from './recent-environments';
+import type { DashboardChartPoint, DashboardMetric } from './types';
 
 const DASHBOARD_PERMISSION = 'index:overview';
+
+/** Re-reads the clock so 刚刚更新 moves on to 更新于 1 分钟前 without a refetch. */
+function UpdatedAtLabel({ value }: { value: string }) {
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 30_000);
+    return () => window.clearInterval(timer);
+  }, [value]);
+
+  return (
+    <span
+      className="text-muted-foreground text-[0.6875rem]"
+      title={formatDateTimeTitle(value)}
+    >
+      {formatUpdatedAt(value, now)}
+    </span>
+  );
+}
 
 const METRIC_ICONS = {
   teams: UserGroupIcon,
@@ -56,9 +62,7 @@ const ROUTE_ALIASES: Record<string, string> = {
 
 export default function DashboardOverviewPage() {
   const { access } = useAuth();
-  const router = useRouter();
   const canView = hasPermission(access, DASHBOARD_PERMISSION);
-  const quickLinks = flattenAuthorizedRoutes(access.routes);
   const query = useQuery({
     queryKey: ['dashboard', 'overview'],
     queryFn: getDashboardOverview,
@@ -66,40 +70,34 @@ export default function DashboardOverviewPage() {
   });
 
   if (!canView) {
-    return <Navigate replace to={quickLinks[0]?.href ?? '/settings/profile'} />;
+    return (
+      <Navigate
+        replace
+        to={firstAuthorizedHref(access.routes) ?? '/settings/profile'}
+      />
+    );
   }
 
   const data = query.data;
-  const visibleMetrics = data?.metrics.filter(hasMetricValues) ?? [];
-  const resourceData =
-    data?.charts.resource_distribution.filter(hasChartPointValue) ?? [];
-  const environmentData =
-    data?.charts.environment_status.filter(hasChartPointValue) ?? [];
-  const proxyData = data?.charts.proxy_status.filter(hasChartPointValue) ?? [];
-  const activityHasValues = hasActivityValues(data?.charts.activity ?? []);
-  const hasChartScope = Boolean(
-    resourceData.length ||
-    environmentData.length ||
-    proxyData.length ||
-    activityHasValues,
-  );
+  const breakdowns: Partial<Record<string, StatusBreakdown>> = data
+    ? {
+        environments: {
+          points: data.charts.environment_status,
+          tones: ENVIRONMENT_TONES,
+        },
+        proxies: { points: data.charts.proxy_status, tones: PROXY_TONES },
+      }
+    : {};
 
   return (
     <section className="bg-background flex min-h-0 flex-1 flex-col overflow-auto">
-      <div className="mx-auto flex w-full max-w-[96rem] flex-col gap-3 px-3 pt-2 pb-4 sm:px-5">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-3 pt-2 pb-4 sm:px-5">
         <div className="flex min-h-10 flex-wrap items-center justify-between gap-x-3 gap-y-1">
           <h1 className="text-[1.0625rem] font-semibold tracking-tight">
             工作台
           </h1>
           <div className="flex min-w-0 flex-wrap items-center gap-2">
-            {data ? (
-              <span
-                className="text-muted-foreground text-[0.6875rem]"
-                title={formatDateTimeTitle(data.generated_at)}
-              >
-                更新于 {formatDisplayDateTime(data.generated_at)}
-              </span>
-            ) : null}
+            {data ? <UpdatedAtLabel value={data.generated_at} /> : null}
             <RefreshButton
               size="sm"
               variant="outline"
@@ -110,162 +108,130 @@ export default function DashboardOverviewPage() {
           </div>
         </div>
 
-        {!query.isLoading && visibleMetrics.length ? (
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
-            {visibleMetrics.map((metric) => (
-              <MetricCard key={metric.key} metric={metric} />
-            ))}
-          </div>
-        ) : null}
+        <div className="bg-card overflow-hidden rounded-lg border">
+          {query.isLoading ? (
+            <LoadingState className="min-h-20" label="工作台加载中..." />
+          ) : query.isError ? (
+            <p className="text-destructive px-4 py-3 text-xs">
+              统计加载失败：{query.error.message}
+            </p>
+          ) : data?.metrics.length ? (
+            <div className="grid grid-cols-2 border-b sm:grid-cols-3 lg:auto-cols-fr lg:grid-flow-col lg:grid-cols-none">
+              {data.metrics.map((metric) => (
+                <MetricCell
+                  key={metric.key}
+                  metric={metric}
+                  breakdown={breakdowns[metric.key]}
+                />
+              ))}
+            </div>
+          ) : null}
 
-        {query.isLoading ? (
-          <LoadingState
-            className="bg-card min-h-48 rounded-lg"
-            label="工作台加载中..."
-          />
-        ) : query.isError ? (
-          <Empty className="bg-card min-h-48 rounded-lg">
-            <EmptyHeader>
-              <EmptyTitle>Dashboard 加载失败</EmptyTitle>
-              <EmptyDescription>{query.error.message}</EmptyDescription>
-            </EmptyHeader>
-          </Empty>
-        ) : data ? (
-          <>
-            {hasChartScope ? (
-              <div className="grid gap-3 lg:grid-cols-2">
-                {resourceData.length ? (
-                  <ResourceDistributionChart
-                    data={resourceData}
-                    metrics={visibleMetrics}
-                    onNavigate={router.push}
-                  />
-                ) : null}
-                {environmentData.length ? (
-                  <StatusPieChart title="环境状态" data={environmentData} />
-                ) : null}
-                {proxyData.length ? (
-                  <StatusPieChart title="代理检测状态" data={proxyData} />
-                ) : null}
-                {activityHasValues ? (
-                  <ActivityChart data={data.charts.activity} />
-                ) : null}
-              </div>
-            ) : null}
-
-            {quickLinks.length ? (
-              <section className="bg-card overflow-hidden rounded-lg p-1.5">
-                <h2 className="px-2 pt-1 pb-1.5 text-[0.8125rem] font-semibold">
-                  快捷入口
-                </h2>
-                <div className="grid gap-0.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {quickLinks.map((item) => (
-                    <Button
-                      asChild
-                      key={item.href}
-                      variant="ghost"
-                      className="h-8 min-w-0 justify-start gap-2 rounded-md px-2"
-                    >
-                      <Link to={item.href}>
-                        <HugeiconsIcon
-                          icon={item.icon}
-                          strokeWidth={2}
-                          className="text-primary size-4"
-                        />
-                        <span className="min-w-0 flex-1 truncate text-[0.8125rem] font-normal">
-                          {item.title}
-                        </span>
-                        <HugeiconsIcon
-                          icon={ArrowRight01Icon}
-                          strokeWidth={2}
-                          className="text-muted-foreground size-3 shrink-0"
-                        />
-                      </Link>
-                    </Button>
-                  ))}
-                </div>
-              </section>
-            ) : null}
-          </>
-        ) : null}
+          <RecentEnvironments />
+        </div>
       </div>
     </section>
   );
 }
 
-function MetricCard({ metric }: { metric: DashboardMetric }) {
+type StatusBreakdown = {
+  points: DashboardChartPoint[];
+  tones: Record<string, string>;
+};
+
+/** Short legend names so the cell's one line never truncates. */
+const SHORT_LABELS: Record<string, string> = {
+  running: '运行',
+  idle: '空闲',
+  disabled: '停用',
+  healthy: '正常',
+  unchecked: '待测',
+  unhealthy: '异常',
+};
+
+const ENVIRONMENT_TONES: Record<string, string> = {
+  running: 'bg-success',
+  idle: 'bg-muted-foreground/35',
+  disabled: 'bg-muted-foreground/15',
+};
+
+const PROXY_TONES: Record<string, string> = {
+  healthy: 'bg-success',
+  unchecked: 'bg-warning',
+  unhealthy: 'bg-destructive',
+};
+
+function MetricCell({
+  metric,
+  breakdown,
+}: {
+  metric: DashboardMetric;
+  breakdown?: StatusBreakdown;
+}) {
   const Icon =
     METRIC_ICONS[metric.key as keyof typeof METRIC_ICONS] ??
     DashboardSquare01Icon;
+  const total = breakdown?.points.reduce((sum, p) => sum + p.value, 0) ?? 0;
   return (
-    <Button
-      asChild
-      data-slot="dashboard-metric-card"
-      variant="ghost"
-      className="bg-card hover:bg-card active:bg-muted h-auto min-w-0 flex-col items-stretch gap-1.5 rounded-lg px-3 py-2.5 text-left whitespace-normal"
+    <Link
+      to={metric.href}
+      data-slot="dashboard-metric-cell"
+      className="hover:bg-muted/50 focus-visible:ring-ring/30 -mr-px -mb-px flex min-w-0 flex-col gap-1 border-r border-b px-4 py-3 outline-none focus-visible:ring-2 focus-visible:ring-inset"
     >
-      <Link to={metric.href}>
-        <div className="flex items-center gap-1.5">
-          <HugeiconsIcon
-            icon={Icon}
-            strokeWidth={2}
-            className="text-primary size-4"
-          />
-          <p className="text-muted-foreground truncate text-xs font-medium">
-            {metric.title}
-          </p>
-        </div>
-        <p className="text-[1.375rem] leading-7 font-semibold tracking-tight tabular-nums">
-          {metric.value}
-        </p>
-        <p className="text-muted-foreground truncate text-[0.6875rem] font-normal">
+      <span className="text-muted-foreground flex items-center gap-1.5 text-xs">
+        <HugeiconsIcon icon={Icon} strokeWidth={2} className="size-3.5" />
+        {metric.title}
+      </span>
+      <span className="text-[1.375rem] leading-7 font-semibold tracking-tight tabular-nums">
+        {metric.value}
+      </span>
+      {breakdown && total > 0 ? (
+        <span className="flex flex-col gap-1">
+          <span className="bg-muted flex h-1 overflow-hidden rounded-full">
+            {breakdown.points.map((point) =>
+              point.value > 0 ? (
+                <span
+                  key={point.key}
+                  className={
+                    breakdown.tones[point.key] ?? 'bg-muted-foreground/30'
+                  }
+                  style={{ width: `${(point.value / total) * 100}%` }}
+                />
+              ) : null,
+            )}
+          </span>
+          <span className="text-muted-foreground truncate text-[0.6875rem]">
+            {breakdown.points
+              .filter((point) => point.value > 0)
+              .map(
+                (point) =>
+                  `${SHORT_LABELS[point.key] ?? point.label} ${point.value}`,
+              )
+              .join(' · ')}
+          </span>
+        </span>
+      ) : (
+        <span className="text-muted-foreground truncate text-[0.6875rem]">
           {metric.secondary_label} {metric.secondary_value}
-        </p>
-      </Link>
-    </Button>
+        </span>
+      )}
+    </Link>
   );
 }
 
-function flattenAuthorizedRoutes(routes: AuthRoute[] | undefined) {
-  const links: Array<{
-    title: string;
-    href: string;
-    icon: ReturnType<typeof resolveRouteIcon>;
-  }> = [];
-  const seen = new Set<string>();
-
-  function visit(route: AuthRoute) {
+/** Where to send someone who may not see the dashboard: their first menu page. */
+function firstAuthorizedHref(routes: AuthRoute[] | undefined): string | null {
+  for (const route of routes ?? []) {
     if (route.menu_type === 'C' && !route.hidden) {
       const href = ROUTE_ALIASES[route.path] ?? route.path;
-      if (!['/dashboard', '/index'].includes(href) && !seen.has(href)) {
-        seen.add(href);
-        links.push({
-          title: route.meta.title,
-          href,
-          icon: resolveRouteIcon(route.meta.icon),
-        });
+      if (!['/dashboard', '/index'].includes(href)) {
+        return href;
       }
     }
-    route.children?.forEach(visit);
+    const child = firstAuthorizedHref(route.children);
+    if (child) {
+      return child;
+    }
   }
-
-  routes?.forEach(visit);
-  return links;
-}
-
-function hasMetricValues(metric: DashboardMetric) {
-  return metric.value > 0 || metric.secondary_value > 0;
-}
-
-function hasChartPointValue(point: { value: number }) {
-  return point.value > 0;
-}
-
-function hasActivityValues(data: DashboardActivityPoint[]) {
-  return data.some(
-    (point) =>
-      Number(point.teams ?? 0) > 0 ||
-      Number(point.environments ?? 0) > 0 ||
-      Number(point.proxies ?? 0) > 0,
-  );
+  return null;
 }

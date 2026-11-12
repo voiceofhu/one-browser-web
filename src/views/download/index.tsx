@@ -11,8 +11,8 @@ import {
 import { AppDownloadCard } from '@/features/app-download/download-card';
 import { locales, type Locale } from '@/i18n';
 import { useI18n } from '@/i18n/provider';
-import { Globe02Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
+import { Languages } from 'lucide-react';
 
 export default function DownloadPage() {
   const { locale, setLocale } = useI18n();
@@ -36,10 +36,10 @@ export default function DownloadPage() {
               <Button
                 variant="outline"
                 size="icon-sm"
-                className="border-border/60 bg-muted text-foreground shadow-none hover:bg-muted dark:bg-muted dark:hover:bg-muted"
+                className="border-border/60 bg-muted text-foreground hover:bg-muted dark:bg-muted dark:hover:bg-muted shadow-none"
                 aria-label={locale === 'zh-CN' ? '切换语言' : 'Change language'}
               >
-                <HugeiconsIcon icon={Globe02Icon} strokeWidth={2} />
+                <Languages aria-hidden="true" className="size-3" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">

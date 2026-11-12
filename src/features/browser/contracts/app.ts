@@ -10,7 +10,6 @@ export interface CapabilityFlags {
 export interface AppSettings {
   chromiumPath: string | null;
   profileRoot: string;
-  defaultStartUrl: string;
   /** Absent on desktop clients built before the pre-proxy existed. */
   preProxy?: PreProxySettings;
   apiEnabled: boolean;
@@ -64,6 +63,12 @@ export interface PreProxyTestResult {
   via: string | null;
   latencyMs: number | null;
   message: string;
+  /** Exit identity from ipwhere.net; absent on clients before 11-12. */
+  exitIp?: string | null;
+  countryCode?: string | null;
+  country?: string | null;
+  region?: string | null;
+  asn?: string | null;
 }
 
 export interface LocalApiStatus {

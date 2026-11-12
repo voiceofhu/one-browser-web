@@ -1,4 +1,5 @@
 import { Badge } from '@/components/ui/badge';
+import { TARGET_OPTIONS } from '@/features/app-download/targets';
 import { Button } from '@/components/ui/button';
 import { TablePagination } from '@/components/table-pagination';
 import {
@@ -150,6 +151,16 @@ export function AssetNameCell({ record }: { record: BrowserAssetResource }) {
 }
 
 export function TargetCell({ record }: { record: BrowserAssetResource }) {
+  const target = TARGET_OPTIONS.find(
+    (item) => item.platform === record.platform && item.arch === record.arch,
+  );
+  if (target) {
+    return (
+      <span className="truncate" title={`${record.platform} / ${record.arch}`}>
+        {target.label}
+      </span>
+    );
+  }
   return (
     <div className="flex items-center gap-1.5">
       <Badge variant="outline">{record.platform}</Badge>

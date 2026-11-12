@@ -7,6 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useDesktopPlatform } from '@/lib/desktop/use-desktop-platform';
 import { cn } from '@/lib/utils';
 import { useRouter } from '@/router/compat';
 import { HugeiconsIcon } from '@hugeicons/react';
@@ -28,20 +29,33 @@ export function SettingsWorkspace({
   children,
   groups,
   section,
+  inWindow = false,
 }: {
   children: ReactNode;
   groups: SettingsNavGroup[];
   section: SettingsSection;
+  /** Rendered as the App's own settings window rather than a page. */
+  inWindow?: boolean;
 }) {
   const router = useRouter();
+  const platform = useDesktopPlatform();
+  // macOS overlays the traffic lights on the page; give them a drag strip.
+  const titlebar = inWindow && platform === 'macos';
 
-  return (
-    <div className="flex h-full min-h-0 flex-col md:flex-row">
+  const workspace = (
+    <div
+      className={cn(
+        'flex min-h-0 flex-col md:flex-row',
+        inWindow ? 'flex-1' : 'h-full',
+      )}
+    >
       <nav
         aria-label="设置分类"
         className="bg-sidebar hidden w-44 shrink-0 flex-col gap-3 overflow-y-auto border-r px-2 py-3 md:flex"
       >
-        <h1 className="font-heading px-2 text-sm font-semibold">设置</h1>
+        {inWindow ? null : (
+          <h1 className="font-heading px-2 text-sm font-semibold">设置</h1>
+        )}
         {groups.map((group) => (
           <div key={group.title} className="flex flex-col gap-0.5">
             <div className="text-muted-foreground px-2 pb-0.5 text-[0.6875rem] font-semibold">
@@ -111,6 +125,24 @@ export function SettingsWorkspace({
           <div className="flex min-w-0 flex-1 flex-col">{children}</div>
         </div>
       </main>
+    </div>
+  );
+
+  if (!inWindow) return workspace;
+
+  return (
+    <div className="bg-background flex h-dvh min-h-0 flex-col">
+      {titlebar ? (
+        <header
+          data-tauri-drag-region
+          className="bg-sidebar flex h-9 shrink-0 items-center justify-center border-b select-none"
+        >
+          <h1 className="pointer-events-none text-[0.8125rem] font-semibold">
+            设置
+          </h1>
+        </header>
+      ) : null}
+      {workspace}
     </div>
   );
 }

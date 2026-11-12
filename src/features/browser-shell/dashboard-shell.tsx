@@ -41,8 +41,10 @@ export function DashboardShell({ children }: React.PropsWithChildren) {
             data-slot="app-shell"
             className={cn(
               'flex min-h-0 flex-1 flex-col overflow-hidden bg-transparent',
+              // macOS draws the window frame itself; a CSS border here would
+              // sit just inside it and double every edge.
               showSiteHeader
-                ? 'border-border/70 rounded-[var(--app-radius)] border shadow-none'
+                ? 'rounded-[var(--app-radius)] border-0 shadow-none'
                 : 'rounded-none border-0 shadow-none',
             )}
           >

@@ -18,6 +18,7 @@ import type {
   PreProxyTestResult,
   PreProxyType,
 } from '@/features/browser/contracts';
+import { CountryFlag } from '@/features/browser/components/country-flag';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -323,14 +324,7 @@ export function PreProxySettings({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <FieldDescription className="min-w-0 flex-1 text-[12px] leading-relaxed font-normal">
           {testResult ? (
-            <span
-              className={testResult.success ? undefined : 'text-destructive'}
-            >
-              {testResult.message}
-              {testResult.latencyMs !== null
-                ? ` · ${testResult.latencyMs} ms`
-                : ''}
-            </span>
+            <PreProxyTestSummary result={testResult} />
           ) : (
             '固定服务器和 PAC 类型的环境代理由浏览器直接连接，不经过前置代理。'
           )}
@@ -340,15 +334,40 @@ export function PreProxySettings({
           size="sm"
           variant="outline"
           className="h-7 px-2.5 text-[12px] font-medium"
-          disabled={
-            preProxy.mode === 'off' || manualDirty || testMutation.isPending
-          }
+          disabled={manualDirty || testMutation.isPending}
           onClick={runTest}
         >
           {testMutation.isPending ? '测试中' : '测试连接'}
         </Button>
       </div>
     </FieldGroup>
+  );
+}
+
+/** Exit IP and location as ipwhere.net sees them through the current route. */
+function PreProxyTestSummary({ result }: { result: PreProxyTestResult }) {
+  const latency = result.latencyMs !== null ? `${result.latencyMs} ms` : null;
+  if (!result.success || !result.exitIp) {
+    return (
+      <span className={result.success ? undefined : 'text-destructive'}>
+        {[result.message, latency].filter(Boolean).join(' · ')}
+      </span>
+    );
+  }
+  const location = [result.country, result.region]
+    .filter((part, index, parts) => part && parts.indexOf(part) === index)
+    .join(' · ');
+  return (
+    <span className="flex min-w-0 flex-col gap-0.5">
+      <span className="text-foreground flex min-w-0 items-center gap-1.5">
+        <CountryFlag code={result.countryCode} country={result.country} />
+        <span className="font-mono">{result.exitIp}</span>
+        {location ? <span className="truncate">{location}</span> : null}
+      </span>
+      <span className="truncate">
+        {[result.message, result.asn, latency].filter(Boolean).join(' · ')}
+      </span>
+    </span>
   );
 }
 

@@ -72,6 +72,8 @@ export function invokeMockCommand<T>(
     case 'complete_remote_environment_exit_sync':
     case 'open_system_log':
       return mockResult<T>(undefined);
+    case 'pick_profile_root':
+      return mockResult<T>(null);
     case 'open_external_url':
       if (typeof request?.url === 'string' && typeof window !== 'undefined') {
         window.open(request.url, '_blank', 'noopener,noreferrer');
@@ -89,6 +91,8 @@ export function invokeMockCommand<T>(
         new Error('Mock desktop auth session is unavailable'),
       );
     case 'clear_desktop_auth_session':
+      return mockResult<T>(undefined);
+    case 'open_settings_window':
       return mockResult<T>(undefined);
     case 'get_settings':
       return mockResult<T>(mockSettings);

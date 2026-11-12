@@ -4,13 +4,14 @@ import {
   InputGroupAddon,
   InputGroupButton,
   InputGroupInput,
-  InputGroupText,
 } from '@/components/ui/input-group';
 import type { AppSettings } from '@/features/browser/contracts';
+import { desktopInvoke } from '@/lib/desktop';
 import {
   CheckmarkCircle02Icon,
   ChromeIcon,
   DatabaseIcon,
+  Folder01Icon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { useState } from 'react';
@@ -21,11 +22,11 @@ import {
   useUpdateSettingsMutation,
   useValidateChromiumPathMutation,
 } from './queries';
-import {
-  SettingsDivider,
-  SettingsFormRow,
-  SettingsGroup,
-} from './settings-group';
+import { SettingsFormRow, SettingsGroup } from './settings-group';
+
+function errorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback;
+}
 
 export function BrowserRuntimeSettings({
   settings,
@@ -35,32 +36,13 @@ export function BrowserRuntimeSettings({
   const updateSettingsMutation = useUpdateSettingsMutation();
   const validateChromiumPathMutation = useValidateChromiumPathMutation();
   const [chromiumPath, setChromiumPath] = useState(settings.chromiumPath ?? '');
-  const [profileRoot, setProfileRoot] = useState(settings.profileRoot);
-  const [defaultStartUrl, setDefaultStartUrl] = useState(
-    settings.defaultStartUrl,
-  );
+  const [pickingRoot, setPickingRoot] = useState(false);
   const chromiumStatus = validateChromiumPathMutation.data;
-
-  function updateSettings(patch: Partial<AppSettings>) {
-    updateSettingsMutation.mutate(patch);
-  }
 
   function saveChromiumPath() {
     const nextChromiumPath = chromiumPath.trim() || null;
     if (nextChromiumPath !== settings.chromiumPath) {
-      updateSettings({ chromiumPath: nextChromiumPath });
-    }
-  }
-
-  function saveProfileRoot() {
-    if (profileRoot !== settings.profileRoot) {
-      updateSettings({ profileRoot });
-    }
-  }
-
-  function saveDefaultStartUrl() {
-    if (defaultStartUrl !== settings.defaultStartUrl) {
-      updateSettings({ defaultStartUrl });
+      updateSettingsMutation.mutate({ chromiumPath: nextChromiumPath });
     }
   }
 
@@ -79,6 +61,31 @@ export function BrowserRuntimeSettings({
         },
       },
     );
+  }
+
+  async function openProfileRoot() {
+    try {
+      await desktopInvoke('open_path', {
+        request: { path: settings.profileRoot },
+      });
+    } catch (error) {
+      toast.error(errorMessage(error, '打开目录失败'));
+    }
+  }
+
+  async function pickProfileRoot() {
+    if (pickingRoot) return;
+    setPickingRoot(true);
+    try {
+      const picked = await desktopInvoke<string | null>('pick_profile_root');
+      if (picked && picked !== settings.profileRoot) {
+        updateSettingsMutation.mutate({ profileRoot: picked });
+      }
+    } catch (error) {
+      toast.error(errorMessage(error, '选择目录失败，请更新桌面客户端后再试'));
+    } finally {
+      setPickingRoot(false);
+    }
   }
 
   return (
@@ -122,49 +129,42 @@ export function BrowserRuntimeSettings({
             </InputGroupAddon>
           </InputGroup>
         </SettingsFormRow>
-
-        <SettingsDivider />
-
-        <SettingsFormRow
-          label="默认启动页"
-          htmlFor="default-start-url"
-          description="环境首次启动且未设置启动标签页时会打开这里。"
-        >
-          <InputGroup className="h-7">
-            <InputGroupAddon>
-              <InputGroupText>URL</InputGroupText>
-            </InputGroupAddon>
-            <InputGroupInput
-              id="default-start-url"
-              value={defaultStartUrl}
-              onChange={(event) => setDefaultStartUrl(event.target.value)}
-              onBlur={saveDefaultStartUrl}
-              onKeyDown={blurOnEnter}
-              placeholder="https://ipwhere.net/"
-              className="font-mono text-[12px] font-normal md:text-[12px]"
-            />
-          </InputGroup>
-        </SettingsFormRow>
       </SettingsGroup>
 
       <SettingsGroup title="环境存储">
         <SettingsFormRow
           label="环境根目录"
           htmlFor="profile-root"
-          description="浏览器环境、缓存和运行数据都会放在这个目录下。"
+          description="浏览器环境、缓存和运行数据都会放在这个目录下。更换后，已有环境的数据留在原目录，不会自动迁移。"
         >
           <InputGroup className="h-7">
             <InputGroupAddon>
               <HugeiconsIcon icon={DatabaseIcon} strokeWidth={2} />
             </InputGroupAddon>
-            <InputGroupInput
+            <button
               id="profile-root"
-              value={profileRoot}
-              onChange={(event) => setProfileRoot(event.target.value)}
-              onBlur={saveProfileRoot}
-              onKeyDown={blurOnEnter}
-              className="font-mono text-[12px] font-normal md:text-[12px]"
-            />
+              type="button"
+              title={`打开目录：${settings.profileRoot}`}
+              onClick={() => void openProfileRoot()}
+              className="min-w-0 flex-1 cursor-pointer truncate px-2 text-left font-mono text-[12px] underline-offset-2 outline-none hover:underline focus-visible:underline"
+            >
+              {settings.profileRoot}
+            </button>
+            <InputGroupAddon align="inline-end">
+              <InputGroupButton
+                variant="outline"
+                className="text-[12px] font-medium"
+                onClick={() => void pickProfileRoot()}
+                disabled={pickingRoot || updateSettingsMutation.isPending}
+              >
+                <HugeiconsIcon
+                  icon={Folder01Icon}
+                  strokeWidth={2}
+                  data-icon="inline-start"
+                />
+                选择…
+              </InputGroupButton>
+            </InputGroupAddon>
           </InputGroup>
         </SettingsFormRow>
       </SettingsGroup>

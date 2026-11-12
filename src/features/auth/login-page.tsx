@@ -18,12 +18,11 @@ import {
   readAuthSessionStatus,
 } from '@/features/auth/session';
 import { isUnauthorizedAuthError } from '@/features/auth/auth-errors';
-import { AppDownloadCard } from '@/features/app-download/download-card';
-import { requestDownloadPrompt } from '@/features/app-download/session';
 import { desktopInvoke, isTauriRuntime } from '@/lib/desktop';
 import { http } from '@/lib/http';
 import { Globe02Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
+import { Languages } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import * as React from 'react';
 import { toast } from 'sonner';
@@ -50,8 +49,6 @@ type LoginPageCopy = {
   openAuthLogin: string;
   webAuthLogin: string;
   webDescription: string;
-  desktopDownload: string;
-  desktopDescription: string;
   openingAuthLogin: string;
   autoOpenWebLogin: (seconds: number) => string;
   authExpired: string;
@@ -68,8 +65,6 @@ const LOGIN_PAGE_COPY: Record<'zh-CN' | 'en-US', LoginPageCopy> = {
     openAuthLogin: '打开网址授权登录',
     webAuthLogin: '授权登录',
     webDescription: '授权登录后，管理浏览器环境与团队。',
-    desktopDownload: '桌面客户端',
-    desktopDescription: '下载 One Browser，使用完整的浏览器功能。',
     openingAuthLogin: '正在打开...',
     autoOpenWebLogin: (seconds) => `${seconds} 秒后自动打开网页版登录`,
     authExpired: '登录信息已过期，请重新登录',
@@ -84,8 +79,6 @@ const LOGIN_PAGE_COPY: Record<'zh-CN' | 'en-US', LoginPageCopy> = {
     openAuthLogin: 'Authorize sign-in',
     webAuthLogin: 'Authorize sign-in',
     webDescription: 'Sign in to manage browser environments and your team.',
-    desktopDownload: 'Desktop app',
-    desktopDescription: 'Download One Browser for the full desktop experience.',
     openingAuthLogin: 'Opening...',
     autoOpenWebLogin: (seconds) => `Opening web sign-in in ${seconds}s`,
     authExpired: 'Your session has expired. Sign in again.',
@@ -161,11 +154,8 @@ export function LoginPage({ authManaged = false }: LoginPageProps) {
 
   const applyAuthSession = React.useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: ['auth'] });
-    if (!isDesktop) {
-      requestDownloadPrompt();
-    }
     router.replace(safeRedirectTo);
-  }, [isDesktop, queryClient, router, safeRedirectTo]);
+  }, [queryClient, router, safeRedirectTo]);
 
   useAuthDeepLinks(applyAuthSession, !authManaged && isDesktop);
 
@@ -234,8 +224,8 @@ export function LoginPage({ authManaged = false }: LoginPageProps) {
     return () => window.clearTimeout(noticeTimer);
   }, [copy.authExpired]);
 
-  // The web login page stays up for a short countdown so visitors can grab the
-  // desktop app first; any interaction with the download card cancels it.
+  // The web login page stays up for a short countdown before it opens the
+  // web sign-in on its own.
   const autoLogin = !isDesktop && autoLoginAllowed && !authNotice;
   const [countdown, setCountdown] = React.useState(AUTO_LOGIN_SECONDS);
   const autoRedirecting = sessionChecked && autoLogin && countdown === 0;
@@ -349,19 +339,6 @@ export function LoginPage({ authManaged = false }: LoginPageProps) {
               </p>
             ) : null}
           </Card>
-          <Card
-            className="gap-0 p-5"
-            onPointerDownCapture={() => setAutoLoginAllowed(false)}
-          >
-            <h2 className="text-sm font-medium">{copy.desktopDownload}</h2>
-            <p className="text-muted-foreground mt-1 text-xs leading-5">
-              {copy.desktopDescription}
-            </p>
-            <AppDownloadCard
-              showHeader={false}
-              className="[&_a]:bg-primary [&_a]:text-primary-foreground [&_a:hover]:bg-primary/90 mt-3 rounded-none border-0 bg-transparent p-0 shadow-none ring-0 [&_[data-slot=button]]:rounded-md [&_[data-slot=card-content]]:gap-2.5 [&_[data-slot=card-content]]:px-0"
-            />
-          </Card>
         </div>
       </main>
     );
@@ -428,16 +405,16 @@ export function LoginPage({ authManaged = false }: LoginPageProps) {
 function LoginPageControls() {
   const { locale, setLocale } = useI18n();
   return (
-    <div className="absolute top-3 right-3 z-20 flex items-center gap-1">
+    <div className="absolute top-3 right-3 z-20 flex items-center gap-1.5">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
-            variant="ghost"
-            size="icon-sm"
-            className="text-muted-foreground rounded-md"
+            variant="outline"
+            size="icon"
+            className="text-muted-foreground hover:text-foreground"
             aria-label={locale === 'zh-CN' ? '切换语言' : 'Change language'}
           >
-            <HugeiconsIcon icon={Globe02Icon} strokeWidth={2} />
+            <Languages aria-hidden="true" className="size-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
@@ -453,7 +430,10 @@ function LoginPageControls() {
           </DropdownMenuRadioGroup>
         </DropdownMenuContent>
       </DropdownMenu>
-      <ThemeToggleButton className="text-muted-foreground hover:bg-muted/70 dark:hover:bg-muted/70 rounded-md border-transparent bg-transparent dark:bg-transparent" />
+      <ThemeToggleButton
+        size="icon"
+        className="text-muted-foreground hover:text-foreground border-border dark:bg-input/30 bg-transparent [&_svg]:size-4!"
+      />
     </div>
   );
 }

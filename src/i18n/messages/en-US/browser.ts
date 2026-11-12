@@ -430,4 +430,23 @@ export const browserMessages = {
   默认启动页: 'Default startup page',
   '，换 IP URL 使用 [url]。': ', use [url] as the change IP URL.',
   '动态代理使用已保存代理。': 'Rotating proxies use a saved proxy.',
+  浏览器管理: 'Browser management',
+  '环境、代理、团队与安装包都在这里管理。':
+    'Manage environments, proxies, teams and installers here.',
+  '创建、分组和启动浏览器环境，每个环境独立指纹与代理。':
+    'Create, group and launch browser environments, each with its own fingerprint and proxy.',
+  '添加 HTTP、SOCKS5 代理，检测出口 IP，绑定到环境。':
+    'Add HTTP and SOCKS5 proxies, check their exit IP, and bind them to environments.',
+  '切换和管理团队，团队内的环境与代理互相共享。':
+    'Switch and manage teams; environments and proxies are shared within a team.',
+  '邀请成员，按角色分配权限和可用的环境。':
+    'Invite members and grant permissions and environments by role.',
+  '定义团队角色，决定成员能看到和操作哪些功能。':
+    'Define team roles that decide what members can see and do.',
+  '上传和发布浏览器安装包，设置当前下载版本。':
+    'Upload and publish browser installers, and choose the current download.',
+  当前发布: 'Current releases',
+  未发布: 'Not released',
+  客户端在此平台暂无可下载的版本:
+    'No download is available for this platform yet',
 } as const;

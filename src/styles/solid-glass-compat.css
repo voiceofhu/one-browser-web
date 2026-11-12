@@ -136,17 +136,16 @@ thead.sticky th,
   box-shadow: inset 0 1px 0 var(--glass-inner);
 }
 
-[data-slot='sidebar-inner'].bg-sidebar,
-[data-slot='sidebar'].bg-sidebar:not([data-mobile='true']) {
-  box-shadow:
-    inset -1px 0 0 var(--glass-edge),
-    inset 0 1px 0 var(--glass-inner);
+/* The native window frame is the title bar's top edge. */
+[data-slot='app-titlebar'] {
+  box-shadow: none;
 }
 
-[data-slot='sidebar'][data-side='right'] [data-slot='sidebar-inner'].bg-sidebar {
-  box-shadow:
-    inset 1px 0 0 var(--glass-edge),
-    inset 0 1px 0 var(--glass-inner);
+/* The sidebar's own border is its only edge; a glass edge or top rim on top of
+   it (and of the title bar's hairline above) would draw every line twice. */
+[data-slot='sidebar-inner'].bg-sidebar,
+[data-slot='sidebar'].bg-sidebar:not([data-mobile='true']) {
+  box-shadow: none;
 }
 
 [data-slot='app-content'] > :is(section, div).bg-card:not(.my-auto) {

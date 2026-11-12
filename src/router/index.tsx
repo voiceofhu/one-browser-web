@@ -6,6 +6,7 @@ import {
 import { AuthGate } from '@/features/auth/auth-gate';
 import { DashboardShell } from '@/features/browser-shell/dashboard-shell';
 import { isTauriRuntime } from '@/lib/desktop';
+import { isSettingsWindow } from '@/lib/desktop/settings-window';
 import { AppErrorBoundary } from '@/views/error/error-boundary';
 import ErrorPage from '@/views/error/error-page';
 import NotFound from '@/views/error/not-found';
@@ -25,6 +26,7 @@ const DocsPage = lazy(() => import('@/views/developers'));
 const CallbackPage = lazy(() => import('@/views/auth/callback'));
 const TeamInvitePage = lazy(() => import('@/views/auth/team-invite'));
 const DashboardOverviewPage = lazy(() => import('@/views/dashboard'));
+const BrowserOverviewPage = lazy(() => import('@/views/browser'));
 const EnvironmentsPage = lazy(() => import('@/views/browser/environments'));
 const ProxiesPage = lazy(() => import('@/views/browser/proxies'));
 const TeamsPage = lazy(() => import('@/views/browser/teams'));
@@ -85,6 +87,7 @@ export function AppRouter() {
             <Route path="/system/log/login" element={<LoginLogPage />} />
             <Route path="/monitor/health" element={<HealthPage />} />
             <Route path="/monitor/job" element={<JobPage />} />
+            <Route path="/browser" element={<BrowserOverviewPage />} />
             <Route path="/environments" element={<EnvironmentsPage />} />
             <Route path="/proxies" element={<ProxiesPage />} />
             <Route path="/teams" element={<TeamsPage />} />
@@ -118,6 +121,15 @@ function DashboardLayout() {
   const outlet = useOutlet();
   const deferredLocationKey = useDeferredValue(location.key);
   const deferredOutlet = useDeferredValue(outlet);
+
+  // The App's settings window shows settings alone, without the workspace.
+  if (isSettingsWindow()) {
+    return (
+      <AuthGate>
+        <Suspense fallback={<RouteLoading />}>{deferredOutlet}</Suspense>
+      </AuthGate>
+    );
+  }
 
   return (
     <AuthGate>

@@ -10,7 +10,6 @@ import {
   completeOidcLogin,
   getCurrentUser,
 } from '@/features/auth/api';
-import { requestDownloadPrompt } from '@/features/app-download/session';
 import { resolveErrorState } from '@/views/error/error-state';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -74,7 +73,6 @@ export function CallbackPage() {
           return;
         }
 
-        requestDownloadPrompt();
         window.location.replace(normalizeReturnTo(result.returnTo));
       })
       .catch((callbackError: unknown) => {
@@ -94,7 +92,9 @@ export function CallbackPage() {
       callbackState.error ?? new Error(callbackState.message),
     );
     const originalCode =
-      typeof callbackState.error === 'object' && callbackState.error !== null && 'code' in callbackState.error
+      typeof callbackState.error === 'object' &&
+      callbackState.error !== null &&
+      'code' in callbackState.error
         ? callbackState.error.code
         : undefined;
     const diagnostic = [
@@ -103,7 +103,9 @@ export function CallbackPage() {
         ? `Code: ${originalCode}`
         : '',
       callbackState.message,
-    ].filter(Boolean).join('\n');
+    ]
+      .filter(Boolean)
+      .join('\n');
 
     return (
       <main className="bg-muted text-foreground flex h-dvh min-w-0 overflow-y-auto px-4 py-6">
@@ -118,7 +120,9 @@ export function CallbackPage() {
             <Alert className="border-0 bg-transparent p-0">
               <AlertTitle>
                 <h1 className="text-sm font-semibold">
-                  {errorState.kind === 'unknown' ? '授权未完成' : errorState.title}
+                  {errorState.kind === 'unknown'
+                    ? '授权未完成'
+                    : errorState.title}
                 </h1>
               </AlertTitle>
               <AlertDescription>
@@ -127,7 +131,7 @@ export function CallbackPage() {
                   : errorState.description}
               </AlertDescription>
             </Alert>
-            <pre className="bg-muted/40 max-h-40 overflow-auto rounded-sm border px-2.5 py-2 font-mono text-xs/5 whitespace-pre-wrap break-words">
+            <pre className="bg-muted/40 max-h-40 overflow-auto rounded-sm border px-2.5 py-2 font-mono text-xs/5 break-words whitespace-pre-wrap">
               {callbackState.message}
             </pre>
             <CopyButton text={diagnostic} variant="ghost" size="sm">
@@ -135,7 +139,11 @@ export function CallbackPage() {
             </CopyButton>
           </div>
           <footer className="bg-muted/40 flex flex-wrap gap-2 border-t px-3 py-2">
-            <Button onClick={() => window.location.assign(buildWebLoginUrl('/dashboard'))}>
+            <Button
+              onClick={() =>
+                window.location.assign(buildWebLoginUrl('/dashboard'))
+              }
+            >
               重新登录
             </Button>
             <Button asChild variant="outline">
@@ -159,9 +167,7 @@ export function CallbackPage() {
           priority
         />
         <SweepShine asChild>
-          <h1 className="mt-4 text-sm font-semibold">
-            正在完成授权
-          </h1>
+          <h1 className="mt-4 text-sm font-semibold">正在完成授权</h1>
         </SweepShine>
         <p className="text-muted-foreground mt-2 text-xs/5" role="status">
           {callbackState.message}
@@ -216,5 +222,7 @@ function isBase64Url256(value: string) {
 }
 
 function normalizeReturnTo(value: string) {
-  return value.startsWith('/') && !value.startsWith('//') ? value : '/dashboard';
+  return value.startsWith('/') && !value.startsWith('//')
+    ? value
+    : '/dashboard';
 }

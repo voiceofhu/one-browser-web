@@ -60,6 +60,7 @@ import {
   UploadModeBadge,
   assetDisplayName,
 } from './assets-table-parts';
+import { CurrentReleases } from './current-releases';
 import { BrowserAssetGithubSyncButton } from './github-sync-button';
 
 type CurrentFilter = 'all' | 'current';
@@ -67,6 +68,11 @@ const CURRENT_FILTERS = [
   { label: '全部', value: 'all' },
   { label: '当前版本', value: 'current' },
 ] as const;
+const CURRENT_RELEASES_PARAMS: BrowserAssetListParams = {
+  page: 1,
+  page_size: 50,
+  current: true,
+};
 const browserAssetQueryKeys = {
   all: ['browser-assets'] as const,
   list: (params: BrowserAssetListParams) =>
@@ -104,6 +110,11 @@ export function BrowserAssetsPageContent() {
     queryFn: () => listBrowserAssets(params),
     enabled: canList,
     placeholderData: (previousData) => previousData,
+  });
+  const currentQuery = useQuery({
+    queryKey: browserAssetQueryKeys.list(CURRENT_RELEASES_PARAMS),
+    queryFn: () => listBrowserAssets(CURRENT_RELEASES_PARAMS),
+    enabled: canList,
   });
   const assets = React.useMemo(
     () => assetsQuery.data?.list ?? [],
@@ -345,6 +356,13 @@ export function BrowserAssetsPageContent() {
           </>
         }
       />
+
+      {currentQuery.isError ? null : (
+        <CurrentReleases
+          assets={currentQuery.data?.list ?? []}
+          isLoading={currentQuery.isLoading}
+        />
+      )}
 
       <div className="min-h-0 flex-1 overflow-auto">
         {assetsQuery.isError ? (

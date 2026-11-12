@@ -42,4 +42,38 @@ export const homeMessages = {
   'macOS Apple 芯片': 'macOS Apple silicon',
   'Windows 64 位': 'Windows 64-bit',
   'Linux 64 位': 'Linux 64-bit',
+  团队协作指纹浏览器: 'Antidetect browser for teams',
+  '每个账号一套独立指纹和代理，团队共享环境、分权协作，还能用代码批量驱动。':
+    'Every account gets its own fingerprint and proxy. Share environments across your team with role-based access, and drive them in bulk from code.',
+  下载客户端: 'Download app',
+  '浏览器环境在桌面客户端中运行，支持 macOS、Windows 与 Linux。登录同一个 One 账号，环境自动同步。':
+    'Browser environments run in the desktop app for macOS, Windows and Linux. Sign in with the same One account and your environments sync automatically.',
+  查看开发文档: 'Read the developer docs',
+  环境列表示意: 'Environment list preview',
+  搜索环境: 'Search environments',
+  名称: 'Name',
+  已停止: 'Stopped',
+  每个环境一套独立指纹: 'A separate fingerprint for every environment',
+  'Cookie、缓存、时区、语言、WebGL 与 Canvas 各自独立，多账号同时在线也互不关联。':
+    'Cookies, cache, time zone, language, WebGL and Canvas are isolated per environment, so accounts stay unlinked even when online at once.',
+  'Chromium 内核': 'Chromium engine',
+  '跟随 Chrome 稳定版更新，网站看到的是一台普通、最新的 Chrome。':
+    'Tracks Chrome Stable, so sites see an ordinary, up-to-date Chrome.',
+  '自有代理 + 前置代理': 'Your proxies + pre-proxy',
+  '环境代理可先经过 Clash、v2rayN 等本机代理再连接，启动前自动检测出口 IP。':
+    'Environment proxies can route through a local proxy like Clash or v2rayN first, and the exit IP is checked before launch.',
+  '团队共享，按角色授权': 'Shared by the team, scoped by role',
+  '邀请成员、分配角色，环境在团队内共享，每次操作都有日志可查。':
+    'Invite members and assign roles. Environments are shared within the team and every action is logged.',
+  批量管理: 'Bulk management',
+  '分组、备注、批量启动，网页和客户端看到的是同一份配置。':
+    'Groups, notes and bulk launch. The web and the desktop app see the same configuration.',
+  '本地 API 与 SDK': 'Local API and SDKs',
+  '用 Puppeteer、Playwright 或 Selenium 直接驱动任意环境，Node.js 与 Python 都有 SDK。':
+    'Drive any environment with Puppeteer, Playwright or Selenium, with SDKs for Node.js and Python.',
+  网站: 'Website',
+  '美国 · 纽约': 'US · New York',
+  所有者: 'Owner',
+  管理员: 'Admin',
+  '已选 2 个环境 · 批量启动': '2 selected · Launch all',
 };

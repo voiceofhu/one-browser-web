@@ -30,6 +30,10 @@ import {
 import { settingsShortcutLabel } from '@/features/browser-shell/use-settings-shortcut';
 import { isTauriRuntime } from '@/lib/desktop';
 import {
+  isSettingsWindow,
+  openSettingsWindow,
+} from '@/lib/desktop/settings-window';
+import {
   Logout03Icon,
   PaintBrush01Icon,
   Settings02Icon,
@@ -40,7 +44,7 @@ import {
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import * as React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 type UserMenuItem = {
   label: string;
@@ -62,6 +66,7 @@ export function AppNavUser({ user }: { user: CurrentUser }) {
   const { isLoggingOut, logout, switchAccount } = useLogout();
   const [confirmOpen, setConfirmOpen] = React.useState(false);
   const isDesktop = isTauriRuntime();
+  const navigate = useNavigate();
   const displayName = user.nick_name || user.user_name || '未登录';
   const email = user.email || '未绑定邮箱';
   const avatar = user.avatar || '';
@@ -71,6 +76,18 @@ export function AppNavUser({ user }: { user: CurrentUser }) {
     user.user_name,
     displayName,
   );
+
+  // In the App, settings open in their own window instead of this page.
+  function openSettingsInWindow(
+    event: React.MouseEvent<HTMLAnchorElement>,
+    section?: SettingsSectionId,
+  ) {
+    if (!isDesktop || isSettingsWindow()) return;
+    event.preventDefault();
+    void openSettingsWindow(section).then((opened) => {
+      if (!opened) navigate(settingsPath(section));
+    });
+  }
 
   return (
     <>
@@ -118,14 +135,22 @@ export function AppNavUser({ user }: { user: CurrentUser }) {
               <DropdownMenuGroup>
                 {userMenuItems.map((item) => (
                   <DropdownMenuItem key={item.section} asChild>
-                    <Link to={settingsPath(item.section)}>
+                    <Link
+                      to={settingsPath(item.section)}
+                      onClick={(event) =>
+                        openSettingsInWindow(event, item.section)
+                      }
+                    >
                       <HugeiconsIcon icon={item.icon} strokeWidth={2} />
                       {item.label}
                     </Link>
                   </DropdownMenuItem>
                 ))}
                 <DropdownMenuItem asChild>
-                  <Link to={settingsPath()}>
+                  <Link
+                    to={settingsPath()}
+                    onClick={(event) => openSettingsInWindow(event)}
+                  >
                     <HugeiconsIcon icon={Settings02Icon} strokeWidth={2} />
                     设置
                     {isDesktop ? (

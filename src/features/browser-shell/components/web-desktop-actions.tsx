@@ -18,33 +18,14 @@ import {
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { AppDownloadCard } from '@/features/app-download/download-card';
-import {
-  consumeDownloadPrompt,
-  isDownloadPromptRequested,
-  subscribeDownloadPrompt,
-} from '@/features/app-download/session';
 import { isTauriRuntime } from '@/lib/desktop';
 import { launchDesktopApp } from '@/lib/desktop/app-gate';
-import { usePathname } from '@/router/compat';
 import { Download01Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import * as React from 'react';
 
 export function WebDesktopActions() {
   const [downloadOpen, setDownloadOpen] = React.useState(false);
-  const pathname = usePathname();
-
-  const downloadRequested = React.useSyncExternalStore(
-    subscribeDownloadPrompt,
-    isDownloadPromptRequested,
-    () => false,
-  );
-  const showDownloadPrompt = pathname === '/dashboard' && downloadRequested;
-
-  function handleDownloadOpenChange(open: boolean) {
-    setDownloadOpen(open);
-    if (!open) consumeDownloadPrompt();
-  }
 
   if (isTauriRuntime()) return null;
 
@@ -71,10 +52,7 @@ export function WebDesktopActions() {
         </SidebarMenuItem>
       </SidebarMenu>
 
-      <ResponsiveDialog
-        open={downloadOpen || showDownloadPrompt}
-        onOpenChange={handleDownloadOpenChange}
-      >
+      <ResponsiveDialog open={downloadOpen} onOpenChange={setDownloadOpen}>
         <ResponsiveDialogContent className="sm:max-w-2xl">
           <ResponsiveDialogHeader>
             <ResponsiveDialogTitle>下载桌面客户端</ResponsiveDialogTitle>

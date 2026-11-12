@@ -1,4 +1,5 @@
 import { desktopInvoke, isTauriRuntime } from '@/lib/desktop';
+import { isSettingsWindow } from '@/lib/desktop/settings-window';
 import * as React from 'react';
 
 const DEFAULT_APP_WINDOW_SIZE = {
@@ -25,7 +26,9 @@ type AppWindowSizePreset = {
 };
 
 async function applyAppWindowSizePreset(preset: AppWindowSizePreset) {
-  if (!isTauriRuntime()) {
+  // Login/workspace sizes belong to the main window; the settings window
+  // boots the same app and must leave both windows' sizes alone.
+  if (!isTauriRuntime() || isSettingsWindow()) {
     return;
   }
 
