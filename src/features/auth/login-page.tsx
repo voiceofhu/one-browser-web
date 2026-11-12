@@ -42,6 +42,7 @@ import { useAuthDeepLinks } from './use-auth-deep-links';
 
 const APP_LOGO_SRC = '/pwa-512x512.png';
 const AUTO_LOGIN_SECONDS = 10;
+const BROWSER_LOGIN_WAIT_MS = 10 * 60_000;
 
 type LoginPageCopy = {
   appLogoAlt: string;
@@ -50,6 +51,12 @@ type LoginPageCopy = {
   webAuthLogin: string;
   webDescription: string;
   openingAuthLogin: string;
+  waitingBrowserLogin: string;
+  waitingBrowserHint: string;
+  reopenBrowserLogin: string;
+  checkingSession: string;
+  handedOff: string;
+  handedOffHint: string;
   autoOpenWebLogin: (seconds: number) => string;
   authExpired: string;
   openLoginError: string;
@@ -66,6 +73,12 @@ const LOGIN_PAGE_COPY: Record<'zh-CN' | 'en-US', LoginPageCopy> = {
     webAuthLogin: '授权登录',
     webDescription: '授权登录后，管理浏览器环境与团队。',
     openingAuthLogin: '正在打开...',
+    waitingBrowserLogin: '请在浏览器中完成登录…',
+    waitingBrowserHint: '登录完成后会自动回到这里。',
+    reopenBrowserLogin: '没有打开？重新打开',
+    checkingSession: '正在检查登录状态…',
+    handedOff: '正在打开 One Browser…',
+    handedOffHint: '授权已完成，回到 One Browser 即可继续，这个页面可以关闭。',
     autoOpenWebLogin: (seconds) => `${seconds} 秒后自动打开网页版登录`,
     authExpired: '登录信息已过期，请重新登录',
     openLoginError: '无法打开网页登录',
@@ -80,6 +93,13 @@ const LOGIN_PAGE_COPY: Record<'zh-CN' | 'en-US', LoginPageCopy> = {
     webAuthLogin: 'Authorize sign-in',
     webDescription: 'Sign in to manage browser environments and your team.',
     openingAuthLogin: 'Opening...',
+    waitingBrowserLogin: 'Finish signing in in your browser…',
+    waitingBrowserHint: 'You will come back here once you are signed in.',
+    reopenBrowserLogin: 'Nothing opened? Open again',
+    checkingSession: 'Checking sign-in…',
+    handedOff: 'Opening One Browser…',
+    handedOffHint:
+      'Sign-in is authorized. Continue in One Browser; you can close this page.',
     autoOpenWebLogin: (seconds) => `Opening web sign-in in ${seconds}s`,
     authExpired: 'Your session has expired. Sign in again.',
     openLoginError: 'Unable to open the sign-in page',
@@ -129,6 +149,10 @@ export function LoginPage({ authManaged = false }: LoginPageProps) {
   const queryClient = useQueryClient();
   const copy = useLoginPageCopy();
   const [opening, setOpening] = React.useState(false);
+  // Desktop: the browser is open and the app waits for the sign-in deep link.
+  const [awaitingBrowser, setAwaitingBrowser] = React.useState(false);
+  // Web: a desktop sign-in was authorized and the app link has been opened.
+  const [handedOff, setHandedOff] = React.useState(false);
   const [authNotice, setAuthNotice] = React.useState<string | null>(null);
   const [sessionChecked, setSessionChecked] = React.useState(authManaged);
   const [autoLoginAllowed, setAutoLoginAllowed] = React.useState(
@@ -196,6 +220,7 @@ export function LoginPage({ authManaged = false }: LoginPageProps) {
           handoff.state,
           handoff.from,
         );
+        setHandedOff(true);
         window.location.assign(authorization.callback_url);
       })
       .catch((error: unknown) => {
@@ -247,8 +272,24 @@ export function LoginPage({ authManaged = false }: LoginPageProps) {
       });
   }, [autoRedirecting, copy.openLoginError, selectAccount]);
 
+  // Waiting in the app gives up after a while so the button comes back.
+  React.useEffect(() => {
+    if (!awaitingBrowser) return;
+    const timer = window.setTimeout(
+      () => setAwaitingBrowser(false),
+      BROWSER_LOGIN_WAIT_MS,
+    );
+    return () => window.clearTimeout(timer);
+  }, [awaitingBrowser]);
+
+  if (handedOff) {
+    return (
+      <LoginStatusScreen title={copy.handedOff} hint={copy.handedOffHint} />
+    );
+  }
+
   if (!sessionChecked) {
-    return null;
+    return <LoginStatusScreen title={copy.checkingSession} />;
   }
 
   async function openWebLogin() {
@@ -267,6 +308,7 @@ export function LoginPage({ authManaged = false }: LoginPageProps) {
         await desktopInvoke('open_external_url', {
           request: { url: loginUrl },
         });
+        setAwaitingBrowser(true);
       } else {
         window.location.assign(loginUrl);
       }
@@ -379,24 +421,71 @@ export function LoginPage({ authManaged = false }: LoginPageProps) {
 
         <Button
           className="mt-5 h-9 w-full gap-1.5 rounded-lg px-3 text-sm"
-          disabled={opening || !canOpenLogin}
-          aria-busy={opening}
+          disabled={opening || awaitingBrowser || !canOpenLogin}
+          aria-busy={opening || awaitingBrowser}
           onClick={() => void openWebLogin()}
           size="lg"
           title={!canOpenLogin ? loginConfigMessage : undefined}
         >
-          {!opening && (
+          {!opening && !awaitingBrowser && (
             <HugeiconsIcon
               icon={Globe02Icon}
               strokeWidth={2}
               data-icon="inline-start"
             />
           )}
-          <SweepShine active={opening}>
-            {opening ? copy.openingAuthLogin : copy.openAuthLogin}
+          <SweepShine active={opening || awaitingBrowser}>
+            {awaitingBrowser
+              ? copy.waitingBrowserLogin
+              : opening
+                ? copy.openingAuthLogin
+                : copy.openAuthLogin}
           </SweepShine>
         </Button>
+        {awaitingBrowser ? (
+          <div className="mt-2 flex flex-col items-center gap-1 text-xs">
+            <p className="text-muted-foreground" role="status">
+              {copy.waitingBrowserHint}
+            </p>
+            <button
+              type="button"
+              className="text-muted-foreground hover:text-foreground underline-offset-4 hover:underline"
+              onClick={() => void openWebLogin()}
+            >
+              {copy.reopenBrowserLogin}
+            </button>
+          </div>
+        ) : null}
         {import.meta.env.DEV ? <DevLoginButton /> : null}
+      </section>
+    </main>
+  );
+}
+
+/** Logo and a shining status line: checking the session, or handing off. */
+function LoginStatusScreen({ title, hint }: { title: string; hint?: string }) {
+  return (
+    <main className="bg-background text-foreground grid h-dvh place-items-center overflow-y-auto px-4 py-6">
+      <section
+        className="flex w-full max-w-sm flex-col items-center text-center"
+        aria-busy="true"
+        aria-live="polite"
+      >
+        <Image
+          src={APP_LOGO_SRC}
+          alt="One Browser"
+          width={48}
+          height={48}
+          priority
+          className="size-12 object-contain"
+          draggable={false}
+        />
+        <SweepShine asChild>
+          <h1 className="mt-4 text-sm font-semibold">{title}</h1>
+        </SweepShine>
+        {hint ? (
+          <p className="text-muted-foreground mt-2 text-xs/5">{hint}</p>
+        ) : null}
       </section>
     </main>
   );
