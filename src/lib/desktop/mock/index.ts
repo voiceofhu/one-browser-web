@@ -175,6 +175,13 @@ export function invokeMockCommand<T>(
       return mockResult<T>(mockRefreshIp(request));
     case 'get_profile_proxy_status':
       return mockResult<T>(mockProfileProxyStatus(request));
+    case 'list_one_node_socks':
+      return mockResult<T>({
+        installed: false,
+        available: false,
+        reason: 'One Node PC 需要 One Browser 桌面客户端',
+        ports: [],
+      });
     case 'delete_profile_cache':
       return mockResult<T>({
         profileIds: toStringList(request?.profileIds),

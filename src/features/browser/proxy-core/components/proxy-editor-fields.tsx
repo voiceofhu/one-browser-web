@@ -31,7 +31,10 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import type { ProxyCheckResult } from '@/features/browser/contracts';
+import type {
+  OneNodeSocksPort,
+  ProxyCheckResult,
+} from '@/features/browser/contracts';
 import {
   AlertCircleIcon,
   CheckmarkCircle02Icon,
@@ -57,6 +60,7 @@ import {
   proxyTypes,
   smartParseFormats,
 } from '../proxy-form-utils';
+import { OneNodeSocksPicker } from './one-node-socks-picker';
 
 export function ProxyEditorFields({
   applySmartParse,
@@ -70,6 +74,7 @@ export function ProxyEditorFields({
   onCheck,
   onFormChange,
   onHostChange,
+  onPickOneNode,
   parseMessage,
   passwordVisible,
   setPasswordVisible,
@@ -85,6 +90,7 @@ export function ProxyEditorFields({
   onCheck?: unknown;
   onFormChange?: () => void;
   onHostChange: () => void;
+  onPickOneNode: (port: OneNodeSocksPort) => void;
   parseMessage: string | null;
   passwordVisible: boolean;
   setPasswordVisible: Dispatch<SetStateAction<boolean>>;
@@ -98,6 +104,8 @@ export function ProxyEditorFields({
           <AlertDescription>{parseMessage}</AlertDescription>
         </Alert>
       ) : null}
+
+      <OneNodeSocksPicker onPick={onPickOneNode} />
 
       <div className="grid gap-3 sm:grid-cols-[8.5rem_1fr]">
         <Controller
@@ -177,7 +185,7 @@ export function ProxyEditorFields({
                 />
               )}
             />
-            <InputGroupText className="px-1 text-muted-foreground/70">
+            <InputGroupText className="text-muted-foreground/70 px-1">
               :
             </InputGroupText>
             <Controller
@@ -394,7 +402,7 @@ function InfoTooltip({
           variant="ghost"
           size="icon-xs"
           aria-label={label}
-          className="-my-1 text-muted-foreground"
+          className="text-muted-foreground -my-1"
         >
           <HugeiconsIcon icon={InformationCircleIcon} strokeWidth={2} />
         </Button>
@@ -436,8 +444,8 @@ function ProxyCheckFeedback({
     <FieldDescription
       className={
         isOk
-          ? 'flex min-w-0 items-center gap-1.5 text-success'
-          : 'flex min-w-0 items-center gap-1.5 text-destructive'
+          ? 'text-success flex min-w-0 items-center gap-1.5'
+          : 'text-destructive flex min-w-0 items-center gap-1.5'
       }
     >
       <HugeiconsIcon

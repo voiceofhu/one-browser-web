@@ -1,6 +1,7 @@
 import type {
   CheckProxyRequest,
   CreateProxyRequest,
+  OneNodeSocksPort,
   ProxyCheckResult,
   ProxyConfig,
   UpdateProxyRequest,
@@ -136,6 +137,20 @@ export function ProxyEditor({
     applyParsedProxy(parsed, { notify: true });
   }
 
+  function applyOneNodePort(port: OneNodeSocksPort) {
+    const options = { shouldDirty: true, shouldValidate: true };
+    onFormChange?.();
+    setParseNotice(null);
+    setValue('type', 'socks5', options);
+    setValue('host', port.host, options);
+    setValue('port', String(port.port), options);
+    setValue('username', '', { shouldDirty: true });
+    setValue('password', '', { shouldDirty: true });
+    if (!getValues('remark').trim()) {
+      setValue('remark', `One Node · ${port.name}`, options);
+    }
+  }
+
   function checkCurrentProxy() {
     const values = getValues();
     const parsed = parseHostPortInput(values.host);
@@ -223,6 +238,7 @@ export function ProxyEditor({
         onCheck={onCheck}
         onFormChange={onFormChange}
         onHostChange={() => setParseNotice(null)}
+        onPickOneNode={applyOneNodePort}
         parseMessage={parseMessage}
         passwordVisible={passwordVisible}
         setPasswordVisible={setPasswordVisible}

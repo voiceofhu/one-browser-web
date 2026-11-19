@@ -43,6 +43,7 @@ export type DesktopCommand =
   | 'update_profile_proxy'
   | 'refresh_profile_ip'
   | 'get_profile_proxy_status'
+  | 'list_one_node_socks'
   | 'delete_profile_cache'
   | 'list_runtime'
   | 'open_profile'

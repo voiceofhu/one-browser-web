@@ -46,6 +46,7 @@ export const smartParseFormats = [
   'socks5://1.1.144.32:27384:sock5:xxx',
   'http://192.168.0.1:8000',
   'socks5://login:password@192.168.0.1:8000',
+  'socks5h://127.0.0.1:23456',
   'https://192.168.0.1:8000:login:password',
   'http://[2a06:c006:bd1e::4653:e7bc]:8000',
 ];
@@ -115,10 +116,7 @@ export function parseHostPortInput(value: string) {
   }
 
   const schemeMatch = input.match(/^([a-z][a-z0-9+.-]*):\/\/(.+)$/i);
-  const protocol = schemeMatch?.[1]?.toLowerCase();
-  const parsedType = proxyTypes.some((item) => item.value === protocol)
-    ? (protocol as EditableProxyType)
-    : undefined;
+  const parsedType = proxyTypeFromScheme(schemeMatch?.[1]);
 
   if (schemeMatch?.[2]) {
     input = schemeMatch[2];
@@ -160,6 +158,15 @@ export function parseHostPortInput(value: string) {
     password: authPassword || safeDecode(parts[3] ?? ''),
     refreshUrl: refreshMatch?.[2] ?? parts.slice(4).join(':'),
   };
+}
+
+/** `socks5h` (SOCKS5 with remote DNS) maps to SOCKS5; the bridge resolves remotely anyway. */
+export function proxyTypeFromScheme(
+  scheme: string | undefined,
+): EditableProxyType | undefined {
+  const protocol = scheme?.toLowerCase();
+  if (protocol === 'socks5h') return 'socks5';
+  return proxyTypes.find((item) => item.value === protocol)?.value;
 }
 
 function safeDecode(value: string) {

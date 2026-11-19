@@ -1,19 +1,10 @@
 import type { PageRequest } from './common';
 
 export type ProxyType =
-  | 'no_proxy'
-  | 'http'
-  | 'https'
-  | 'socks5'
-  | 'fixed_servers'
-  | 'pac_script';
+  'no_proxy' | 'http' | 'https' | 'socks5' | 'fixed_servers' | 'pac_script';
 
 export type ProxyCheckStatus =
-  | 'unchecked'
-  | 'checking'
-  | 'ok'
-  | 'blocked'
-  | 'error';
+  'unchecked' | 'checking' | 'ok' | 'blocked' | 'error';
 
 export interface InlineProxyConfig {
   type: ProxyType;
@@ -124,4 +115,22 @@ export interface DeleteProxiesRequest {
 export interface DeleteProxiesResult {
   deleted: string[];
   affectedProfiles: string[];
+}
+
+/** A loopback SOCKS5 port published by One Node PC (desktop only). */
+export interface OneNodeSocksPort {
+  nodeId: string;
+  name: string;
+  host: string;
+  port: number;
+  link: string;
+  reachable: boolean;
+}
+
+export interface OneNodeSocksList {
+  /** `local-socks.json` exists; when false the UI renders nothing. */
+  installed: boolean;
+  available: boolean;
+  reason?: string;
+  ports: OneNodeSocksPort[];
 }

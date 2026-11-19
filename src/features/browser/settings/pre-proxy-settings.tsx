@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import type {
+  OneNodeSocksPort,
   PreProxyMode,
   PreProxyPatch,
   PreProxySettings as PreProxySettingsValue,
@@ -19,7 +20,14 @@ import type {
   PreProxyType,
 } from '@/features/browser/contracts';
 import { CountryFlag } from '@/features/browser/components/country-flag';
-import { useState } from 'react';
+import {
+  ONE_NODE_UNAVAILABLE_TEXT,
+  OneNodeSocksSelect,
+  numberValue,
+  parseHostPortInput,
+  useOneNodeSocks,
+} from '@/features/browser/proxy-core';
+import { type ClipboardEvent, useState } from 'react';
 import { toast } from 'sonner';
 
 import {
@@ -67,6 +75,9 @@ export function PreProxySettings({
   const [port, setPort] = useState(preProxy.port ? String(preProxy.port) : '');
   const [username, setUsername] = useState(preProxy.username ?? '');
   const [password, setPassword] = useState('');
+  // Set when a pasted link or a One Node port replaces the address without a
+  // password, so saving also drops the password kept in the keychain.
+  const [dropSavedPassword, setDropSavedPassword] = useState(false);
   const [testResult, setTestResult] = useState<PreProxyTestResult | null>(null);
   const systemProxyQuery = useSystemProxyQuery(mode === 'system');
 
@@ -91,6 +102,7 @@ export function PreProxySettings({
       {
         onSuccess: () => {
           setPassword('');
+          setDropSavedPassword(false);
           toast.success(message);
         },
       },
@@ -115,12 +127,55 @@ export function PreProxySettings({
     }
     if (password) {
       patch.password = password;
+    } else if (dropSavedPassword && preProxy.hasPassword) {
+      patch.password = null;
     }
     save(patch, '前置代理已保存');
   }
 
   function clearPassword() {
     save({ ...basePatch(preProxy.mode), password: null }, '密码已清除');
+  }
+
+  function applyEndpoint(next: {
+    type?: PreProxyType;
+    host: string;
+    port: string;
+    username: string;
+    password: string;
+  }) {
+    if (next.type) setType(next.type);
+    setHost(next.host);
+    setPort(next.port);
+    setUsername(next.username);
+    setPassword(next.password);
+    setDropSavedPassword(!next.password);
+  }
+
+  function handleHostPaste(event: ClipboardEvent<HTMLInputElement>) {
+    const parsed = parseHostPortInput(event.clipboardData.getData('text'));
+    if (!parsed?.host || numberValue(parsed.port) === null) return;
+    event.preventDefault();
+    if (parsed.type === 'https') {
+      toast.info('前置代理只支持 SOCKS5 和 HTTP，请确认协议');
+    }
+    applyEndpoint({
+      type: parsed.type === 'https' ? undefined : parsed.type,
+      host: parsed.host,
+      port: parsed.port,
+      username: parsed.username,
+      password: parsed.password,
+    });
+  }
+
+  function pickOneNode(port: OneNodeSocksPort) {
+    applyEndpoint({
+      type: 'socks5',
+      host: port.host,
+      port: String(port.port),
+      username: '',
+      password: '',
+    });
   }
 
   function runTest() {
@@ -135,7 +190,8 @@ export function PreProxySettings({
       host.trim() !== (preProxy.host ?? '') ||
       port.trim() !== (preProxy.port ? String(preProxy.port) : '') ||
       username.trim() !== (preProxy.username ?? '') ||
-      password.length > 0);
+      password.length > 0 ||
+      (dropSavedPassword && preProxy.hasPassword));
   const systemProxy = systemProxyQuery.data;
 
   return (
@@ -215,6 +271,7 @@ export function PreProxySettings({
 
       {mode === 'manual' ? (
         <SettingsGroup title="代理服务器">
+          <OneNodeSocksRow onPick={pickOneNode} />
           <SettingsRow
             label="协议"
             htmlFor="pre-proxy-type"
@@ -242,7 +299,7 @@ export function PreProxySettings({
           <SettingsRow
             label="地址"
             htmlFor="pre-proxy-host"
-            description="例如 127.0.0.1 端口 7890"
+            description="例如 127.0.0.1 端口 7890，也可粘贴 socks5:// 链接"
           >
             <div className="flex w-full shrink-0 gap-1.5 @md/field-group:w-56">
               <Input
@@ -252,6 +309,7 @@ export function PreProxySettings({
                 autoComplete="off"
                 spellCheck={false}
                 onChange={(event) => setHost(event.target.value)}
+                onPaste={handleHostPaste}
                 className="h-7 min-w-0 flex-1 font-mono text-[12px] font-normal md:text-[12px]"
               />
               <Input
@@ -341,6 +399,40 @@ export function PreProxySettings({
         </Button>
       </div>
     </FieldGroup>
+  );
+}
+
+/** Desktop only; renders nothing in the web build or without One Node PC. */
+function OneNodeSocksRow({
+  onPick,
+}: {
+  onPick: (port: OneNodeSocksPort) => void;
+}) {
+  const { available, ports, refresh, visible } = useOneNodeSocks();
+  if (!visible) return null;
+  return (
+    <>
+      <SettingsRow
+        label="One Node PC"
+        htmlFor={available ? 'pre-proxy-one-node' : undefined}
+        description={
+          available
+            ? '选择本地 SOCKS5 端口，自动填入下方地址'
+            : ONE_NODE_UNAVAILABLE_TEXT
+        }
+      >
+        {available ? (
+          <OneNodeSocksSelect
+            id="pre-proxy-one-node"
+            className="h-7 text-[12px] font-normal @md/field-group:w-56"
+            ports={ports}
+            onOpen={refresh}
+            onPick={onPick}
+          />
+        ) : null}
+      </SettingsRow>
+      <SettingsDivider />
+    </>
   );
 }
 
