@@ -1,4 +1,4 @@
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 
 const environmentWarningMessages: Record<string, string> = {
   network_location_unavailable: '未取得有效出口 IP，无法确认网络环境',

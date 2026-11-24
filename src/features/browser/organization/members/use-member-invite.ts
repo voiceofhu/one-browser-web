@@ -1,6 +1,6 @@
 import { hasButtonPermission } from '@/features/auth/permissions';
 import * as React from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 
 import {
   useCreateRemoteTeamInviteMutation,

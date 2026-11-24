@@ -25,7 +25,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
 import * as React from 'react';
 import { useForm, useWatch } from 'react-hook-form';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 
 import { AdvancedSettings } from '../../profile-editor/advanced-settings';
 import {

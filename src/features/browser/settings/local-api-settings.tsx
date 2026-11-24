@@ -19,7 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import type { AppSettings } from '@/features/browser/contracts';
 import { useState } from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 
 import { useUpdateSettingsMutation } from './queries';
 import { SettingsDivider, SettingsGroup, SettingsRow } from './settings-group';

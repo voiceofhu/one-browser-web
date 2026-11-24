@@ -28,7 +28,7 @@ import {
   useOneNodeSocks,
 } from '@/features/browser/proxy-core';
 import { type ClipboardEvent, useState } from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 
 import {
   useSystemProxyQuery,

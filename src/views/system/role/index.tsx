@@ -1,7 +1,7 @@
 import { DialogActionButton } from '@/components/ui/dialog-action-button';
 import * as React from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { SystemResourceTable } from '@/components/system-resource-table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';

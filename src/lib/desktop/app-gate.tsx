@@ -11,7 +11,7 @@ import { DialogActionButton } from '@/components/ui/dialog-action-button';
 import { authorizeDesktopHandoff } from '@/features/auth/api';
 import { isTauriRuntime } from '@/lib/desktop/client';
 import * as React from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 
 type DesktopAppRequest = {
   description?: string;

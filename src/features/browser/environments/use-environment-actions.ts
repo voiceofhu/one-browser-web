@@ -2,7 +2,7 @@ import { toBrowserErrorMessage } from '@/features/browser/errors';
 import { isTauriRuntime } from '@/lib/desktop';
 import { useDesktopAppGate } from '@/lib/desktop/app-gate';
 import * as React from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 
 import {
   toastBrowserOpenError,

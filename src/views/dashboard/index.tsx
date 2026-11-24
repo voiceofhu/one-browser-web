@@ -1,5 +1,6 @@
 import { RefreshButton } from '@/components/refresh-button';
 import { LoadingState } from '@/components/loading-state';
+import { AnimatedCounter } from '@/components/ui/animated-counter';
 import { useAuth } from '@/features/auth/auth-gate';
 import { hasPermission } from '@/features/auth/permissions';
 import type { AuthRoute } from '@/features/auth/types';
@@ -182,9 +183,10 @@ function MetricCell({
         <HugeiconsIcon icon={Icon} strokeWidth={2} className="size-3.5" />
         {metric.title}
       </span>
-      <span className="text-[1.375rem] leading-7 font-semibold tracking-tight tabular-nums">
-        {metric.value}
-      </span>
+      <AnimatedCounter
+        value={metric.value}
+        className="text-[1.375rem] leading-7 font-semibold tracking-tight"
+      />
       {breakdown && total > 0 ? (
         <span className="flex flex-col gap-1">
           <span className="bg-muted flex h-1 overflow-hidden rounded-full">

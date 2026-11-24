@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import { Cancel01Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { useCallback, useMemo, useState } from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 
 import { BrowserDataTable } from '../../components/data-table';
 import { ProfileEditor } from '../../profile-editor';

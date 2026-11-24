@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Refresh01Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import * as React from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 
 const MINIMUM_SPIN_MS = 1100;
 

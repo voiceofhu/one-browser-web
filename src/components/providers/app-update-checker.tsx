@@ -9,7 +9,7 @@ import {
 } from '@/lib/desktop/app-updater';
 import { onDesktopForeground } from '@/lib/desktop/foreground';
 import * as React from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 
 import {
   DESKTOP_APP_DOWNLOAD_URL,

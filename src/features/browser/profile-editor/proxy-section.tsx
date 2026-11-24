@@ -29,7 +29,7 @@ import { cn } from '@/lib/utils';
 import { Add01Icon, Route02Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 
 import { CountryFlag, resolveCountryCode } from '../components/country-flag';
 import {
@@ -253,7 +253,7 @@ export function ProxySection({
           result={localNetworkResult}
         />
       ) : (
-        <div className="rounded-md border border-dashed border-border/80 bg-muted/10 p-1.5">
+        <div className="border-border/80 bg-muted/10 rounded-md border border-dashed p-1.5">
           <div className="grid gap-1.5 sm:grid-cols-[minmax(0,1fr)_auto]">
             <Field data-invalid={invalid}>
               <FieldLabel className="sr-only" htmlFor="profile-editor-proxy">
@@ -271,7 +271,7 @@ export function ProxySection({
                   {selectedProxy ? (
                     <SelectedProxyValue proxy={selectedProxy} />
                   ) : (
-                    <span className="truncate text-muted-foreground">
+                    <span className="text-muted-foreground truncate">
                       选择已保存代理
                     </span>
                   )}
@@ -279,14 +279,14 @@ export function ProxySection({
                 <SelectContent
                   align="start"
                   position="popper"
-                  className="max-h-72 w-[var(--radix-select-trigger-width)] rounded-md border-border/70 bg-popover/95 p-0 shadow-xl backdrop-blur"
+                  className="border-border/70 bg-popover/95 max-h-72 w-[var(--radix-select-trigger-width)] rounded-md p-0 shadow-xl backdrop-blur"
                 >
                   <SelectGroup className="p-1">
                     {availableProxies.map((proxy) => (
                       <SelectItem
                         key={proxy.proxyId}
                         value={proxy.proxyId}
-                        className="min-h-12 px-2.5 py-1.5 text-xs focus:bg-accent/70 data-[state=checked]:bg-accent/50"
+                        className="focus:bg-accent/70 data-[state=checked]:bg-accent/50 min-h-12 px-2.5 py-1.5 text-xs"
                         textValue={proxyAddress(proxy)}
                       >
                         <ProxyOption
@@ -388,7 +388,7 @@ function ProxyLocationLine({ proxy }: { proxy: ProxyListItem | null }) {
   }
 
   return (
-    <div className="flex min-h-6 min-w-0 items-center gap-1.5 px-1 text-xs text-muted-foreground">
+    <div className="text-muted-foreground flex min-h-6 min-w-0 items-center gap-1.5 px-1 text-xs">
       <ProxyMarker proxy={proxy} />
       <span className="truncate">{proxyLocation(proxy)}</span>
     </div>
@@ -403,22 +403,22 @@ function LocalNetworkStatus({
   result?: ProxyCheckResult;
 }) {
   return (
-    <div className="flex min-h-11 items-center gap-2 rounded-md border border-dashed border-border/80 bg-muted/10 px-3 py-2 text-xs sm:text-sm">
-      <span className="font-medium text-foreground">本机网络:</span>
+    <div className="border-border/80 bg-muted/10 flex min-h-11 items-center gap-2 rounded-md border border-dashed px-3 py-2 text-xs sm:text-sm">
+      <span className="text-foreground font-medium">本机网络:</span>
       {isChecking ? (
-        <span className="flex items-center gap-1.5 text-muted-foreground">
+        <span className="text-muted-foreground flex items-center gap-1.5">
           <Spinner className="size-3.5" />
           检测中
         </span>
       ) : result?.status === 'ok' ? (
-        <span className="flex min-w-0 items-center gap-1.5 text-muted-foreground">
+        <span className="text-muted-foreground flex min-w-0 items-center gap-1.5">
           {resolveCountryCode(result.countryCode, result.country) ? (
             <CountryFlag code={result.countryCode} country={result.country} />
           ) : null}
           <span className="truncate">{formatProxyCheckLocation(result)}</span>
         </span>
       ) : (
-        <span className="truncate text-muted-foreground">
+        <span className="text-muted-foreground truncate">
           {result?.message || '等待检测'}
         </span>
       )}
@@ -437,8 +437,8 @@ function ProxyOption({
 }) {
   return (
     <div className="flex min-w-0 flex-col gap-1 py-0.5 pr-5">
-      <div className="truncate font-medium text-foreground">{title}</div>
-      <div className="flex min-w-0 items-center gap-1.5 text-[11px] text-muted-foreground">
+      <div className="text-foreground truncate font-medium">{title}</div>
+      <div className="text-muted-foreground flex min-w-0 items-center gap-1.5 text-[11px]">
         {proxy ? <ProxyMarker proxy={proxy} /> : null}
         <span className="truncate">{description}</span>
       </div>
@@ -472,7 +472,7 @@ function ProxyMarker({
     <HugeiconsIcon
       icon={Route02Icon}
       strokeWidth={2}
-      className={cn('size-3.5 shrink-0 text-muted-foreground', className)}
+      className={cn('text-muted-foreground size-3.5 shrink-0', className)}
     />
   );
 }

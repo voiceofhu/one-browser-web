@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/native-select';
 import { Textarea } from '@/components/ui/textarea';
 import * as React from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 
 import { generatedKey } from '../team-scope';
 import type { RemoteTeamPayload, RemoteTeamResource } from '../types';

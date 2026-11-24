@@ -2,7 +2,7 @@ import {
   AppearancePreferencesProvider,
   ThemeColorProvider,
 } from '@/components/theme';
-import { Toaster } from '@/components/ui/sonner';
+import { Toaster } from '@/components/ui/toast';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { I18nProvider } from '@/i18n/provider';
 
@@ -21,7 +21,7 @@ export function Providers({ children }: React.PropsWithChildren) {
               <TooltipProvider>{children}</TooltipProvider>
               <BuildInfo />
               <AppUpdateChecker />
-              <Toaster richColors />
+              <Toaster labels={{ dismiss: '关闭' }} />
             </AppearancePreferencesProvider>
           </ThemeColorProvider>
         </ThemeProvider>

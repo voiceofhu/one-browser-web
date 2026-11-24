@@ -9,7 +9,7 @@ import {
 } from '@/lib/desktop/app-updater';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 
 import { SettingsGroup, SettingsRow } from './settings-group';
 

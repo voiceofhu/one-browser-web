@@ -20,7 +20,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import * as React from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 
 import type {
   RemotePermissionPayload,
@@ -358,13 +358,13 @@ export function PermissionDialog({
               {permissionType === 'F' ? null : (
                 <Field
                   orientation="horizontal"
-                  className="rounded-lg border border-border/70 bg-muted/20 px-3 py-2"
+                  className="border-border/70 bg-muted/20 rounded-lg border px-3 py-2"
                 >
                   <div className="min-w-0 flex-1">
                     <FieldLabel htmlFor="permission-visible">
                       在导航中显示
                     </FieldLabel>
-                    <p className="mt-0.5 text-[0.6875rem] text-muted-foreground">
+                    <p className="text-muted-foreground mt-0.5 text-[0.6875rem]">
                       关闭后仍保留路由权限，但不展示菜单入口。
                     </p>
                   </div>

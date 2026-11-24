@@ -4,7 +4,7 @@ import { toBrowserErrorMessage } from '@/features/browser/errors';
 import { GithubIcon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { useMutation } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 
 import { syncBrowserAssetsFromGithub } from '../api/client';
 import type { BrowserAssetGithubSyncResult } from '../types';

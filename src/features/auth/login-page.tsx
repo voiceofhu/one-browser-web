@@ -25,7 +25,7 @@ import { HugeiconsIcon } from '@hugeicons/react';
 import { Languages } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import * as React from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 
 import { AppImage as Image } from '@/components/app-image';
 import { useRouter, useSearchParams } from '@/router/compat';

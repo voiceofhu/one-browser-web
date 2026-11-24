@@ -34,7 +34,7 @@ import {
 import { HugeiconsIcon } from '@hugeicons/react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as React from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 
 import { usePathname, useRouter, useSearchParams } from '@/router/compat';
 import {
@@ -138,7 +138,7 @@ export function TeamInvitePage() {
       void queryClient.invalidateQueries({
         queryKey: ['auth', 'team-invite', token],
       });
-      toast.message('已拒绝邀请', {
+      toast('已拒绝邀请', {
         description: `你已拒绝加入“${invite.team_name}”。`,
       });
       router.replace(redirectTo);
@@ -184,11 +184,11 @@ export function TeamInvitePage() {
   }
 
   return (
-    <main className="relative isolate grid min-h-dvh place-items-center overflow-hidden rounded-[var(--app-radius)] bg-background px-4 py-8 text-foreground">
+    <main className="bg-background text-foreground relative isolate grid min-h-dvh place-items-center overflow-hidden rounded-[var(--app-radius)] px-4 py-8">
       <InteractiveGridBackground />
       <ThemeToggleButton className="absolute top-3 right-3 z-20" />
 
-      <Card className="relative z-10 w-full max-w-96 bg-card/95">
+      <Card className="bg-card/95 relative z-10 w-full max-w-96">
         <CardHeader className="items-center gap-3 px-6 pt-6 text-center">
           <Avatar className="size-12 rounded-none drop-shadow-[0_10px_16px_rgba(15,23,42,0.16)] after:rounded-none after:border-0 dark:drop-shadow-[0_12px_18px_rgba(0,0,0,0.36)]">
             <AvatarImage
@@ -333,7 +333,7 @@ function InviteSummary({ invite }: { invite: TeamInvite }) {
           className="text-muted-foreground"
         />
         <span className="truncate text-sm font-medium">{invite.team_name}</span>
-        <span className="truncate text-xs text-muted-foreground">
+        <span className="text-muted-foreground truncate text-xs">
           {invite.team_key}
         </span>
       </div>

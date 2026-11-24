@@ -39,7 +39,7 @@ import {
   PlayIcon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 
 import { CountryFlag, resolveCountryCode } from '../../components/country-flag';
 import { normalizeProfileGroup } from '../group-utils';
@@ -58,7 +58,7 @@ export function CreatedAtCell({ profile }: { profile: ProfileListItem }) {
       </span>
       {group ? (
         <span
-          className="max-w-28 truncate text-xs text-muted-foreground"
+          className="text-muted-foreground max-w-28 truncate text-xs"
           title={group}
         >
           {group}
@@ -80,7 +80,7 @@ export function EnvironmentCell({
       <div className="flex min-w-0 items-center gap-2">
         <button
           type="button"
-          className="min-w-0 truncate text-left font-medium underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+          className="focus-visible:ring-ring/30 min-w-0 truncate text-left font-medium underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:ring-2 focus-visible:outline-none"
           title={profile.name}
           aria-label={`编辑环境 ${profile.name}`}
           onClick={() => onEdit(profile.profileId)}
@@ -122,7 +122,7 @@ export function EnvironmentCell({
         ) : null}
       </div>
       <span
-        className="truncate text-muted-foreground"
+        className="text-muted-foreground truncate"
         title={formatDateTimeTitle(profile.lastOpenAt)}
       >
         上次启动：
@@ -159,13 +159,13 @@ export function ProxyCell({
     <div className="flex min-w-44 flex-col gap-1">
       <button
         type="button"
-        className="w-full min-w-0 truncate text-left font-medium underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+        className="focus-visible:ring-ring/30 w-full min-w-0 truncate text-left font-medium underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:ring-2 focus-visible:outline-none"
         title={profile.proxyUrl}
         onClick={() => onSwitchProxy(profile)}
       >
         {profile.proxyUrl || proxyLabel(profile.proxySummary)}
       </button>
-      <div className="flex min-w-0 items-center gap-2 text-muted-foreground">
+      <div className="text-muted-foreground flex min-w-0 items-center gap-2">
         <CountryFlag code={code} country={profile.proxyCountry} />
         <span className="truncate" title={locationTitle || location}>
           {location}
@@ -201,7 +201,7 @@ export function RowActions({
       aria-disabled={Boolean(deleteDisabledReason)}
       className={
         deleteDisabledReason
-          ? 'cursor-not-allowed opacity-50 focus:bg-transparent focus:text-destructive'
+          ? 'focus:text-destructive cursor-not-allowed opacity-50 focus:bg-transparent'
           : undefined
       }
       onSelect={(event) => {
@@ -355,10 +355,10 @@ export function ProfileBulkActions({
 
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-8 flex justify-center px-4 md:left-(--sidebar-width)">
-      <div className="pointer-events-auto flex max-w-[calc(100vw-2rem)] items-center gap-2 rounded-lg border bg-popover p-2 text-popover-foreground shadow-lg">
+      <div className="bg-popover text-popover-foreground pointer-events-auto flex max-w-[calc(100vw-2rem)] items-center gap-2 rounded-lg border p-2 shadow-lg">
         <Badge
           variant="outline"
-          className="h-6 rounded-md bg-muted/40 px-2.5 text-xs"
+          className="bg-muted/40 h-6 rounded-md px-2.5 text-xs"
         >
           <span className="font-semibold tabular-nums">{selectedCount}</span>
           <span className="text-muted-foreground">已选</span>

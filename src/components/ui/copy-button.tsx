@@ -4,7 +4,7 @@ import { copyTextToClipboard } from '@/lib/clipboard';
 import { CheckIcon, Copy01Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import * as React from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 
 type CopyStage = 'idle' | 'copying' | 'copied';
 

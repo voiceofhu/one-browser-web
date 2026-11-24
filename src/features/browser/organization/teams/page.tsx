@@ -36,7 +36,7 @@ import { AddTeamIcon, Alert01Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import type { ColumnDef, VisibilityState } from '@tanstack/react-table';
 import * as React from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 
 import { TeamDialog } from './components/team-dialog';
 import {
@@ -263,7 +263,7 @@ export function RemoteTeamsPage() {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col bg-card">
+    <div className="bg-card flex min-h-0 flex-1 flex-col">
       <BrowserTableToolbar
         filters={
           <BrowserTableFilterTabs

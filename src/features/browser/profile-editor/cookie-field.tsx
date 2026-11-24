@@ -14,7 +14,7 @@ import { CloudUploadIcon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { useRef } from 'react';
 import type { FieldError as HookFormFieldError } from 'react-hook-form';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 
 import { EditorFieldRow } from './editor-controls';
 

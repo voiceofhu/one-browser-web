@@ -37,7 +37,7 @@ import {
 import { HugeiconsIcon } from '@hugeicons/react';
 import { useMutation } from '@tanstack/react-query';
 import * as React from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 
 const INVITE_EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const SUPPORTED_INVITE_EMAIL_DOMAIN = '@gmail.com';
@@ -86,7 +86,7 @@ export function InviteShareTabs({
 }) {
   const [mode, setMode] = React.useState<InviteShareMode>('link');
   return (
-    <div className="rounded-lg border bg-card p-3 sm:p-4">
+    <div className="bg-card rounded-lg border p-3 sm:p-4">
       <AnimatedSegmentedTabs
         label="邀请方式"
         value={mode}
@@ -99,7 +99,7 @@ export function InviteShareTabs({
             <div className="flex min-w-0 flex-col gap-2.5">
               <div className="flex min-w-0 flex-col gap-1">
                 <div className="text-sm font-medium">邀请链接</div>
-                <div className="text-xs text-muted-foreground">
+                <div className="text-muted-foreground text-xs">
                   复制完整链接发送给好友，或让对方扫码打开。
                 </div>
               </div>
@@ -128,13 +128,13 @@ function InviteStats({
   invitedCount: number;
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+    <div className="text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
       <span>
         已邀请{' '}
-        <span className="font-medium text-foreground">{invitedCount}</span>
+        <span className="text-foreground font-medium">{invitedCount}</span>
       </span>
       <span>
-        正常 <span className="font-medium text-foreground">{activeCount}</span>
+        正常 <span className="text-foreground font-medium">{activeCount}</span>
       </span>
     </div>
   );
@@ -206,7 +206,7 @@ function UserInviteEmailForm({ disabled }: { disabled: boolean }) {
         <FieldLabel htmlFor="referral-email" className="sr-only">
           好友邮箱
         </FieldLabel>
-        <InputGroup className="h-9 bg-background">
+        <InputGroup className="bg-background h-9">
           <InputGroupAddon align="inline-start">
             <InputGroupText>
               <HugeiconsIcon icon={Mail01Icon} strokeWidth={2} />
@@ -271,7 +271,7 @@ function CopyInviteLink({ value }: { value: string }) {
       <FieldLabel htmlFor="referral-url" className="sr-only">
         邀请链接
       </FieldLabel>
-      <InputGroup className="h-8 bg-background">
+      <InputGroup className="bg-background h-8">
         <InputGroupInput
           id="referral-url"
           value={value || '-'}
@@ -299,7 +299,7 @@ function CopyInviteLink({ value }: { value: string }) {
 function InviteQrPanel({ inviteUrl }: { inviteUrl: string }) {
   return (
     <div className="flex shrink-0 items-center gap-3 md:w-32 md:flex-col md:justify-center">
-      <div className="rounded-md bg-white p-1.5 shadow-sm ring-1 ring-border">
+      <div className="ring-border rounded-md bg-white p-1.5 shadow-sm ring-1">
         {inviteUrl ? (
           <QrCode value={inviteUrl} size={88} />
         ) : (
@@ -348,11 +348,11 @@ function InviteQrDialog({ inviteUrl }: { inviteUrl: string }) {
           <DialogDescription>扫码打开完整邀请链接。</DialogDescription>
         </DialogHeader>
         <div className="flex min-w-0 flex-col items-center gap-3">
-          <div className="flex size-56 max-w-full items-center justify-center rounded-lg bg-white p-3 shadow-sm ring-1 ring-border">
+          <div className="ring-border flex size-56 max-w-full items-center justify-center rounded-lg bg-white p-3 shadow-sm ring-1">
             <QrCode value={inviteUrl} size={192} className="max-w-full" />
           </div>
           <div
-            className="w-full min-w-0 truncate rounded-md bg-muted/50 px-2 py-1.5 text-center font-mono text-[0.6875rem] text-muted-foreground"
+            className="bg-muted/50 text-muted-foreground w-full min-w-0 truncate rounded-md px-2 py-1.5 text-center font-mono text-[0.6875rem]"
             title={inviteUrl}
           >
             {inviteUrl}

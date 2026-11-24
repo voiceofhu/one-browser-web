@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils';
 import { Copy01Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { useState } from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 
 import { CountryFlag } from '../../components/country-flag';
 import { ProxyStatusBadge } from '../../components/status-badge';
@@ -82,7 +82,7 @@ export function ProxyAddressCell({
         {canEdit ? (
           <button
             type="button"
-            className="min-w-0 truncate text-left font-medium underline-offset-4 group-hover/row:underline hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
+            className="focus-visible:ring-ring/30 min-w-0 truncate text-left font-medium underline-offset-4 group-hover/row:underline hover:underline focus-visible:rounded-sm focus-visible:ring-2 focus-visible:outline-none"
             title="编辑代理"
             onClick={() => onEdit(proxy.proxyId)}
           >
@@ -114,7 +114,7 @@ export function ProxyAddressCell({
           )}
         </Button>
       </div>
-      <div className="flex min-w-0 items-center gap-2 text-muted-foreground">
+      <div className="text-muted-foreground flex min-w-0 items-center gap-2">
         <CountryFlag code={location.code} />
         <span className="truncate" title={location.title}>
           {location.detail}
@@ -123,7 +123,7 @@ export function ProxyAddressCell({
           <>
             <span
               aria-hidden="true"
-              className="shrink-0 text-muted-foreground/70"
+              className="text-muted-foreground/70 shrink-0"
             >
               ·
             </span>
@@ -177,7 +177,7 @@ export function NoteCell({
     return (
       <span
         className={cn(
-          'max-w-40 truncate text-muted-foreground',
+          'text-muted-foreground max-w-40 truncate',
           !proxy.remark && 'italic',
         )}
         title={proxy.remark || '无备注'}
@@ -224,7 +224,7 @@ export function NoteCell({
         <button
           type="button"
           className={cn(
-            'max-w-40 truncate text-left text-muted-foreground hover:text-foreground focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30',
+            'text-muted-foreground hover:text-foreground focus-visible:ring-ring/30 max-w-40 truncate text-left focus-visible:rounded-sm focus-visible:ring-2 focus-visible:outline-none',
             !proxy.remark && 'italic',
           )}
           title={proxy.remark || '无备注'}
@@ -276,7 +276,7 @@ export function NoteCell({
 
 export function ProxyStatusCell({ result }: { result: ProxyCheckResult }) {
   if (result.status === 'unchecked') {
-    return <span className="italic text-muted-foreground">未检测</span>;
+    return <span className="text-muted-foreground italic">未检测</span>;
   }
 
   const detail =
@@ -286,7 +286,7 @@ export function ProxyStatusCell({ result }: { result: ProxyCheckResult }) {
     <div className="flex min-w-0 flex-col gap-0.5">
       <ProxyStatusBadge status={result.status} />
       {detail ? (
-        <span className="max-w-40 truncate text-xs text-muted-foreground">
+        <span className="text-muted-foreground max-w-40 truncate text-xs">
           {detail}
         </span>
       ) : null}

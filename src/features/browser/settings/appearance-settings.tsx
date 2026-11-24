@@ -27,7 +27,7 @@ import { type Locale, locales } from '@/i18n';
 import { useI18n } from '@/i18n/provider';
 import { Refresh01Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 
 import { useTheme } from '@/components/theme/runtime';
 import { AnimatedThemeColorPicker } from './animated-theme-color-picker';

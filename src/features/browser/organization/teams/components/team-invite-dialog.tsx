@@ -37,7 +37,7 @@ import {
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import * as React from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 
 import type {
   RemoteTeamInvitePayload,
@@ -329,7 +329,7 @@ export function TeamInviteDialog({
                   <FieldLabel htmlFor="invite-email" className="text-xs">
                     邮箱地址
                   </FieldLabel>
-                  <InputGroup className="min-h-9 rounded-lg bg-background px-0.5">
+                  <InputGroup className="bg-background min-h-9 rounded-lg px-0.5">
                     <InputGroupAddon align="inline-start">
                       <InputGroupText>
                         <HugeiconsIcon icon={Mail01Icon} strokeWidth={2} />
@@ -388,7 +388,7 @@ export function TeamInviteDialog({
                   <FieldLabel htmlFor="invite-url" className="text-xs">
                     邀请链接
                   </FieldLabel>
-                  <InputGroup className="h-9 rounded-lg bg-background">
+                  <InputGroup className="bg-background h-9 rounded-lg">
                     <InputGroupInput
                       id="invite-url"
                       value={invite.url}

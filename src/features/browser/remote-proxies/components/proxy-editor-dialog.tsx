@@ -22,7 +22,7 @@ import {
   checkProxy as checkProxyApi,
 } from '@/features/browser/proxy-core';
 import * as React from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 
 import type {
   RemoteProxyPayload,

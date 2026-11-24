@@ -15,7 +15,7 @@ import {
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { useState } from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 
 import { CHROMIUM_PATH_PLACEHOLDER } from '../status/chromium-display';
 import {

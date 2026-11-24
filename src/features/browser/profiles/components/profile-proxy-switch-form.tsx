@@ -22,7 +22,7 @@ import {
   createNoProxyCheckRequest,
 } from '@/features/browser/proxy-core';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 
 import {
   useCheckProxyMutation,

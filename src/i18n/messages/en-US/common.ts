@@ -46,6 +46,7 @@ export const commonMessages = {
   重试: 'Retry',
   复制: 'Copy',
   复制失败: 'Copy failed',
+  复制错误信息: 'Copy error details',
   '正在复制...': 'Copying...',
   已复制: 'Copied',
   启用: 'Enable',

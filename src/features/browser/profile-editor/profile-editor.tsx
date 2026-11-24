@@ -31,7 +31,7 @@ import { ArrowDown01Icon, Cancel01Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 
 import {
   buildProfileGroupOptions,

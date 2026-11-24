@@ -32,7 +32,7 @@ import { HugeiconsIcon } from '@hugeicons/react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as React from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 import { z } from 'zod';
 
 import { AvatarCropDialog } from './avatar-crop-dialog';
@@ -217,7 +217,7 @@ export function AccountProfilePage() {
               onChooseAvatar={handleChooseAvatar}
             />
 
-            <FieldGroup className="rounded-lg border bg-card p-3 sm:p-4">
+            <FieldGroup className="bg-card rounded-lg border p-3 sm:p-4">
               <div className="grid gap-4 md:grid-cols-2">
                 <ReadonlyCopyField
                   label="用户名"
@@ -264,7 +264,7 @@ export function AccountProfilePage() {
                           key={option.value}
                           orientation="horizontal"
                           data-checked={field.value === option.value}
-                          className="h-8 w-fit cursor-pointer items-center rounded-md border border-input bg-input/20 px-3 text-xs transition-colors hover:bg-muted data-[checked=true]:border-primary data-[checked=true]:bg-primary/5"
+                          className="border-input bg-input/20 hover:bg-muted data-[checked=true]:border-primary data-[checked=true]:bg-primary/5 h-8 w-fit cursor-pointer items-center rounded-md border px-3 text-xs transition-colors"
                         >
                           <RadioGroupItem
                             id={`account-sex-${option.value}`}
@@ -355,9 +355,9 @@ function ReadonlyCopyField({
   return (
     <Field>
       <FieldLabel>{label}</FieldLabel>
-      <div className="flex h-7 min-w-0 items-center gap-2 rounded-md bg-input/20 px-2 text-xs/relaxed">
+      <div className="bg-input/20 flex h-7 min-w-0 items-center gap-2 rounded-md px-2 text-xs/relaxed">
         <span
-          className="min-w-0 flex-1 truncate text-muted-foreground data-[filled=true]:text-foreground"
+          className="text-muted-foreground data-[filled=true]:text-foreground min-w-0 flex-1 truncate"
           data-filled={Boolean(copyText)}
           title={displayText}
         >
@@ -395,7 +395,7 @@ function ProfileAvatarBlock({
   user: CurrentUser;
 }) {
   return (
-    <div className="flex flex-col gap-3 rounded-lg border bg-card p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4">
+    <div className="bg-card flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between sm:p-4">
       <div className="flex min-w-0 items-center gap-3">
         <Avatar className="size-14" size="lg">
           <AvatarImage src={avatar || undefined} alt={displayName} />
@@ -405,7 +405,7 @@ function ProfileAvatarBlock({
         </Avatar>
         <div className="min-w-0">
           <div className="truncate text-sm font-medium">{displayName}</div>
-          <div className="mt-0.5 truncate text-xs text-muted-foreground">
+          <div className="text-muted-foreground mt-0.5 truncate text-xs">
             {user.email || '未绑定邮箱'}
           </div>
         </div>

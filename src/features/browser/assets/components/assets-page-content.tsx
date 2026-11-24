@@ -38,7 +38,7 @@ import type {
   VisibilityState,
 } from '@tanstack/react-table';
 import * as React from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 
 import {
   deleteBrowserAsset,

@@ -11,11 +11,10 @@ import {
 import { Input } from '@/components/ui/input';
 import {
   InputGroup,
-  InputGroupAddon,
-  InputGroupButton,
   InputGroupInput,
   InputGroupText,
 } from '@/components/ui/input-group';
+import { AppPasswordInput } from '@/components/app-password-input';
 import {
   Select,
   SelectContent,
@@ -38,8 +37,6 @@ import type {
 import {
   AlertCircleIcon,
   CheckmarkCircle02Icon,
-  EyeIcon,
-  EyeOffIcon,
   InformationCircleIcon,
   Search01Icon,
 } from '@hugeicons/core-free-icons';
@@ -240,31 +237,21 @@ export function ProxyEditorFields({
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
               <FieldLabel htmlFor="proxy-password">密码</FieldLabel>
-              <InputGroup>
-                <InputGroupInput
-                  id="proxy-password"
-                  aria-invalid={fieldState.invalid}
-                  type={passwordVisible ? 'text' : 'password'}
-                  value={field.value}
-                  onChange={(event) => {
-                    onFormChange?.();
-                    field.onChange(event);
-                  }}
-                  placeholder={mode === 'edit' ? '留空表示不修改' : '可选'}
-                />
-                <InputGroupAddon align="inline-end">
-                  <InputGroupButton
-                    size="icon-xs"
-                    aria-label={passwordVisible ? '隐藏密码' : '显示密码'}
-                    onClick={() => setPasswordVisible((visible) => !visible)}
-                  >
-                    <HugeiconsIcon
-                      icon={passwordVisible ? EyeOffIcon : EyeIcon}
-                      strokeWidth={2}
-                    />
-                  </InputGroupButton>
-                </InputGroupAddon>
-              </InputGroup>
+              <AppPasswordInput
+                id="proxy-password"
+                aria-invalid={fieldState.invalid}
+                value={field.value}
+                onChange={(value) => {
+                  onFormChange?.();
+                  field.onChange(value);
+                }}
+                placeholder={mode === 'edit' ? '留空表示不修改' : '可选'}
+                autoComplete="new-password"
+                defaultVisible={passwordVisible}
+                onVisibleChange={setPasswordVisible}
+                strength={false}
+                labels={{ toggle: '显示密码' }}
+              />
               <FieldError errors={[fieldState.error]} />
             </Field>
           )}

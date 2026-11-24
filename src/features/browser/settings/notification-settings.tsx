@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import { desktopInvoke, isTauriRuntime } from '@/lib/desktop';
 import { onDesktopForeground } from '@/lib/desktop/foreground';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 
 import { SettingsGroup, SettingsRow } from './settings-group';
 

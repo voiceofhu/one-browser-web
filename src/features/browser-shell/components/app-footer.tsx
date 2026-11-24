@@ -18,7 +18,7 @@ import { desktopInvoke, isTauriRuntime } from '@/lib/desktop';
 import { settingsPath } from '@/features/browser/settings/settings-sections';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 
 import {
   ChromiumDownloadFooter,

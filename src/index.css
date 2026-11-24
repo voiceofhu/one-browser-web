@@ -307,3 +307,65 @@ html.platform-other {
     --corner-scale: 1.5;
   }
 }
+
+/*
+ * One UI PasswordInput restyled to match this project's shadcn Input
+ * (components/app-password-input.tsx). Unlayered so it beats the component's
+ * own utility classes; the copied ui/password-input.tsx stays untouched.
+ */
+.app-password-input {
+  --app-password-height: --spacing(7);
+  --app-password-inset: --spacing(2);
+  --app-password-text: var(--text-xs);
+
+  & [data-slot='password-input-field'] {
+    @apply border-input bg-background dark:bg-input/30 text-foreground rounded-md border shadow-none transition-[color,box-shadow];
+    height: var(--app-password-height);
+  }
+  &
+    [data-slot='password-input-field']:has(
+      [data-slot='password-input-control']:focus-visible
+    ) {
+    @apply border-ring ring-ring/30 ring-2;
+  }
+  & [data-slot='password-input-field']:has([aria-invalid='true']) {
+    @apply border-destructive ring-destructive/20 dark:border-destructive/50 dark:ring-destructive/40 ring-2;
+  }
+  & [data-slot='password-input-control'] {
+    @apply autofill:shadow-none;
+    font-size: var(--app-password-text);
+    padding-left: var(--app-password-inset);
+  }
+  & [data-slot='password-input-display'] {
+    font-size: var(--app-password-text);
+    left: var(--app-password-inset);
+  }
+  & [data-slot='password-input-display'] > span:first-child {
+    @apply text-muted-foreground;
+  }
+  & [data-slot='password-input-caret'] {
+    @apply bg-foreground h-[1.2em];
+  }
+  & [data-slot='password-input-toggle'] {
+    @apply text-muted-foreground hover:text-foreground focus-visible:ring-ring/50 mr-0.5;
+    width: calc(var(--app-password-height) - 0.25rem);
+    height: calc(var(--app-password-height) - 0.25rem);
+  }
+  & [data-slot='password-input-toggle'] svg {
+    @apply size-4;
+  }
+
+  &[data-icon='true'] {
+    --app-password-inset: --spacing(8);
+  }
+  &[data-variant='plain'] {
+    --app-password-inset: 0px;
+
+    & [data-slot='password-input-field'] {
+      @apply border-transparent bg-transparent ring-0 dark:bg-transparent;
+    }
+    & [data-slot='password-input-toggle'] {
+      @apply mr-0;
+    }
+  }
+}

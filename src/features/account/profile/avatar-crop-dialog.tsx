@@ -21,7 +21,7 @@ import {
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import * as React from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 
 const AVATAR_OUTPUT_SIZE = 240;
 const CROP_VIEW_SIZE = 280;
@@ -222,7 +222,7 @@ function AvatarCropDialogContent({
           <div className="flex min-w-0 flex-col gap-3">
             <div
               className={cn(
-                'relative mx-auto touch-none overflow-hidden rounded-lg bg-muted ring-1 ring-border select-none',
+                'bg-muted ring-border relative mx-auto touch-none overflow-hidden rounded-lg ring-1 select-none',
                 imageSize && !isSubmitting ? 'cursor-grab' : 'cursor-default',
                 isDragging ? 'cursor-grabbing' : null,
               )}
@@ -251,11 +251,11 @@ function AvatarCropDialogContent({
                   onLoad={handleImageLoad}
                 />
               ) : (
-                <div className="grid size-full place-items-center text-sm text-muted-foreground">
+                <div className="text-muted-foreground grid size-full place-items-center text-sm">
                   请选择图片
                 </div>
               )}
-              <div className="pointer-events-none absolute inset-0 rounded-lg ring-2 ring-background/80 ring-inset" />
+              <div className="ring-background/80 pointer-events-none absolute inset-0 rounded-lg ring-2 ring-inset" />
             </div>
 
             <div className="flex items-center gap-2">
@@ -322,14 +322,14 @@ function AvatarCropDialogContent({
             </div>
           </div>
 
-          <div className="flex flex-col gap-3 rounded-lg bg-background p-3 ring-1 ring-border">
+          <div className="bg-background ring-border flex flex-col gap-3 rounded-lg p-3 ring-1">
             <div className="text-sm font-medium">头像预览</div>
             <div className="flex flex-col items-center gap-3">
               <Avatar className="size-24">
                 <AvatarImage src={previewUrl ?? undefined} alt="头像预览" />
                 <AvatarFallback>预览</AvatarFallback>
               </Avatar>
-              <p className="text-center text-xs text-muted-foreground">
+              <p className="text-muted-foreground text-center text-xs">
                 拖动图片调整位置，使用缩放控制头像范围。
               </p>
             </div>

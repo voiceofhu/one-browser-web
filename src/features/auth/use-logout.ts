@@ -4,7 +4,7 @@ import { http } from '@/lib/http';
 import { useRouter } from '@/router/compat';
 import { useQueryClient } from '@tanstack/react-query';
 import * as React from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 
 /**
  * Sign out of this app only (One User and the other apps stay signed in), or

@@ -2,13 +2,12 @@ import type {
   OpenProfileProgressPayload,
   OpenProfileProgressStep,
 } from '@/features/browser/contracts';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
+import { copyTextToClipboard } from '@/lib/clipboard';
 
 import { toBrowserErrorMessage } from '../errors';
-import {
-  BrowserOpenStatusToast,
-  type BrowserOpenToastStatus,
-} from './browser-open-status-toast';
+
+type BrowserOpenToastStatus = 'loading' | 'success' | 'error';
 
 const browserOpenToastId = 'browser-open-progress';
 const localOpenTotalSteps = 5;
@@ -129,25 +128,37 @@ function showBrowserOpenToast({
   currentStep?: number;
   totalSteps?: number;
 }) {
-  toast.custom(
-    (toastId) => (
-      <BrowserOpenStatusToast
-        status={status}
-        title={title}
-        description={description}
-        currentStep={currentStep}
-        totalSteps={totalSteps}
-        onClose={
-          status === 'loading' ? undefined : () => toast.dismiss(toastId)
-        }
-      />
-    ),
-    {
+  // one id, so each step swaps the same toast in place
+  if (status === 'loading') {
+    const step =
+      currentStep !== undefined && totalSteps !== undefined
+        ? `第 ${currentStep}/${totalSteps} 步`
+        : undefined;
+    toast.loading(title, {
       id: browserOpenToastId,
-      duration: status === 'success' ? 3500 : Infinity,
-      dismissible: status !== 'loading',
-      richColors: true,
-      unstyled: true,
+      description: [step, description].filter(Boolean).join(' · '),
+      dismissible: false,
+    });
+    return;
+  }
+  if (status === 'success') {
+    toast.success(title, {
+      id: browserOpenToastId,
+      description,
+      duration: 3500,
+    });
+    return;
+  }
+  const details = [title, description].filter(Boolean).join('\n');
+  toast.error(title, {
+    id: browserOpenToastId,
+    description,
+    duration: Infinity,
+    action: {
+      label: '复制错误信息',
+      onClick: () => {
+        copyTextToClipboard(details).catch(() => toast.error('复制失败'));
+      },
     },
-  );
+  });
 }

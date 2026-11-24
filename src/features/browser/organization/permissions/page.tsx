@@ -1,4 +1,4 @@
-import { ChevronsDownUp, ChevronsUpDown } from "lucide-react";
+import { ChevronsDownUp, ChevronsUpDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/features/auth/auth-gate';
 import {
@@ -17,9 +17,7 @@ import {
   BrowserTableSearchField,
   BrowserTableToolbar,
 } from '@/features/browser/components/table-toolbar';
-import {
-  Add01Icon,
-} from '@hugeicons/core-free-icons';
+import { Add01Icon } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import type {
   OnChangeFn,
@@ -27,7 +25,7 @@ import type {
   VisibilityState,
 } from '@tanstack/react-table';
 import * as React from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 
 import { RemotePermissionRequiredState } from '../teams/team-scope';
 import { usePermissionColumns } from './components/permission-columns';
@@ -305,7 +303,7 @@ export function RemotePermissionsPage() {
   }
 
   return (
-    <section className="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-background">
+    <section className="bg-background relative flex h-full min-h-0 flex-1 flex-col overflow-hidden">
       <BrowserTableToolbar
         filters={
           <>
@@ -316,7 +314,7 @@ export function RemotePermissionsPage() {
               onValueChange={setStatusFilter}
             />
             <BrowserTableSearchField
-              className="min-w-36 max-w-60 flex-1"
+              className="max-w-60 min-w-36 flex-1"
               value={search}
               placeholder="搜索权限名称、路由或标识"
               ariaLabel="搜索权限"
@@ -352,7 +350,11 @@ export function RemotePermissionsPage() {
                 setExpandedIds(allExpanded ? new Set() : new Set(expandableIds))
               }
             >
-              {allExpanded ? <ChevronsDownUp aria-hidden="true" data-icon="inline-start" /> : <ChevronsUpDown aria-hidden="true" data-icon="inline-start" />}
+              {allExpanded ? (
+                <ChevronsDownUp aria-hidden="true" data-icon="inline-start" />
+              ) : (
+                <ChevronsUpDown aria-hidden="true" data-icon="inline-start" />
+              )}
               {allExpanded ? '全部收起' : '全部展开'}
             </Button>
             <BrowserTableColumnVisibilityMenu
@@ -364,7 +366,7 @@ export function RemotePermissionsPage() {
         }
       />
 
-      <div className="min-h-0 flex-1 overflow-auto bg-background">
+      <div className="bg-background min-h-0 flex-1 overflow-auto">
         {permissionsQuery.isError ? (
           <PermissionLoadErrorState
             message={permissionsQuery.error.message}

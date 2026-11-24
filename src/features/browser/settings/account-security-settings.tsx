@@ -23,7 +23,7 @@ import {
   UserSwitchIcon,
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 
 import { SettingsDivider, SettingsGroup, SettingsRow } from './settings-group';
 

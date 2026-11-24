@@ -41,7 +41,7 @@ import {
 } from '@hugeicons/core-free-icons';
 import { HugeiconsIcon } from '@hugeicons/react';
 import * as React from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 
 const teamsParams = { page_size: 100 } as const;
 
@@ -220,7 +220,7 @@ function TeamMenuItem({ team }: { team: RemoteTeamResource }) {
   return (
     <div className="min-w-0">
       <div className="truncate font-medium">{team.team_name}</div>
-      <div className="truncate text-[0.6875rem] text-muted-foreground">
+      <div className="text-muted-foreground truncate text-[0.6875rem]">
         {team.member_count} 成员 · {team.environment_count} 环境 ·{' '}
         {team.proxy_count} 代理
       </div>

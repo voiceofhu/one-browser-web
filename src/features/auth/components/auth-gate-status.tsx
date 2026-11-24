@@ -19,7 +19,7 @@ import { gsap } from 'gsap';
 import * as React from 'react';
 
 import { AppImage as Image } from '@/components/app-image';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/toast';
 
 const APP_LOGO_SRC = '/pwa-512x512.png';
 
@@ -58,7 +58,9 @@ export function AuthGateStatus({
       ? `Code: ${originalCode}`
       : '',
     message,
-  ].filter(Boolean).join('\n');
+  ]
+    .filter(Boolean)
+    .join('\n');
 
   async function openWebLogin() {
     if (onLogin) {
@@ -130,7 +132,9 @@ export function AuthGateStatus({
         </Alert>
         <div className="min-w-0">
           <div className="mb-1 flex items-center justify-between gap-2">
-            <p className="text-muted-foreground text-xs font-medium">错误详情</p>
+            <p className="text-muted-foreground text-xs font-medium">
+              错误详情
+            </p>
             <CopyButton
               text={diagnostic}
               variant="ghost"
@@ -142,7 +146,7 @@ export function AuthGateStatus({
           </div>
           <pre
             data-no-window-drag
-            className="bg-background max-h-36 overflow-auto rounded-sm border px-2.5 py-2 font-mono text-xs/5 whitespace-pre-wrap break-words select-text"
+            className="bg-background max-h-36 overflow-auto rounded-sm border px-2.5 py-2 font-mono text-xs/5 break-words whitespace-pre-wrap select-text"
           >
             {message}
           </pre>
