@@ -1,5 +1,9 @@
-import { UpdateAvailableNotice } from '@/components/update-available-notice';
-import { reloadForUpdate, startAppUpdateCheck } from '@/lib/app-update';
+import { UpdateNotice } from '@/components/ui/update-notice';
+import {
+  isUpdateSnoozed,
+  snoozeUpdateForToday,
+  startAppUpdateCheck,
+} from '@/lib/app-update';
 import { desktopInvoke, isTauriRuntime } from '@/lib/desktop';
 import {
   hasAppUpdate,
@@ -25,13 +29,20 @@ export function AppUpdateChecker() {
   const nativeUpdate = native.data;
   const install = useInstallAppUpdate();
   const [dismissed, setDismissed] = React.useState<string | null>(null);
+  // a failed install remounts the notice so its button is usable again
+  const [attempt, setAttempt] = React.useState(0);
   useCheckAppUpdateOnShow(native.isSuccess);
   const [desktopUpdate, setDesktopUpdate] =
     React.useState<DesktopAppUpdate | null>(null);
   const desktopCheckInFlight = React.useRef(false);
 
   React.useEffect(() => {
-    const start = () => startAppUpdateCheck(() => setPageUpdateAvailable(true));
+    // Checks keep running while snoozed, so the notice returns on the first
+    // check after midnight.
+    const start = () =>
+      startAppUpdateCheck(() => {
+        if (!isUpdateSnoozed()) setPageUpdateAvailable(true);
+      });
     let stop = start();
     const stopForeground = isTauriRuntime()
       ? onDesktopForeground(() => {
@@ -88,6 +99,7 @@ export function AppUpdateChecker() {
       setDesktopUpdate(null);
     } catch (error) {
       console.warn('Failed to open the desktop app download page.', error);
+      setAttempt((n) => n + 1);
     }
   }
 
@@ -96,6 +108,7 @@ export function AppUpdateChecker() {
       await install.mutateAsync();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : '更新失败');
+      setAttempt((n) => n + 1);
     }
   }
 
@@ -106,41 +119,60 @@ export function AppUpdateChecker() {
     nativeVersion !== null &&
     dismissed !== nativeVersion;
 
+  // One notice at a time: the app update wins, then the download page for
+  // older apps, then a new deploy of these pages.
+  if (showNative) {
+    return (
+      <UpdateNotice
+        key={`native-${attempt}`}
+        open
+        onLater={() => setDismissed(nativeVersion)}
+        onUpdate={() => void installNativeUpdate()}
+        labels={{
+          title: `新版本 v${nativeVersion} 已就绪`,
+          description:
+            '会先关闭正在运行的浏览器环境，更新后自动重新打开 One Browser。',
+          action: '立即更新',
+          updating:
+            nativeUpdate?.state === 'installing' ? '正在安装…' : '正在下载…',
+          later: '稍后提醒',
+        }}
+      />
+    );
+  }
+
+  if (desktopUpdate !== null) {
+    return (
+      <UpdateNotice
+        key={`desktop-${attempt}`}
+        open
+        onLater={() => setDesktopUpdate(null)}
+        onUpdate={() => void openDesktopDownloadPage()}
+        labels={{
+          title: `新版本 v${desktopUpdate.latestVersion} 已发布`,
+          description: '点击更新，下载安装后即可使用新版本。',
+          action: '立即更新',
+          updating: '正在打开…',
+          later: '稍后提醒',
+        }}
+      />
+    );
+  }
+
   return (
-    <div className="fixed right-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-50 flex w-[calc(100%-2rem)] max-w-sm flex-col gap-2 sm:right-6 sm:bottom-[max(1.5rem,env(safe-area-inset-bottom))] sm:w-full">
-      <UpdateAvailableNotice
-        open={pageUpdateAvailable}
-        onOpenChange={setPageUpdateAvailable}
-        onUpdate={reloadForUpdate}
-      />
-      <UpdateAvailableNotice
-        open={showNative}
-        onOpenChange={(open) => {
-          if (!open) setDismissed(nativeVersion);
-        }}
-        onUpdate={installNativeUpdate}
-        currentVersion={nativeUpdate?.current}
-        latestVersion={nativeVersion ?? undefined}
-        title="新版本已就绪"
-        description="会先关闭正在运行的浏览器环境，更新后自动重新打开 One Browser。"
-        updateLabel="立即更新"
-        updatingLabel={
-          nativeUpdate?.state === 'installing' ? '正在安装…' : '正在下载…'
-        }
-        resetUpdatingAfterUpdate
-      />
-      <UpdateAvailableNotice
-        open={desktopUpdate !== null}
-        onOpenChange={(open) => {
-          if (!open) setDesktopUpdate(null);
-        }}
-        onUpdate={openDesktopDownloadPage}
-        currentVersion={desktopUpdate?.currentVersion}
-        latestVersion={desktopUpdate?.latestVersion}
-        description="点击更新，下载安装后即可使用新版本。"
-        updatingLabel="正在打开…"
-        resetUpdatingAfterUpdate
-      />
-    </div>
+    <UpdateNotice
+      open={pageUpdateAvailable}
+      onLater={() => {
+        snoozeUpdateForToday();
+        setPageUpdateAvailable(false);
+      }}
+      labels={{
+        title: '新版本已发布',
+        description: '点击更新，刷新页面后即可使用新版本。',
+        action: '立即更新',
+        updating: '正在更新…',
+        later: '稍后提醒',
+      }}
+    />
   );
 }
