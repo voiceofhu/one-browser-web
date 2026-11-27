@@ -39,7 +39,6 @@ const SystemRolePage = lazy(() => import('@/views/system/role'));
 const SystemMenuPage = lazy(() => import('@/views/system/menu'));
 const SystemNoticePage = lazy(() => import('@/views/system/notice'));
 const OperationLogPage = lazy(() => import('@/views/system/log/operation'));
-const LoginLogPage = lazy(() => import('@/views/system/log/login'));
 const HealthPage = lazy(() => import('@/views/monitor/health'));
 const JobPage = lazy(() => import('@/views/monitor/job'));
 const errorStatuses = [401, 403, 404, 408, 429, 500, 502, 503, 504];
@@ -84,7 +83,6 @@ export function AppRouter() {
               path="/system/log/operation"
               element={<OperationLogPage />}
             />
-            <Route path="/system/log/login" element={<LoginLogPage />} />
             <Route path="/monitor/health" element={<HealthPage />} />
             <Route path="/monitor/job" element={<JobPage />} />
             <Route path="/browser" element={<BrowserOverviewPage />} />

@@ -347,7 +347,7 @@ export function RemoteMembersPage() {
           columns={columns}
           data={membersQuery.data?.list ?? []}
           emptyTitle="暂无成员"
-          emptyDescription="生成一次性邀请后，对方登录或使用 Google 首次登录即可加入团队。"
+          emptyDescription="生成一次性邀请后，对方通过 One User 登录即可加入团队。"
           getRowId={(record) => String(record.member_id)}
           isLoading={membersQuery.isLoading}
           columnVisibility={columnVisibility}

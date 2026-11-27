@@ -71,8 +71,8 @@ export const organizationMessages = {
   无法读取邀请信息: 'Could not load invitation information',
   暂无代理查看权限: 'No permission to view proxies',
   暂无环境查看权限: 'No permission to view environments',
-  '生成一次性邀请后，对方登录或使用 Google 首次登录即可加入团队。':
-    'After generating a one-time invitation, the recipient can join the team after signing in or signing in with Google for the first time.',
+  '生成一次性邀请后，对方通过 One User 登录即可加入团队。':
+    'After generating a one-time invitation, the recipient joins the team by signing in with One User.',
   '请联系管理员授予代理查看权限。':
     'Ask an administrator for proxy viewing permission.',
   '请联系管理员授予当前团队的代理查看权限。':

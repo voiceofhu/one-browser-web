@@ -10,7 +10,6 @@ export const apiFetch = createApiFetch({
   plain: (pathname) =>
     [
       '/api/auth/oidc/start',
-      '/api/auth/google/callback',
       '/api/auth/avatar',
       '/api/browser/assets/uploads/direct',
       '/api/health/stream',

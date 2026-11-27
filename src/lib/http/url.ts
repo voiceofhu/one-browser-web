@@ -89,19 +89,13 @@ export function sanitizeRequestUrl(value: string) {
 
 export function shouldSkipAuthRedirect(url: string) {
   const path = getUrlPath(url);
-  return (
-    path.endsWith('/auth/login') ||
-    path.endsWith('/auth/google/callback') ||
-    path.endsWith('/auth/oidc/complete')
-  );
+  return path.endsWith('/auth/oidc/complete');
 }
 
 export function shouldRefreshAuth(url: string) {
   const path = getUrlPath(url);
   return !(
     path.includes('/app-downloads/') ||
-    path.endsWith('/auth/login') ||
-    path.endsWith('/auth/google/callback') ||
     path.endsWith('/auth/oidc/complete') ||
     path.endsWith('/auth/refresh')
   );
